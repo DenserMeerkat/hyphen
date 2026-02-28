@@ -1,0 +1,14 @@
+# IDE / Android Studio
+.idea/
+*.iml
+local.properties
+
+# Gradle & Build Outputs
+.gradle/
+build/
+*/build/
+*.apk
+*.aab
+
+# OS Files (Mac)
+.DS_Store
