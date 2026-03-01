@@ -6,9 +6,21 @@ local.properties
 # Gradle & Build Outputs
 .gradle/
 build/
-*/build/
+**/build/
 *.apk
 *.aab
+*.aar
+captures/
 
-# OS Files (Mac)
+# Security / Signing Keys
+*.jks
+*.keystore
+key.properties
+signing.properties
+
+# Kotlin & KMP Cache
+.kotlin/
+
+# OS Files
 .DS_Store
+Thumbs.db

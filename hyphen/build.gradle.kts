@@ -1,18 +1,20 @@
 plugins {
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.jetbrains.compose)
     alias(libs.plugins.compose.compiler)
+    `maven-publish`
 }
+
+group = "io.github.densermeerkat"
+version = "0.1.0-SNAPSHOT"
 
 android {
     namespace = "com.denser.hyphen"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 26
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -37,22 +39,41 @@ android {
 }
 
 kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
-}
 
-dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    jvm("desktop") {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
+    }
 
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.ui.tooling.preview)
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(libs.runtime)
+                implementation(libs.foundation)
+                implementation(libs.material3)
+                implementation(libs.ui)
+            }
+        }
+
+        androidMain {
+            dependencies {
+                implementation(libs.androidx.core.ktx)
+                implementation(libs.androidx.appcompat)
+                implementation(libs.material)
+                implementation(libs.androidx.compose.ui.tooling.preview)
+            }
+        }
+
+        commonTest {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
+    }
 }
