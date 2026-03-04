@@ -1,24 +1,20 @@
-package com.denser.hyphen.sample.desktop
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.application
+import androidx.compose.ui.window.ComposeViewport
 import com.denser.hyphen.sample.shared.HyphenToolbar
 import com.denser.hyphen.state.rememberHyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
 
-fun main() = application {
-    Window(
-        onCloseRequest = ::exitApplication,
-        title = "Hyphen Editor - Desktop"
-    ) {
+@OptIn(ExperimentalComposeUiApi::class)
+fun main() {
+    ComposeViewport(viewportContainerId = "ComposeTarget") {
         MaterialTheme {
             val editorState = rememberHyphenTextState(
                 initialText = """

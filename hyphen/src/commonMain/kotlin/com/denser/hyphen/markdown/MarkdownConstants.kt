@@ -20,11 +20,20 @@ internal object MarkdownConstants {
     val HIGHLIGHT_REGEX = Regex("==(.*?)==")
 
     // -, *, or • at line start
-    val BULLET_LIST_REGEX = Regex("(?m)^[\\-*•] (.*?)$")
+    val BULLET_LIST_REGEX = Regex(
+        pattern = """^[\-*•] (.*?)$""",
+        option = RegexOption.MULTILINE
+    )
 
     // 1. at line start
-    val ORDERED_LIST_REGEX = Regex("(?m)^\\d+\\. (.*?)$")
+    val ORDERED_LIST_REGEX = Regex(
+        pattern = """^\d+\. (.*?)$""",
+        option = RegexOption.MULTILINE
+    )
 
     // > or ┃ at line start
-    val BLOCKQUOTE_REGEX = Regex("(?m)^[>┃] (.*?)$")
+    val BLOCKQUOTE_REGEX = Regex(
+        pattern = """^[>┃] (.*?)$""",
+        option = RegexOption.MULTILINE
+    )
 }

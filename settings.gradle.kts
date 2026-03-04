@@ -12,7 +12,6 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
@@ -25,3 +24,4 @@ include(":hyphen")
 include(":sample:shared")
 include(":sample:android")
 include(":sample:desktop")
+include(":sample:web")

@@ -92,6 +92,18 @@ class HyphenTextState(
             buffer.replace(0, buffer.length, markdownResult.cleanText)
             buffer.selection = TextRange(markdownResult.newCursorPosition.coerceIn(0, buffer.length))
 
+            val stylesJustClosed = markdownResult.newSpans
+                .filter { it.end == markdownResult.newCursorPosition }
+                .map { it.style }
+
+            if (stylesJustClosed.isNotEmpty()) {
+                val newOverrides = pendingOverrides.toMutableMap()
+                stylesJustClosed.forEach { style ->
+                    newOverrides[style] = false
+                }
+                pendingOverrides = newOverrides
+            }
+
             saveSnapshot()
         } else {
             updatedSpans = SpanManager.shiftSpans(_spans, changeOrigin, rawLengthDifference)

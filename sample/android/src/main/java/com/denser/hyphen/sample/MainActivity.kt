@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.denser.hyphen.sample.shared.HyphenToolbar
 import com.denser.hyphen.state.rememberHyphenTextState
-import com.denser.hyphen.ui.HyphenTextEditor
+import com.denser.hyphen.ui.HyphenBasicTextEditor
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
                             .padding(innerPadding)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
-                        HyphenTextEditor(
+                        HyphenBasicTextEditor(
                             state = editorState,
                             modifier = Modifier.fillMaxSize(),
                             textStyle = TextStyle(

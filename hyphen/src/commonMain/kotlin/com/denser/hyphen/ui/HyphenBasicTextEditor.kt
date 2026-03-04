@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.denser.hyphen.state.HyphenTextState
 
 @Composable
-fun HyphenTextEditor(
+fun HyphenBasicTextEditor(
     state: HyphenTextState,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
