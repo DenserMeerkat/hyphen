@@ -2,6 +2,7 @@ package com.denser.hyphen.state
 
 import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.model.StyleSets
 
 internal object SpanManager {
 
@@ -107,11 +108,7 @@ internal object SpanManager {
             newSpans.add(MarkupStyleRange(style, changeOrigin, insertEnd))
         }
 
-        val inactiveStyles = listOf(
-            MarkupStyle.Bold, MarkupStyle.Italic,
-            MarkupStyle.Underline, MarkupStyle.Strikethrough,
-            MarkupStyle.Highlight, MarkupStyle.InlineCode
-        ).filter { it !in activeStyles }
+        val inactiveStyles = StyleSets.allInline.filter { it !in activeStyles }
 
         inactiveStyles.forEach { style ->
             val overlaps = newSpans.filter { it.style == style && it.start < insertEnd && it.end > changeOrigin }

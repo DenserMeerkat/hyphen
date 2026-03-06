@@ -5,13 +5,12 @@ import androidx.compose.foundation.text.input.insert
 import androidx.compose.ui.text.TextRange
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
+import com.denser.hyphen.model.StyleSets
 
 internal object BlockStyleManager {
 
     fun isBlockStyle(style: MarkupStyle): Boolean {
-        return style is MarkupStyle.BulletList ||
-                style is MarkupStyle.OrderedList ||
-                style is MarkupStyle.Blockquote
+        return style in StyleSets.allBlock
     }
 
     fun hasBlockStyle(text: String, selection: TextRange, style: MarkupStyle): Boolean {

@@ -1,10 +1,10 @@
 package com.denser.hyphen.markdown
 
 import com.denser.hyphen.model.MarkupStyle
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.Test
 
 class MarkdownProcessorTest {
 
@@ -13,7 +13,7 @@ class MarkdownProcessorTest {
         val text = "Just a normal string without formatting."
         val result = MarkdownProcessor.process(text, cursorPosition = 5)
 
-        assertNull("Processor should return null to avoid unnecessary recompositions", result)
+        assertNull(result,"Processor should return null to avoid unnecessary recompositions")
     }
 
     @Test
@@ -67,7 +67,7 @@ class MarkdownProcessorTest {
         for ((text, expectedStyle) in textsAndStyles) {
             val result = MarkdownProcessor.process(text, cursorPosition = 0)
 
-            assertNotNull("Failed on: $text", result)
+            assertNotNull(result,"Failed on: $text")
             // Block styles should NOT strip the prefix from the cleanText
             assertEquals(text, result?.cleanText)
 

@@ -9,7 +9,7 @@ internal data class EditorSnapshot(
     val spans: List<MarkupStyleRange>
 )
 
-internal class EditorHistoryManager(private val maxHistorySize: Int = 50) {
+internal class HistoryManager(private val maxHistorySize: Int = 50) {
     private val undoStack = mutableListOf<EditorSnapshot>()
     private val redoStack = mutableListOf<EditorSnapshot>()
 
@@ -36,8 +36,9 @@ internal class EditorHistoryManager(private val maxHistorySize: Int = 50) {
 
     fun redo(currentState: EditorSnapshot): EditorSnapshot? {
         if (redoStack.isEmpty()) return null
-
-        undoStack.add(currentState)
+        if (undoStack.lastOrNull() != currentState) {
+            undoStack.add(currentState)
+        }
         return redoStack.removeAt(redoStack.lastIndex)
     }
 }

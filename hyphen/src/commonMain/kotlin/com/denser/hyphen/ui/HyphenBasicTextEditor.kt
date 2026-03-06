@@ -9,7 +9,9 @@ import androidx.compose.foundation.text.input.TextFieldDecorator
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -49,12 +51,18 @@ fun HyphenBasicTextEditor(
 ) {
     val customClipboard = rememberMarkdownClipboard(state, clipboardLabel)
 
+    LaunchedEffect(state.selection) {
+        state.updateSelection(state.selection)
+    }
+
     CompositionLocalProvider(LocalClipboard provides customClipboard) {
         BasicTextField(
             state = state.textFieldState,
-            modifier = modifier.onPreviewKeyEvent { event ->
-                handleHardwareKeyEvent(event, state)
-            },
+            modifier = modifier
+                .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
+                .onFocusChanged { focusState ->
+                    state.isFocused = focusState.isFocused
+                },
             enabled = enabled,
             readOnly = readOnly,
             textStyle = textStyle,

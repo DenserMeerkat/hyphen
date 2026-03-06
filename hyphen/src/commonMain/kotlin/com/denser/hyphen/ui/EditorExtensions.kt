@@ -8,17 +8,28 @@ import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.platform.Clipboard
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.state.BlockStyleManager
 import com.denser.hyphen.state.HyphenTextState
+import androidx.compose.ui.input.key.isAltPressed
 
 internal fun handleHardwareKeyEvent(
     event: KeyEvent,
     state: HyphenTextState
 ): Boolean {
+    val isKeyDown = event.type == KeyEventType.KeyDown
+    if (!isKeyDown) return false
+
+    val isPrimaryModifier = event.isCtrlPressed || event.isMetaPressed
+    val isShift = event.isShiftPressed
+    val isAlt = event.isAltPressed
+
     return when {
-        event.key == Key.Enter && event.type == KeyEventType.KeyDown -> {
+        event.key == Key.Enter -> {
             var consumed = false
             state.textFieldState.edit {
                 val handled = BlockStyleManager.handleSmartEnter(state, this)
@@ -29,6 +40,34 @@ internal fun handleHardwareKeyEvent(
             }
             consumed
         }
+
+        isPrimaryModifier && !isShift && !isAlt -> {
+            when (event.key) {
+                Key.B -> { state.toggleStyle(MarkupStyle.Bold); true }
+                Key.I -> { state.toggleStyle(MarkupStyle.Italic); true }
+                Key.U -> { state.toggleStyle(MarkupStyle.Underline); true }
+                Key.Z -> { state.undo(); true }
+                Key.Y -> { state.redo(); true }
+                Key.Spacebar -> { state.clearAllStyles(); true }
+                else -> false
+            }
+        }
+
+        isPrimaryModifier && isShift -> {
+            when (event.key) {
+                Key.S -> { state.toggleStyle(MarkupStyle.Strikethrough); true }
+                Key.H -> { state.toggleStyle(MarkupStyle.Highlight); true }
+                Key.X -> { state.toggleStyle(MarkupStyle.Strikethrough); true }
+                Key.Z -> { state.redo(); true }
+                else -> false
+            }
+        }
+
+        isPrimaryModifier && isAlt && event.key == Key.X -> {
+            state.toggleStyle(MarkupStyle.Strikethrough)
+            true
+        }
+
         else -> false
     }
 }

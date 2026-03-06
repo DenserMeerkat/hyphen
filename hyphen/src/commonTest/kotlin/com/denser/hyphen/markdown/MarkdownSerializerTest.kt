@@ -2,8 +2,8 @@ package com.denser.hyphen.markdown
 
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class MarkdownSerializerTest {
 

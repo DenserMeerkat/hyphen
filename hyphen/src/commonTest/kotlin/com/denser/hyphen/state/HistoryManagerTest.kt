@@ -1,13 +1,13 @@
 package com.denser.hyphen.state
 
 import androidx.compose.ui.text.TextRange
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
-class EditorHistoryManagerTest {
+class HistoryManagerTest {
 
     private fun createSnapshot(text: String) = EditorSnapshot(
         text = text,
@@ -17,7 +17,7 @@ class EditorHistoryManagerTest {
 
     @Test
     fun `initial state cannot undo or redo`() {
-        val manager = EditorHistoryManager()
+        val manager = HistoryManager()
 
         assertFalse(manager.canUndo)
         assertFalse(manager.canRedo)
@@ -27,7 +27,7 @@ class EditorHistoryManagerTest {
 
     @Test
     fun `saveSnapshot adds to history and enables undo`() {
-        val manager = EditorHistoryManager()
+        val manager = HistoryManager()
         manager.saveSnapshot(createSnapshot("State 1"))
 
         assertTrue(manager.canUndo)
@@ -36,7 +36,7 @@ class EditorHistoryManagerTest {
 
     @Test
     fun `saveSnapshot ignores consecutive identical snapshots`() {
-        val manager = EditorHistoryManager()
+        val manager = HistoryManager()
         val snapshot = createSnapshot("Same State")
 
         manager.saveSnapshot(snapshot)
@@ -53,7 +53,7 @@ class EditorHistoryManagerTest {
 
     @Test
     fun `saveSnapshot clears the redo stack`() {
-        val manager = EditorHistoryManager()
+        val manager = HistoryManager()
 
         // 1. Save state and then undo it to populate the redo stack
         manager.saveSnapshot(createSnapshot("State 1"))
@@ -71,7 +71,7 @@ class EditorHistoryManagerTest {
     @Test
     fun `history respects maxHistorySize and drops oldest snapshots`() {
         val maxSize = 3
-        val manager = EditorHistoryManager(maxHistorySize = maxSize)
+        val manager = HistoryManager(maxHistorySize = maxSize)
 
         // Save 5 states. It should only keep states 3, 4, and 5.
         manager.saveSnapshot(createSnapshot("State 1"))
@@ -99,7 +99,7 @@ class EditorHistoryManagerTest {
 
     @Test
     fun `undo pushes current state to redo stack`() {
-        val manager = EditorHistoryManager()
+        val manager = HistoryManager()
         manager.saveSnapshot(createSnapshot("State 1"))
 
         val currentState = createSnapshot("State 2")
@@ -111,7 +111,7 @@ class EditorHistoryManagerTest {
 
     @Test
     fun `redo pushes current state back to undo stack`() {
-        val manager = EditorHistoryManager()
+        val manager = HistoryManager()
         manager.saveSnapshot(createSnapshot("State 1"))
 
         val state2 = createSnapshot("State 2")

@@ -2,11 +2,12 @@ package com.denser.hyphen.state
 
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.test.Test
 
 class SpanManagerTest {
+
 
     // --- shiftSpans Tests ---
     @Test
@@ -61,6 +62,7 @@ class SpanManagerTest {
         assertTrue(result.any { it.style == MarkupStyle.Italic })
     }
 
+
     // --- consolidateSpans Tests ---
     @Test
     fun `consolidateSpans merges overlapping inline spans of the same style`() {
@@ -98,6 +100,7 @@ class SpanManagerTest {
         assertEquals(2, result.size)
     }
 
+
     // --- toggleStyle Tests ---
     @Test
     fun `toggleStyle splits an existing span if toggled inside it`() {
@@ -122,6 +125,7 @@ class SpanManagerTest {
         assertTrue(result.any { it.start == 8 && it.end == 12 })
     }
 
+
     // --- applyTypingOverrides Tests ---
     @Test
     fun `applyTypingOverrides removes inactive styles and adds active styles in typed range`() {
@@ -141,6 +145,7 @@ class SpanManagerTest {
         assertTrue(result.any { it.style == MarkupStyle.Bold && it.start == 6 && it.end == 10 })
         assertTrue(result.any { it.style == MarkupStyle.Italic && it.start == 4 && it.end == 6 })
     }
+
 
     // --- resolveChangeOrigin Tests ---
     @Test
