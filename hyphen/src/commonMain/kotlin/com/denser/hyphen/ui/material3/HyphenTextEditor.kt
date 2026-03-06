@@ -24,6 +24,79 @@ import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
 import com.denser.hyphen.ui.HyphenStyleConfig
 
+/**
+ * [Material Design filled text field](https://m3.material.io/components/text-fields/overview)
+ * with built-in Markdown formatting support.
+ *
+ * This is a Material3-decorated wrapper around [HyphenBasicTextEditor]. It inherits all
+ * markdown editing behaviour — inline styles, block prefixes, hardware shortcuts, and
+ * Markdown-serializing clipboard — while adopting the standard Material3 filled text field
+ * appearance including labels, icons, supporting text, and error state.
+ *
+ * If you do not need Material3 decoration, use [HyphenBasicTextEditor] directly.
+ *
+ * A minimal example:
+ * ```kotlin
+ * val state = rememberHyphenTextState()
+ *
+ * HyphenTextEditor(
+ *     state = state,
+ *     label = { Text("Notes") },
+ *     placeholder = { Text("Start typing…") },
+ * )
+ * ```
+ *
+ * To read the formatted output as Markdown:
+ * ```kotlin
+ * val markdown = state.toMarkdown()
+ * ```
+ *
+ * @param state The [HyphenTextState] that holds text content, spans, selection, and undo/redo
+ *   history. Use [com.denser.hyphen.state.rememberHyphenTextState] to create and remember an instance.
+ * @param modifier Optional [Modifier] applied to the text field container.
+ * @param enabled Controls the enabled state of the text field. When `false`, the field is
+ *   neither editable nor focusable, and it will appear visually disabled to accessibility
+ *   services.
+ * @param readOnly Controls the editable state of the text field. When `true`, the field cannot
+ *   be modified but can be focused and its text can be copied.
+ * @param textStyle Typographic style applied to the input text. Defaults to [LocalTextStyle].
+ *   The text color is resolved from [colors] when not explicitly specified in the style.
+ * @param labelPosition Controls where the label is displayed relative to the field. See
+ *   [TextFieldLabelPosition].
+ * @param label Optional label displayed inside or above the field. Uses
+ *   [Typography.bodySmall] when minimized and [Typography.bodyLarge] when expanded.
+ * @param placeholder Optional placeholder displayed when the input text is empty. Uses
+ *   [Typography.bodyLarge].
+ * @param leadingIcon Optional icon composable displayed at the start of the field container.
+ * @param trailingIcon Optional icon composable displayed at the end of the field container.
+ * @param prefix Optional composable displayed before the input text inside the field.
+ * @param suffix Optional composable displayed after the input text inside the field.
+ * @param supportingText Optional helper or error text displayed below the field container.
+ * @param isError Indicates whether the field's current value is in an error state. When
+ *   `true`, the label, bottom indicator, and trailing icon are tinted with the error color,
+ *   and an error is announced to accessibility services.
+ * @param keyboardOptions Software keyboard options such as keyboard type and IME action.
+ *   Defaults to [KeyboardOptions.Default].
+ * @param lineLimits Whether the field should be single-line (horizontal scroll) or multi-line
+ *   (vertical grow/scroll). Defaults to [TextFieldLineLimits.Default].
+ * @param scrollState Scroll state managing vertical or horizontal scroll of the field content.
+ * @param shape The shape of the field's filled container. Defaults to
+ *   [TextFieldDefaults.shape].
+ * @param colors [TextFieldColors] used to resolve foreground and background colors across
+ *   enabled, focused, and error states. See [TextFieldDefaults.colors].
+ * @param contentPadding Padding between the inner text field and the surrounding decoration
+ *   elements. Defaults to [TextFieldDefaults.contentPaddingWithLabel] when a label is present
+ *   in attached position, or [TextFieldDefaults.contentPaddingWithoutLabel] otherwise.
+ * @param interactionSource Optional hoisted [MutableInteractionSource] for observing
+ *   interactions. If `null`, an internal source is created and used.
+ * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle] — colors, weights, and
+ *   decorations used when rendering formatted text.
+ * @param onTextLayout Callback invoked whenever the text layout is recalculated. Provides a
+ *   deferred [TextLayoutResult] useful for cursor drawing or hit testing.
+ * @param clipboardLabel Label attached to the clipboard entry when text is copied.
+ * @param onValueChange Optional callback invoked after each input transformation with the
+ *   current plain text value.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HyphenTextEditor(

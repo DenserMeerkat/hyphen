@@ -16,27 +16,101 @@ import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.model.StyleSets
 
+/**
+ * Hoisted state for a Hyphen markdown text editor.
+ *
+ * [HyphenTextState] is the single source of truth for all editor content. It holds the raw
+ * plain text (stripped of Markdown syntax), the list of active [MarkupStyleRange] spans that
+ * describe formatting, pending typing overrides, and the full undo/redo history.
+ *
+ * Markdown syntax entered by the user is processed by [MarkdownProcessor] and immediately
+ * converted into spans — the [text] property therefore always contains clean, undecorated
+ * content. Call [toMarkdown] to serialize the current state back to a Markdown string.
+ *
+ * **Typical usage**
+ * ```kotlin
+ * val state = rememberHyphenTextState()
+ *
+ * HyphenBasicTextEditor(state = state)
+ *
+ * // Bold the selected range from a toolbar button
+ * Button(onClick = { state.toggleStyle(MarkupStyle.Bold) }) {
+ *     Text("B")
+ * }
+ *
+ * // Read the result
+ * val markdown = state.toMarkdown()
+ * ```
+ *
+ * **Initializing with Markdown**
+ *
+ * Pass a Markdown string to the constructor and it will be parsed on creation:
+ * ```kotlin
+ * val state = rememberHyphenTextState("**Hello**, _world_!")
+ * // state.text == "Hello, world!"
+ * // state.spans contains Bold(0..5) and Italic(7..12)
+ * ```
+ *
+ * @param initialText Plain text or Markdown string used to seed the editor on creation.
+ *   Markdown syntax is parsed immediately — [text] will contain the clean result.
+ */
 class HyphenTextState(
     initialText: String = "",
 ) {
+    /**
+     * The underlying [TextFieldState] driving the Compose text field.
+     *
+     * Exposed for integration with [androidx.compose.foundation.text.BasicTextField] and Material3 decorators. Prefer the
+     * higher-level API ([text], [selection], [toggleStyle], etc.) for all formatting
+     * operations — mutating [textFieldState] directly bypasses span tracking and undo history.
+     */
     val textFieldState = TextFieldState()
 
+    /** The current plain text content of the editor, with all Markdown syntax stripped. */
     val text: String get() = textFieldState.text.toString()
+
+    /** The current cursor position or selected range within [text]. */
     val selection: TextRange get() = textFieldState.selection
 
     private val _spans = mutableStateListOf<MarkupStyleRange>()
+
+    /**
+     * The active list of [MarkupStyleRange] entries describing all inline and block
+     * formatting applied to [text]. Observed as Compose snapshot state — any composable
+     * reading this list will recompose when spans change.
+     */
     val spans: List<MarkupStyleRange> get() = _spans
 
+    /**
+     * Transient formatting intent for the next typed character(s).
+     *
+     * When the cursor is collapsed (no selection) and the user toggles a style, that intent
+     * is stored here rather than creating a zero-length span. The override is applied to the
+     * next inserted characters and then cleared. A `true` value means the style will be
+     * applied; `false` means it will be suppressed even if the cursor sits inside an existing
+     * span of that style.
+     */
     var pendingOverrides by mutableStateOf(mapOf<MarkupStyle, Boolean>())
         private set
 
+    /** `true` if there is at least one state in the undo stack. */
     val canUndo: Boolean get() = historyManager.canUndo
+
+    /** `true` if there is at least one state in the redo stack. */
     val canRedo: Boolean get() = historyManager.canRedo
 
     private val historyManager = HistoryManager()
     private val selectionManager = SelectionManager()
     private var isUndoingOrRedoing = false
 
+    /**
+     * Whether the text field currently has input focus.
+     *
+     * Kept in sync by [com.denser.hyphen.ui.HyphenBasicTextEditor] via `onFocusChanged`. Used by [SelectionManager]
+     * to decide whether to fall back to the last valid selection when a toolbar button is
+     * tapped — tapping a button causes the field to lose focus before the click is processed,
+     * which would otherwise collapse the selection to zero.
+     */
     var isFocused: Boolean
         get() = selectionManager.isFocused
         set(value) {
@@ -55,6 +129,20 @@ class HyphenTextState(
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Selection
+    // -------------------------------------------------------------------------
+
+    /**
+     * Notifies the state that the text field's selection has changed.
+     *
+     * [com.denser.hyphen.ui.HyphenBasicTextEditor] calls this automatically via a `LaunchedEffect`. Non-collapsed
+     * selections are remembered so that toolbar operations (which cause the field to lose
+     * focus) still act on the correct range. Collapsed cursor movements clear the remembered
+     * selection so stale ranges do not persist across unrelated actions.
+     *
+     * @param newSelection The latest selection reported by the text field.
+     */
     fun updateSelection(newSelection: TextRange) {
         selectionManager.onSelectionChanged(newSelection)
     }
@@ -62,6 +150,26 @@ class HyphenTextState(
     private fun resolvedSelection(): Pair<Int, Int> =
         selectionManager.resolve(selection)
 
+    // -------------------------------------------------------------------------
+    // Input processing
+    // -------------------------------------------------------------------------
+
+    /**
+     * Processes a raw text change from the input pipeline and keeps spans, cursor position,
+     * and undo history consistent.
+     *
+     * Called from the `inputTransformation` of [com.denser.hyphen.ui.HyphenBasicTextEditor] on every keystroke,
+     * paste, or programmatic edit. Responsibilities:
+     * - Detects completed Markdown syntax and converts it to spans via [MarkdownProcessor].
+     * - Shifts existing spans to account for insertions and deletions.
+     * - Applies or suppresses styles for newly inserted characters based on [pendingOverrides].
+     * - Saves undo snapshots at word boundaries, after pastes, and after Markdown conversions.
+     *
+     * Direct callers outside of the editor input pipeline do not normally need to invoke this.
+     *
+     * @param buffer The mutable buffer provided by the input transformation, representing
+     *   the text state after the user's latest edit.
+     */
     fun processInput(buffer: TextFieldBuffer) {
         if (isUndoingOrRedoing) return
 
@@ -141,6 +249,26 @@ class HyphenTextState(
         _spans.addAll(SpanManager.consolidateSpans(updatedSpans))
     }
 
+    // -------------------------------------------------------------------------
+    // Style operations
+    // -------------------------------------------------------------------------
+
+    /**
+     * Toggles a [MarkupStyle] on the current selection, or sets a pending typing override
+     * when the cursor is collapsed.
+     *
+     * - **Inline styles** (Bold, Italic, Underline, etc.): if the entire selection is already
+     *   covered by the style, it is removed; otherwise it is added. When there is no selection,
+     *   a [pendingOverrides] entry is set so the style applies to the next typed characters.
+     * - **Block styles** (BulletList, OrderedList, Blockquote): the appropriate line prefix is
+     *   inserted or removed via [BlockStyleManager]. Multiple selected lines are each prefixed
+     *   individually.
+     *
+     * An undo snapshot is saved before every toggle. The remembered selection is cleared
+     * after the operation so subsequent actions do not reuse a stale range.
+     *
+     * @param style The [MarkupStyle] to toggle.
+     */
     fun toggleStyle(style: MarkupStyle) {
         saveSnapshot()
 
@@ -153,6 +281,18 @@ class HyphenTextState(
         selectionManager.clear()
     }
 
+    /**
+     * Removes all inline formatting from the current selection.
+     *
+     * - **With a selection**: every [MarkupStyleRange] overlapping the selected range is
+     *   trimmed or removed. Spans extending beyond the selection boundaries are preserved
+     *   outside the cleared region. An undo snapshot is saved before the operation.
+     * - **Without a selection (collapsed cursor)**: all active inline styles at the cursor
+     *   are suppressed via [pendingOverrides] set to `false`. No spans are mutated and no
+     *   snapshot is saved.
+     *
+     * Block styles (list prefixes, blockquotes) are not affected.
+     */
     fun clearAllStyles() {
         val (selStart, selEnd) = resolvedSelection()
 
@@ -173,7 +313,6 @@ class HyphenTextState(
                     span.copy(end = selStart),
                     span.copy(start = selEnd),
                 )
-
                 span.start < selStart -> listOf(span.copy(end = selStart))
                 else -> listOf(span.copy(start = selEnd))
             }
@@ -185,6 +324,21 @@ class HyphenTextState(
         selectionManager.clear()
     }
 
+    /**
+     * Returns `true` if the given [style] is active at the current selection or cursor.
+     *
+     * - **Block styles**: delegates to [BlockStyleManager.hasBlockStyle], which inspects
+     *   the line prefix at the cursor position.
+     * - **Inline styles with a pending override**: the override value takes precedence over
+     *   any underlying span, allowing the user to toggle a style on or off at a collapsed
+     *   cursor before typing.
+     * - **Inline styles with a selection**: returns `true` only if a span of the given style
+     *   fully covers the entire selected range.
+     * - **Inline styles with a collapsed cursor**: returns `true` if the cursor sits inside
+     *   (or at the start boundary of) a span of the given style.
+     *
+     * @param style The [MarkupStyle] to query.
+     */
     fun hasStyle(style: MarkupStyle): Boolean {
         if (BlockStyleManager.isBlockStyle(style)) {
             return BlockStyleManager.hasBlockStyle(text, selection, style)
@@ -200,13 +354,42 @@ class HyphenTextState(
         }
     }
 
+    /**
+     * Returns `true` if the given [style] is applied at a specific character [index].
+     *
+     * Unlike [hasStyle], this does not consider the current selection or pending overrides —
+     * it is a direct point-in-time query against the span list. Used by
+     * [BlockStyleManager.handleSmartEnter] to determine whether a line start carries a list
+     * or blockquote style.
+     *
+     * @param index The character index to query (span range is start-inclusive, end-exclusive).
+     * @param style The [MarkupStyle] to check for.
+     */
     fun isStyleAt(index: Int, style: MarkupStyle): Boolean =
         _spans.any { it.style == style && index >= it.start && index < it.end }
 
+    /**
+     * Clears all entries in [pendingOverrides].
+     *
+     * Called automatically when the cursor moves or a character is inserted without an active
+     * override. Can also be called explicitly to reset typing intent, e.g. when the editor
+     * loses focus.
+     */
     fun clearPendingOverrides() {
         if (pendingOverrides.isNotEmpty()) pendingOverrides = emptyMap()
     }
 
+    // -------------------------------------------------------------------------
+    // Undo / redo
+    // -------------------------------------------------------------------------
+
+    /**
+     * Reverts the editor to the previous state in the undo history.
+     *
+     * The current state is pushed onto the redo stack so it can be restored with [redo].
+     * Both [text] and [spans] are restored; [pendingOverrides] and the remembered selection
+     * are cleared. Has no effect if [canUndo] is `false`.
+     */
     fun undo() {
         val previousState = historyManager.undo(getCurrentSnapshot())
         if (previousState != null) {
@@ -215,6 +398,13 @@ class HyphenTextState(
         }
     }
 
+    /**
+     * Reapplies the most recently undone state from the redo stack.
+     *
+     * The current state is pushed back onto the undo stack. Both [text] and [spans] are
+     * restored; [pendingOverrides] and the remembered selection are cleared. Has no effect
+     * if [canRedo] is `false`.
+     */
     fun redo() {
         val nextState = historyManager.redo(getCurrentSnapshot())
         if (nextState != null) {
@@ -223,11 +413,35 @@ class HyphenTextState(
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Serialization
+    // -------------------------------------------------------------------------
+
+    /**
+     * Serializes the current editor content to a Markdown string.
+     *
+     * Inline styles are wrapped with their corresponding delimiters (e.g. `**bold**`,
+     * `*italic*`) and block prefixes (e.g. `- `, `> `) are preserved as-is in the output.
+     * The result is suitable for storage, transmission, or pasting into any Markdown-aware
+     * surface.
+     *
+     * An optional character range can be specified to serialize only a substring — used
+     * internally by the clipboard integration when the user copies a selection. Out-of-bounds
+     * values are clamped silently.
+     *
+     * @param start Start index of the range to serialize, inclusive. Defaults to `0`.
+     * @param end End index of the range to serialize, exclusive. Defaults to [text] length.
+     * @return A Markdown-formatted string representing the specified range.
+     */
     fun toMarkdown(start: Int = 0, end: Int = text.length): String {
         val safeStart = start.coerceIn(0, text.length)
         val safeEnd = end.coerceIn(safeStart, text.length)
         return MarkdownSerializer.serialize(text, spans, safeStart, safeEnd)
     }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
 
     private fun applyBlockStyleInternal(style: MarkupStyle) {
         val effectiveSel = selectionManager.effectiveSelection(selection)
@@ -277,6 +491,12 @@ class HyphenTextState(
     }
 }
 
+/**
+ * Creates and remembers a [HyphenTextState] across recompositions.
+ *
+ * @param initialText Plain text or Markdown string used to seed the editor on creation.
+ *   See [HyphenTextState] for details on how Markdown is parsed at initialization.
+ */
 @Composable
 fun rememberHyphenTextState(
     initialText: String = ""
