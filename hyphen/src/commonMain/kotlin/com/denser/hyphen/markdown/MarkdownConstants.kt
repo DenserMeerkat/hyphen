@@ -4,8 +4,11 @@ internal object MarkdownConstants {
     // **text**
     val BOLD_REGEX = Regex("\\*\\*(.*?)\\*\\*")
 
-    // *text* or _text_
-    val ITALIC_REGEX = Regex("(?<!\\*)\\*(?!\\*)(.*?)(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_)(.*?)(?<!_)_(?!_)")
+    // *text*
+    val ITALIC_ASTERISK_REGEX = Regex("(?<!\\*)\\*(?!\\*)(.*?)(?<!\\*)\\*(?!\\*)")
+
+    // _text_
+    val ITALIC_UNDERSCORE_REGEX = Regex("(?<!_)_(?!_)(.*?)(?<!_)_(?!_)")
 
     // ~~text~~
     val STRIKETHROUGH_REGEX = Regex("~~(.*?)~~")

@@ -91,7 +91,8 @@ internal object MarkdownProcessor {
         applyRule(MarkdownConstants.STRIKETHROUGH_REGEX, MarkupStyle.Strikethrough, { 2 }, { 2 })
         applyRule(MarkdownConstants.HIGHLIGHT_REGEX, MarkupStyle.Highlight, { 2 }, { 2 })
         applyRule(MarkdownConstants.INLINE_CODE_REGEX, MarkupStyle.InlineCode, { 1 }, { 1 })
-        applyRule(MarkdownConstants.ITALIC_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
+        applyRule(MarkdownConstants.ITALIC_ASTERISK_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
+        applyRule(MarkdownConstants.ITALIC_UNDERSCORE_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
 
         applyRule(
             MarkdownConstants.BULLET_LIST_REGEX,
