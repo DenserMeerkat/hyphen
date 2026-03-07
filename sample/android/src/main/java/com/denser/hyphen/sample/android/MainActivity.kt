@@ -1,4 +1,4 @@
-package com.denser.hyphen.sample
+package com.denser.hyphen.sample.android
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                 )
 
                 Scaffold(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.Companion.fillMaxSize(),
                     topBar = {
                         TopAppBar(
                             title = { Text("Hyphen Editor - Android") },
@@ -61,7 +61,7 @@ class MainActivity : ComponentActivity() {
                     },
                     bottomBar = {
                         Box(
-                            modifier = Modifier
+                            modifier = Modifier.Companion
                                 .background(color = MaterialTheme.colorScheme.surfaceContainer)
                                 .navigationBarsPadding()
                                 .imePadding(),
@@ -71,14 +71,14 @@ class MainActivity : ComponentActivity() {
                     }
                 ) { innerPadding ->
                     Column(
-                        modifier = Modifier
+                        modifier = Modifier.Companion
                             .fillMaxSize()
                             .padding(innerPadding)
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                     ) {
                         HyphenBasicTextEditor(
                             state = editorState,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.Companion.fillMaxSize(),
                             textStyle = TextStyle(
                                 fontSize = 16.sp,
                                 color = MaterialTheme.colorScheme.onSurface

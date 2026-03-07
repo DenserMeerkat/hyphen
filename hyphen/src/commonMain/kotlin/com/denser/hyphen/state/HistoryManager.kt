@@ -1,5 +1,6 @@
 package com.denser.hyphen.state
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.text.TextRange
 import com.denser.hyphen.model.MarkupStyleRange
 import kotlin.time.TimeMark
@@ -15,8 +16,9 @@ internal class HistoryManager(
     private val maxHistorySize: Int = 50,
     private val debounceMillis: Long = 500L
 ) {
-    private val undoStack = mutableListOf<EditorSnapshot>()
-    private val redoStack = mutableListOf<EditorSnapshot>()
+    private val undoStack = mutableStateListOf<EditorSnapshot>()
+    private val redoStack = mutableStateListOf<EditorSnapshot>()
+
     private var lastSaveTime: TimeMark? = null
 
     val canUndo: Boolean get() = undoStack.isNotEmpty()

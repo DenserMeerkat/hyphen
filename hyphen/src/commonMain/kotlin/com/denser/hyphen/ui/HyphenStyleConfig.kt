@@ -62,7 +62,7 @@ data class HyphenStyleConfig(
     ),
     val blockquoteSpanStyle: SpanStyle = SpanStyle(
         fontStyle = FontStyle.Italic,
-        color = Color.DarkGray,
+        color = Color.Gray,
         background = Color.Gray.copy(alpha = 0.05f),
     ),
 )
