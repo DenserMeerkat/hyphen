@@ -8,238 +8,85 @@ import kotlin.test.assertTrue
 
 class SelectionManagerTest {
 
+    private fun manager(focused: Boolean = true, saved: TextRange? = null) =
+        SelectionManager().apply {
+            isFocused = focused
+            saved?.let { onSelectionChanged(it) }
+        }
 
-    // isFocused
     @Test
-    fun `isFocused defaults to false`() {
+    fun `isFocused updates correctly`() {
         val manager = SelectionManager()
         assertFalse(manager.isFocused)
-    }
 
-    @Test
-    fun `isFocused can be set and read`() {
-        val manager = SelectionManager()
         manager.isFocused = true
         assertTrue(manager.isFocused)
-
-        manager.isFocused = false
-        assertFalse(manager.isFocused)
-    }
-
-
-    // onSelectionChanged
-    @Test
-    fun `onSelectionChanged saves non-collapsed selection when focused`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-
-        manager.onSelectionChanged(TextRange(0, 5))
-
-        val (start, end) = manager.resolve(TextRange(2)) // collapsed cursor
-        // lastValidSelection should be used since current is collapsed and unfocused... 
-        // but isFocused is still true here so current wins — test resolve separately
-        // Here we just verify the save happened by going unfocused
-        manager.isFocused = false
-        val (s, e) = manager.resolve(TextRange(2))
-        assertEquals(0, s)
-        assertEquals(5, e)
     }
 
     @Test
-    fun `onSelectionChanged does not save collapsed selection when focused`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
+    fun `onSelectionChanged memory lifecycle`() {
+        // 1. Saves valid selection when focused
+        val m1 = manager(focused = true, saved = TextRange(0, 5))
+        m1.isFocused = false
+        assertEquals(0 to 5, m1.resolve(TextRange(2)))
 
-        manager.onSelectionChanged(TextRange(0, 5)) // valid selection saved
-        manager.onSelectionChanged(TextRange(3))    // collapsed — should not overwrite
+        // 2. Clears memory on collapsed cursor while focused
+        val m2 = manager(focused = true, saved = TextRange(0, 5))
+        m2.onSelectionChanged(TextRange(3))
+        m2.isFocused = false
+        assertEquals(3 to 3, m2.resolve(TextRange(3)))
 
-        manager.isFocused = false
-        val (s, e) = manager.resolve(TextRange(2))
-        assertEquals(0, s)
-        assertEquals(5, e)
+        // 3. Ignores changes and protects memory when unfocused
+        val m3 = manager(focused = true, saved = TextRange(0, 5))
+        m3.isFocused = false
+        m3.onSelectionChanged(TextRange(2))
+        assertEquals(0 to 5, m3.resolve(TextRange(2)))
     }
 
     @Test
-    fun `onSelectionChanged clears lastValidSelection when not focused`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 5)) // save a valid selection
+    fun `resolve returns correct range and normalizes reversed selections`() {
+        val m = manager(focused = true, saved = TextRange(2, 8))
 
-        manager.isFocused = false
-        manager.onSelectionChanged(TextRange(0, 5)) // called while unfocused — should clear
+        // When Focused: Always trusts current selection
+        assertEquals(1 to 4, m.resolve(TextRange(1, 4)))
+        assertEquals(3 to 3, m.resolve(TextRange(3)))
 
-        // Now resolve with a collapsed cursor — lastValid was cleared so no fallback
-        val (s, e) = manager.resolve(TextRange(2))
-        assertEquals(2, s)
-        assertEquals(2, e)
-    }
+        // When Unfocused: Rescues memory ONLY if current is collapsed
+        m.isFocused = false
+        assertEquals(2 to 8, m.resolve(TextRange(0))) // Memory rescued
+        assertEquals(1 to 4, m.resolve(TextRange(1, 4))) // Current non-collapsed wins
 
+        // No memory exists: Returns current
+        assertEquals(3 to 3, manager(focused = false).resolve(TextRange(3)))
 
-    // resolve
-    @Test
-    fun `resolve returns current selection when focused`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 10)) // save a big selection
-
-        // Even with a saved selection, focused state should return current
-        val (s, e) = manager.resolve(TextRange(2, 7))
-        assertEquals(2, s)
-        assertEquals(7, e)
+        // Normalizes reversed ranges seamlessly
+        assertEquals(2 to 8, m.resolve(TextRange(8, 2)))
     }
 
     @Test
-    fun `resolve returns current collapsed selection when focused`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 5))
+    fun `effectiveSelection returns correct TextRange object`() {
+        val m = manager(focused = true, saved = TextRange(1, 6))
 
-        // Collapsed cursor while focused — should still return current, not fallback
-        val (s, e) = manager.resolve(TextRange(3))
-        assertEquals(3, s)
-        assertEquals(3, e)
+        assertEquals(TextRange(2, 5), m.effectiveSelection(TextRange(2, 5))) // Focused
+
+        m.isFocused = false
+        assertEquals(TextRange(1, 6), m.effectiveSelection(TextRange(0))) // Rescued
+        assertEquals(TextRange(2, 7), m.effectiveSelection(TextRange(2, 7))) // Current wins
+        assertEquals(TextRange(3), manager(focused = false).effectiveSelection(TextRange(3))) // No memory
     }
 
     @Test
-    fun `resolve falls back to lastValidSelection when unfocused and current is collapsed`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(2, 8))
+    fun `clear wipes memory but allows future saves`() {
+        val m = manager(focused = true, saved = TextRange(0, 5))
 
-        manager.isFocused = false
-        val (s, e) = manager.resolve(TextRange(0)) // collapsed after losing focus
-        assertEquals(2, s)
-        assertEquals(8, e)
-    }
+        m.clear() // Wipe it
+        m.isFocused = false
+        assertEquals(2 to 2, m.resolve(TextRange(2))) // Falls back to current
 
-    @Test
-    fun `resolve does not fall back when unfocused but current is non-collapsed`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 10))
-
-        manager.isFocused = false
-        val (s, e) = manager.resolve(TextRange(1, 4))
-        assertEquals(1, s)
-        assertEquals(4, e)
-    }
-
-    @Test
-    fun `resolve returns collapsed when unfocused and no lastValidSelection exists`() {
-        val manager = SelectionManager()
-        // Never saved anything, never focused
-
-        val (s, e) = manager.resolve(TextRange(3))
-        assertEquals(3, s)
-        assertEquals(3, e)
-    }
-
-    @Test
-    fun `resolve normalizes reversed selection`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-
-        val (s, e) = manager.resolve(TextRange(8, 2))
-        assertEquals(2, s)
-        assertEquals(8, e)
-    }
-
-    @Test
-    fun `resolve normalizes reversed lastValidSelection fallback`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(8, 2)) // reversed drag
-
-        manager.isFocused = false
-        val (s, e) = manager.resolve(TextRange(0))
-        assertEquals(2, s)
-        assertEquals(8, e)
-    }
-
-
-    // effectiveSelection
-    @Test
-    fun `effectiveSelection returns current when focused`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 10))
-
-        val effective = manager.effectiveSelection(TextRange(2, 5))
-        assertEquals(TextRange(2, 5), effective)
-    }
-
-    @Test
-    fun `effectiveSelection returns lastValid when unfocused and current is collapsed`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(1, 6))
-
-        manager.isFocused = false
-        val effective = manager.effectiveSelection(TextRange(0))
-        assertEquals(TextRange(1, 6), effective)
-    }
-
-    @Test
-    fun `effectiveSelection returns current when unfocused but current is non-collapsed`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 10))
-
-        manager.isFocused = false
-        val effective = manager.effectiveSelection(TextRange(2, 7))
-        assertEquals(TextRange(2, 7), effective)
-    }
-
-    @Test
-    fun `effectiveSelection returns current when unfocused and no lastValid saved`() {
-        val manager = SelectionManager()
-        // No focus, no saved selection
-
-        val effective = manager.effectiveSelection(TextRange(3))
-        assertEquals(TextRange(3), effective)
-    }
-
-
-    // clear
-    @Test
-    fun `clear removes lastValidSelection so resolve no longer falls back`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 5))
-
-        manager.isFocused = false
-        manager.clear()
-
-        val (s, e) = manager.resolve(TextRange(2))
-        assertEquals(2, s)
-        assertEquals(2, e)
-    }
-
-    @Test
-    fun `clear is a no-op when nothing was saved`() {
-        val manager = SelectionManager()
-
-        // Should not throw
-        manager.clear()
-
-        val (s, e) = manager.resolve(TextRange(3))
-        assertEquals(3, s)
-        assertEquals(3, e)
-    }
-
-    @Test
-    fun `clear allows new selection to be saved afterwards`() {
-        val manager = SelectionManager()
-        manager.isFocused = true
-        manager.onSelectionChanged(TextRange(0, 5))
-
-        manager.clear()
-
-        manager.onSelectionChanged(TextRange(2, 9))
-        manager.isFocused = false
-
-        val (s, e) = manager.resolve(TextRange(0))
-        assertEquals(2, s)
-        assertEquals(9, e)
+        // Prove it can save again
+        m.isFocused = true
+        m.onSelectionChanged(TextRange(2, 9))
+        m.isFocused = false
+        assertEquals(2 to 9, m.resolve(TextRange(0)))
     }
 }

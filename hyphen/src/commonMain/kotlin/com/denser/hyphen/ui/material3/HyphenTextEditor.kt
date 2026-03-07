@@ -94,8 +94,9 @@ import com.denser.hyphen.ui.HyphenStyleConfig
  * @param onTextLayout Callback invoked whenever the text layout is recalculated. Provides a
  *   deferred [TextLayoutResult] useful for cursor drawing or hit testing.
  * @param clipboardLabel Label attached to the clipboard entry when text is copied.
- * @param onValueChange Optional callback invoked after each input transformation with the
- *   current plain text value.
+ * @param onTextChange Optional callback invoked whenever the plain, undecorated text changes.
+ * @param onMarkdownChange Optional callback invoked whenever the text OR formatting changes,
+ * providing the fully serialized Markdown string. Ideal for syncing with ViewModels.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -130,7 +131,8 @@ fun HyphenTextEditor(
     styleConfig: HyphenStyleConfig = HyphenStyleConfig(),
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
-    onValueChange: ((String) -> Unit)? = null,
+    onTextChange: ((String) -> Unit)? = null,
+    onMarkdownChange: ((String) -> Unit)? = null,
 ) {
     val actualInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
     val isFocused by actualInteractionSource.collectIsFocusedAsState()
@@ -167,7 +169,8 @@ fun HyphenTextEditor(
             cursorBrush = SolidColor(cursorColor),
             onTextLayout = onTextLayout,
             clipboardLabel = clipboardLabel,
-            onValueChange = onValueChange,
+            onTextChange = onTextChange,
+            onMarkdownChange = onMarkdownChange,
 
             decorator = TextFieldDefaults.decorator(
                 state = state.textFieldState,

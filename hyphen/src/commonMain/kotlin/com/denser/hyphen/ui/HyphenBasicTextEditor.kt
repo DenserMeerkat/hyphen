@@ -33,7 +33,7 @@ import com.denser.hyphen.state.HyphenTextState
  *
  * Markdown syntax typed by the user (e.g. `**bold**`, `_italic_`, `- list item`) is
  * automatically detected and stripped from the visible text. The corresponding visual styles
- * are applied via an [outputTransformation] so the underlying [HyphenTextState] always holds
+ * are applied via an [androidx.compose.foundation.text.input.OutputTransformation] so the underlying [HyphenTextState] always holds
  * clean, undecorated text.
  *
  * Focus state and selection are tracked internally so that toolbar buttons invoked after the
@@ -57,33 +57,34 @@ import com.denser.hyphen.state.HyphenTextState
  * so pasting into another Markdown-aware editor preserves formatting.
  *
  * @param state The [HyphenTextState] that holds text content, spans, selection, and undo/redo
- *   history. Use [com.denser.hyphen.state.rememberHyphenTextState] to create and remember an instance.
+ * history. Use [com.denser.hyphen.state.rememberHyphenTextState] to create and remember an instance.
  * @param modifier Optional [Modifier] applied to the underlying [BasicTextField].
  * @param enabled Controls the enabled state of the text field. When `false`, the field is
- *   neither editable nor focusable, and its input cannot be selected.
+ * neither editable nor focusable, and its input cannot be selected.
  * @param readOnly Controls the editable state of the text field. When `true`, the field cannot
- *   be modified but can be focused and its text can be copied.
+ * be modified but can be focused and its text can be copied.
  * @param textStyle Typographic style applied to the visible text. Defaults to 16 sp body text.
- *   Color and font properties are merged with the active theme where applicable.
+ * Color and font properties are merged with the active theme where applicable.
  * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle] — colors, weights, and
- *   decorations used by the output transformation when rendering formatted text.
+ * decorations used by the output transformation when rendering formatted text.
  * @param keyboardOptions Software keyboard options such as capitalization, autocorrect, and
- *   [ImeAction]. Defaults to sentence capitalization with autocorrect disabled.
+ * [ImeAction]. Defaults to sentence capitalization with autocorrect disabled.
  * @param lineLimits Whether the field should be single-line (horizontal scroll) or multi-line
- *   (vertical grow/scroll). Defaults to [TextFieldLineLimits.Default].
+ * (vertical grow/scroll). Defaults to [TextFieldLineLimits.Default].
  * @param scrollState Scroll state managing vertical or horizontal scroll of the field content.
  * @param interactionSource Optional hoisted [MutableInteractionSource] for observing focus,
- *   hover, and press interactions. If `null`, an internal source is used.
+ * hover, and press interactions. If `null`, an internal source is used.
  * @param cursorBrush [Brush] used to paint the cursor. Pass [SolidColor] with
- *   [Color.Unspecified] to hide the cursor entirely.
+ * [Color.Unspecified] to hide the cursor entirely.
  * @param decorator Optional [TextFieldDecorator] that wraps the inner text field with
- *   decorations such as labels, icons, or borders (e.g. a Material3 decorator).
+ * decorations such as labels, icons, or borders (e.g. a Material3 decorator).
  * @param onTextLayout Callback invoked whenever the text layout is recalculated. Provides a
- *   deferred [TextLayoutResult] that can be used for cursor drawing or hit testing.
+ * deferred [TextLayoutResult] that can be used for cursor drawing or hit testing.
  * @param clipboardLabel Label attached to the clipboard entry when text is copied. Used by
- *   some platforms to describe the clipboard contents.
- * @param onValueChange Optional callback invoked after each input transformation with the
- *   current plain text. Use this to sync external state or trigger validation.
+ * some platforms to describe the clipboard contents.
+ * @param onTextChange Optional callback invoked whenever the plain, undecorated text changes.
+ * @param onMarkdownChange Optional callback invoked whenever the text OR formatting changes,
+ * providing the fully serialized Markdown string. Ideal for syncing with ViewModels.
  */
 @Composable
 fun HyphenBasicTextEditor(
@@ -106,12 +107,18 @@ fun HyphenBasicTextEditor(
     decorator: TextFieldDecorator? = null,
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
-    onValueChange: ((String) -> Unit)? = null,
+    onTextChange: ((String) -> Unit)? = null,
+    onMarkdownChange: ((String) -> Unit)? = null,
 ) {
     val customClipboard = rememberMarkdownClipboard(state, clipboardLabel)
 
     LaunchedEffect(state.selection) {
         state.updateSelection(state.selection)
+    }
+
+    LaunchedEffect(state.text, state.spans.toList()) {
+        onTextChange?.invoke(state.text)
+        onMarkdownChange?.invoke(state.toMarkdown())
     }
 
     CompositionLocalProvider(LocalClipboard provides customClipboard) {
@@ -136,7 +143,7 @@ fun HyphenBasicTextEditor(
                 applyMarkdownStyles(state, styleConfig, this)
             },
             inputTransformation = {
-                processMarkdownInput(state, onValueChange, this)
+                processMarkdownInput(state, this)
             }
         )
     }

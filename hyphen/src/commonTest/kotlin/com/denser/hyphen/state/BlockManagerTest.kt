@@ -56,6 +56,20 @@ class BlockStyleManagerTest {
     }
 
     @Test
+    fun `handleSmartEnter continues alternate bullet styles`() {
+        val state = HyphenTextState("• First Item")
+
+        state.textFieldState.edit {
+            this.selection = TextRange(12)
+            val handled = BlockStyleManager.handleSmartEnter(state, this)
+            assertTrue(handled)
+        }
+
+        // Assert it respected the exact alternate prefix character used
+        assertEquals("• First Item\n• ", state.textFieldState.text.toString())
+    }
+
+    @Test
     fun `handleSmartEnter increments ordered list number`() {
         val state = HyphenTextState("5. Fifth Item")
 

@@ -100,7 +100,6 @@ internal fun applyMarkdownStyles(
 
 internal fun processMarkdownInput(
     state: HyphenTextState,
-    onValueChange: ((String) -> Unit)?,
     buffer: TextFieldBuffer
 ) {
     val previousText = state.text
@@ -121,7 +120,6 @@ internal fun processMarkdownInput(
     }
 
     state.processInput(buffer)
-    onValueChange?.invoke(buffer.asCharSequence().toString())
 }
 
 @Composable

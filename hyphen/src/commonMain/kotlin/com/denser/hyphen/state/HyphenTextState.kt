@@ -9,12 +9,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.TextRange
 import com.denser.hyphen.markdown.MarkdownProcessor
 import com.denser.hyphen.markdown.MarkdownSerializer
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.model.StyleSets
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Hoisted state for a Hyphen markdown text editor.
@@ -25,7 +27,8 @@ import com.denser.hyphen.model.StyleSets
  *
  * Markdown syntax entered by the user is processed by [MarkdownProcessor] and immediately
  * converted into spans — the [text] property therefore always contains clean, undecorated
- * content. Call [toMarkdown] to serialize the current state back to a Markdown string.
+ * content. Call [toMarkdown] or collect [markdownFlow] to serialize the current state back
+ * to a Markdown string.
  *
  * **Typical usage**
  * ```kotlin
@@ -35,7 +38,7 @@ import com.denser.hyphen.model.StyleSets
  *
  * // Bold the selected range from a toolbar button
  * Button(onClick = { state.toggleStyle(MarkupStyle.Bold) }) {
- *     Text("B")
+ * Text("B")
  * }
  *
  * // Read the result
@@ -44,7 +47,8 @@ import com.denser.hyphen.model.StyleSets
  *
  * **Initializing with Markdown**
  *
- * Pass a Markdown string to the constructor and it will be parsed on creation:
+ * Pass a Markdown string to the constructor and it will be parsed on creation. You can also
+ * update the content programmatically later using [setMarkdown]:
  * ```kotlin
  * val state = rememberHyphenTextState("**Hello**, _world_!")
  * // state.text == "Hello, world!"
@@ -52,7 +56,7 @@ import com.denser.hyphen.model.StyleSets
  * ```
  *
  * @param initialText Plain text or Markdown string used to seed the editor on creation.
- *   Markdown syntax is parsed immediately — [text] will contain the clean result.
+ * Markdown syntax is parsed immediately — [text] will contain the clean result.
  */
 class HyphenTextState(
     initialText: String = "",
@@ -186,7 +190,7 @@ class HyphenTextState(
         val isWordBoundary =
             newText.lastOrNull()?.isWhitespace() == true || newText.lastOrNull() == '\n'
 
-        if (!canUndo || isPasting || isWordBoundary) saveSnapshot()
+        saveSnapshot(force = !canUndo || isPasting || isWordBoundary)
 
         val cursorPosition = buffer.selection.start
         val changeOrigin = SpanManager.resolveChangeOrigin(
@@ -213,7 +217,8 @@ class HyphenTextState(
                 clearPendingOverrides()
             }
 
-            updatedSpans = SpanManager.mergeSpans(baseSpans, markdownResult.newSpans)
+            val inlineBaseSpans = baseSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
+            updatedSpans = SpanManager.mergeSpans(inlineBaseSpans, markdownResult.newSpans)
 
             buffer.replace(0, buffer.length, markdownResult.cleanText)
             buffer.selection =
@@ -231,17 +236,20 @@ class HyphenTextState(
 
             saveSnapshot()
         } else {
-            updatedSpans = SpanManager.shiftSpans(_spans, changeOrigin, rawLengthDifference)
+            var shifted = SpanManager.shiftSpans(_spans, changeOrigin, rawLengthDifference)
+            shifted = shifted.filterNot { BlockStyleManager.isBlockStyle(it.style) }
 
             if (rawLengthDifference > 0) {
                 val insertEnd = changeOrigin + rawLengthDifference
                 updatedSpans = SpanManager.applyTypingOverrides(
-                    updatedSpans,
+                    shifted,
                     activeInlineStyles,
                     changeOrigin,
                     insertEnd
                 )
                 clearPendingOverrides()
+            } else {
+                updatedSpans = shifted
             }
         }
 
@@ -270,7 +278,7 @@ class HyphenTextState(
      * @param style The [MarkupStyle] to toggle.
      */
     fun toggleStyle(style: MarkupStyle) {
-        saveSnapshot()
+        saveSnapshot(force = true)
 
         if (BlockStyleManager.isBlockStyle(style)) {
             applyBlockStyleInternal(style)
@@ -303,7 +311,7 @@ class HyphenTextState(
             return
         }
 
-        saveSnapshot()
+        saveSnapshot(force = true)
 
         val updatedSpans = _spans.flatMap { span ->
             when {
@@ -439,6 +447,32 @@ class HyphenTextState(
         return MarkdownSerializer.serialize(text, spans, safeStart, safeEnd)
     }
 
+    /**
+     * Programmatically replaces the entire contents of the editor with new Markdown.
+     * This resets the undo/redo history and clears any pending overrides.
+     * * @param markdown The Markdown string to parse and display.
+     */
+    fun setMarkdown(markdown: String) {
+        val markdownResult = MarkdownProcessor.process(markdown, 0)
+
+        textFieldState.edit {
+            if (markdownResult != null) {
+                replace(0, length, markdownResult.cleanText)
+            } else {
+                replace(0, length, markdown)
+            }
+        }
+
+        _spans.clear()
+        if (markdownResult != null) {
+            _spans.addAll(SpanManager.consolidateSpans(markdownResult.newSpans))
+        }
+
+        clearPendingOverrides()
+        selectionManager.clear()
+        historyManager.clear()
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -451,12 +485,13 @@ class HyphenTextState(
                 BlockStyleManager.applyBlockStyle(this, shiftedSpans, effectiveSel, style)
         }
         val result = MarkdownProcessor.process(text, selection.start)
+        val inlineSpans = shiftedSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
         _spans.clear()
         _spans.addAll(
             if (result != null) {
-                SpanManager.consolidateSpans(SpanManager.mergeSpans(shiftedSpans, result.newSpans))
+                SpanManager.consolidateSpans(SpanManager.mergeSpans(inlineSpans, result.newSpans))
             } else {
-                SpanManager.consolidateSpans(shiftedSpans)
+                SpanManager.consolidateSpans(inlineSpans)
             }
         )
     }
@@ -474,8 +509,8 @@ class HyphenTextState(
 
     private fun getCurrentSnapshot() = EditorSnapshot(text, selection, _spans.toList())
 
-    private fun saveSnapshot() {
-        historyManager.saveSnapshot(getCurrentSnapshot())
+    private fun saveSnapshot(force: Boolean = false) {
+        historyManager.saveSnapshot(getCurrentSnapshot(), force)
     }
 
     private fun restoreSnapshot(snapshot: EditorSnapshot) {
@@ -503,3 +538,15 @@ fun rememberHyphenTextState(
 ): HyphenTextState = remember {
     HyphenTextState(initialText)
 }
+
+/**
+ * Emits the serialized Markdown string whenever the text or formatting changes.
+ * * Useful for observing state changes in a reactive pipeline, such as collecting
+ * updates in a ViewModel or applying debouncing before saving to a database.
+ */
+val HyphenTextState.markdownFlow: Flow<String>
+    get() = snapshotFlow {
+        val currentText = this.text
+        val currentSpans = this.spans.toList()
+        MarkdownSerializer.serialize(currentText, currentSpans, 0, currentText.length)
+    }

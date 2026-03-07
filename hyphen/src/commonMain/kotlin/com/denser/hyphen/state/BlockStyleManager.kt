@@ -3,6 +3,7 @@ package com.denser.hyphen.state
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.ui.text.TextRange
+import com.denser.hyphen.markdown.MarkdownConstants
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.model.StyleSets
@@ -17,12 +18,14 @@ internal object BlockStyleManager {
         val cursor = minOf(selection.start, selection.end)
         val lastNewline = text.lastIndexOf('\n', (cursor - 1).coerceAtLeast(0))
         val lineStart = if (lastNewline == -1) 0 else lastNewline + 1
-        val lineText = text.substring(lineStart)
+
+        val lineEnd = text.indexOf('\n', lineStart).let { if (it == -1) text.length else it }
+        val lineText = text.substring(lineStart, lineEnd)
 
         return when (style) {
-            is MarkupStyle.BulletList -> lineText.startsWith("- ")
-            is MarkupStyle.OrderedList -> Regex("^\\d+\\.\\s").find(lineText) != null
-            is MarkupStyle.Blockquote -> lineText.startsWith("> ")
+            is MarkupStyle.BulletList -> MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText)
+            is MarkupStyle.OrderedList -> MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)
+            is MarkupStyle.Blockquote -> MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText)
             else -> false
         }
     }
@@ -37,29 +40,26 @@ internal object BlockStyleManager {
         val lineText = bufferText.substring(lineStart, cursor)
 
         return when {
-            state.isStyleAt(lineStart, MarkupStyle.BulletList) -> {
-                val prefixChar = lineText.firstOrNull() ?: '-'
-                val emptyPrefix = "$prefixChar "
-
-                if (lineText == emptyPrefix) buffer.replace(lineStart, cursor, "")
-                else buffer.insert(cursor, "\n$emptyPrefix")
+            state.isStyleAt(lineStart, MarkupStyle.BulletList) && MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText) -> {
+                val prefix = lineText.take(2)
+                if (lineText == prefix) buffer.replace(lineStart, cursor, "")
+                else buffer.insert(cursor, "\n$prefix")
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.OrderedList) -> {
-                val currentNumber =
-                    Regex("^(\\d+)\\. ").find(lineText)?.groupValues?.get(1)?.toIntOrNull() ?: 1
-                if (lineText.matches(Regex("^\\d+\\. $"))) buffer.replace(lineStart, cursor, "")
+            state.isStyleAt(lineStart, MarkupStyle.OrderedList) && MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText) -> {
+                val prefixLen = lineText.indexOf('.') + 2
+                val prefix = lineText.take(prefixLen)
+                val currentNumber = prefix.dropLast(2).toIntOrNull() ?: 1
+                if (lineText == prefix) buffer.replace(lineStart, cursor, "")
                 else buffer.insert(cursor, "\n${currentNumber + 1}. ")
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.Blockquote) -> {
-                val prefixChar = lineText.firstOrNull() ?: '>'
-                val emptyPrefix = "$prefixChar "
-
-                if (lineText == emptyPrefix) buffer.replace(lineStart, cursor, "")
-                else buffer.insert(cursor, "\n$emptyPrefix")
+            state.isStyleAt(lineStart, MarkupStyle.Blockquote) && MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText) -> {
+                val prefix = lineText.take(2)
+                if (lineText == prefix) buffer.replace(lineStart, cursor, "")
+                else buffer.insert(cursor, "\n$prefix")
                 true
             }
 
@@ -101,65 +101,57 @@ internal object BlockStyleManager {
             }
         }
 
-        val isOrderedList = prefix.trim().lastOrNull() == '.'
-        val firstLineText = bufferText.substring(lineStarts.first())
-        val isRemoving = if (isOrderedList) {
-            Regex("^\\d+\\.\\s").find(firstLineText) != null
-        } else {
-            firstLineText.startsWith(prefix)
+        val firstLineEnd = bufferText.indexOf('\n', lineStarts.first()).let { if (it == -1) buffer.length else it }
+        val firstLineText = bufferText.substring(lineStarts.first(), firstLineEnd)
+
+        val isRemoving = when (style) {
+            is MarkupStyle.OrderedList -> MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(firstLineText)
+            is MarkupStyle.BulletList -> MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(firstLineText)
+            is MarkupStyle.Blockquote -> MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(firstLineText)
+            else -> false
         }
 
         var currentSpans = spans.toList()
 
         for (i in lineStarts.indices.reversed()) {
             val lineStart = lineStarts[i]
-            val lineText = buffer.asCharSequence().substring(lineStart, buffer.length)
+            val lineEnd = bufferText.indexOf('\n', lineStart).let { if (it == -1) buffer.length else it }
+            val lineText = bufferText.substring(lineStart, lineEnd)
+
+            var existingPrefixLen = 0
+            if (MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)) {
+                existingPrefixLen = lineText.indexOf('.') + 2
+            } else if (MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText)) {
+                existingPrefixLen = 2
+            } else if (MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText)) {
+                existingPrefixLen = 2
+            }
 
             if (isRemoving) {
-                if (isOrderedList) {
-                    val match = Regex("^(\\d+\\.\\s)").find(lineText)
-                    if (match != null) {
-                        val matchedPrefix = match.value
-                        buffer.replace(lineStart, lineStart + matchedPrefix.length, "")
-                        currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, -matchedPrefix.length)
-                    }
-                } else if (lineText.startsWith(prefix)) {
-                    buffer.replace(lineStart, lineStart + prefix.length, "")
-                    currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, -prefix.length)
+                val matchTarget = when (style) {
+                    is MarkupStyle.OrderedList -> MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)
+                    is MarkupStyle.BulletList -> MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText)
+                    is MarkupStyle.Blockquote -> MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText)
+                    else -> false
+                }
+
+                if (matchTarget && existingPrefixLen > 0) {
+                    buffer.replace(lineStart, lineStart + existingPrefixLen, "")
+                    currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, -existingPrefixLen)
                 }
             } else {
-                val actualPrefix = if (isOrderedList) "1. " else prefix
+                val actualPrefix = if (style is MarkupStyle.OrderedList) "1. " else prefix
 
-                if (isOrderedList) {
-                    val match = Regex("^(\\d+\\.\\s)").find(lineText)
-                    if (match != null) {
-                        val matchedPrefix = match.value
-                        buffer.replace(lineStart, lineStart + matchedPrefix.length, actualPrefix)
-                        val diff = actualPrefix.length - matchedPrefix.length
+                if (existingPrefixLen > 0) {
+                    val existingPrefix = lineText.take(existingPrefixLen)
+                    if (existingPrefix != actualPrefix) {
+                        buffer.replace(lineStart, lineStart + existingPrefixLen, actualPrefix)
+                        val diff = actualPrefix.length - existingPrefixLen
                         currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, diff)
-                    } else {
-                        val bulletMatch = Regex("^(- )").find(lineText)
-                        if (bulletMatch != null) {
-                            buffer.replace(lineStart, lineStart + bulletMatch.value.length, actualPrefix)
-                            val diff = actualPrefix.length - bulletMatch.value.length
-                            currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, diff)
-                        } else {
-                            buffer.insert(lineStart, actualPrefix)
-                            currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, actualPrefix.length)
-                        }
                     }
                 } else {
-                    if (!lineText.startsWith(prefix)) {
-                        val orderedMatch = Regex("^(\\d+\\.\\s)").find(lineText)
-                        if (orderedMatch != null) {
-                            buffer.replace(lineStart, lineStart + orderedMatch.value.length, prefix)
-                            val diff = prefix.length - orderedMatch.value.length
-                            currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, diff)
-                        } else {
-                            buffer.insert(lineStart, prefix)
-                            currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, prefix.length)
-                        }
-                    }
+                    buffer.insert(lineStart, actualPrefix)
+                    currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, actualPrefix.length)
                 }
             }
         }
@@ -172,14 +164,14 @@ internal object BlockStyleManager {
             val lineEnd = if (nextNewline == -1) buffer.length else nextNewline
             val lineText = bufferStr.substring(currentLineStart, lineEnd)
 
-            val match = Regex("^(\\d+)\\.\\s").find(lineText)
-            if (match != null) {
-                val oldPrefix = match.value
+            if (MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)) {
+                val oldPrefixLen = lineText.indexOf('.') + 2
+                val oldPrefix = lineText.take(oldPrefixLen)
                 val newPrefix = "$listCounter. "
                 if (oldPrefix != newPrefix) {
-                    buffer.replace(currentLineStart, currentLineStart + oldPrefix.length, newPrefix)
-                    val diff = newPrefix.length - oldPrefix.length
-                    currentSpans = SpanManager.shiftSpans(currentSpans, currentLineStart + oldPrefix.length, diff)
+                    buffer.replace(currentLineStart, currentLineStart + oldPrefixLen, newPrefix)
+                    val diff = newPrefix.length - oldPrefixLen
+                    currentSpans = SpanManager.shiftSpans(currentSpans, currentLineStart + oldPrefixLen, diff)
                     currentLineStart = lineEnd + diff + 1
                 } else {
                     currentLineStart = lineEnd + 1

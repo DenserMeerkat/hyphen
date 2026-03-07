@@ -7,10 +7,12 @@ internal class SelectionManager {
     var isFocused: Boolean = false
 
     fun onSelectionChanged(current: TextRange) {
-        if (isFocused && current.start != current.end) {
-            lastValidSelection = current
-        } else if (!isFocused) {
-            clear()
+        if (isFocused) {
+            if (current.start != current.end) {
+                lastValidSelection = current
+            } else {
+                clear()
+            }
         }
     }
 
