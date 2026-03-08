@@ -199,7 +199,7 @@ private fun SampleTopBar(
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "sample",
+                        text = "demo",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
