@@ -82,7 +82,7 @@ kotlin {
                 implementation(libs.androidx.core.ktx)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.material)
-                implementation(libs.androidx.compose.ui.tooling.preview)
+                compileOnly(libs.androidx.compose.ui.tooling.preview)
             }
         }
 
@@ -94,15 +94,18 @@ kotlin {
     }
 }
 
-val javadocJar by tasks.registering(Jar::class) {
-    dependsOn(tasks.named("dokkaGenerate"))
-    archiveClassifier.set("javadoc")
-    from(layout.buildDirectory.dir("dokka/html"))
-}
-
 publishing {
     publications.withType<MavenPublication> {
-        artifact(javadocJar)
+
+        val pubName = name
+        val javadocJarTask = project.tasks.register("javadocJar${pubName.replaceFirstChar { it.uppercaseChar() }}", Jar::class) {
+            dependsOn(project.tasks.named("dokkaGenerate"))
+            archiveClassifier.set("javadoc")
+            from(project.layout.buildDirectory.dir("dokka/html"))
+            destinationDirectory.set(project.layout.buildDirectory.dir("libs/javadoc/$pubName"))
+        }
+
+        artifact(javadocJarTask)
 
         pom {
             name.set("Hyphen")
@@ -152,7 +155,5 @@ publishing {
 }
 
 signing {
-    if (project.findProperty("signing.keyId") != null) {
-        sign(publishing.publications)
-    }
+    sign(publishing.publications)
 }
