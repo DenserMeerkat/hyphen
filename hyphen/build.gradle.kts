@@ -6,11 +6,13 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.compose)
     alias(libs.plugins.compose.compiler)
-    `maven-publish`
+    id("maven-publish")
+    id("org.jetbrains.dokka") version "2.1.0"
+    signing
 }
 
 group = "io.github.densermeerkat"
-version = "0.1.0-SNAPSHOT"
+version = "0.1.0-alpha01"
 
 android {
     namespace = "com.denser.hyphen"
@@ -89,5 +91,70 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
+    }
+}
+
+val dokkaHtml by tasks.getting(org.jetbrains.dokka.gradle.DokkaTask::class)
+
+val javadocJar by tasks.registering(Jar::class) {
+    dependsOn(dokkaHtml)
+    archiveClassifier.set("javadoc")
+    from(dokkaHtml.outputDirectory)
+}
+
+publishing {
+    publications.withType<MavenPublication> {
+        artifact(javadocJar)
+
+        pom {
+            name.set("Hyphen")
+            description.set("A Multiplatform WYSIWYG Markdown editor.")
+            url.set("https://github.com/DenserMeerkat/hyphen")
+
+            licenses {
+                license {
+                    name.set("The Apache License, Version 2.0")
+                    url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                }
+            }
+            developers {
+                developer {
+                    id.set("DenserMeerkat")
+                    name.set("DenserMeerkat")
+                }
+            }
+            scm {
+                connection.set("scm:git:git://github.com/DenserMeerkat/hyphen.git")
+                developerConnection.set("scm:git:ssh://github.com/DenserMeerkat/hyphen.git")
+                url.set("https://github.com/DenserMeerkat/hyphen")
+            }
+        }
+    }
+
+    repositories {
+        maven {
+            name = "LocalTest"
+            url = uri(layout.buildDirectory.dir("repo"))
+        }
+
+        maven {
+            name = "OSSRH"
+            url = uri(
+                if (version.toString().endsWith("SNAPSHOT"))
+                    "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                else
+                    "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            )
+            credentials {
+                username = project.findProperty("sonatypeUsername")?.toString()
+                password = project.findProperty("sonatypePassword")?.toString()
+            }
+        }
+    }
+}
+
+signing {
+    if (project.findProperty("signing.keyId") != null) {
+        sign(publishing.publications)
     }
 }
