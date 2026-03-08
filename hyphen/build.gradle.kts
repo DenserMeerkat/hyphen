@@ -94,12 +94,10 @@ kotlin {
     }
 }
 
-val dokkaHtml by tasks.getting(org.jetbrains.dokka.gradle.DokkaTask::class)
-
 val javadocJar by tasks.registering(Jar::class) {
-    dependsOn(dokkaHtml)
+    dependsOn(tasks.named("dokkaGenerate"))
     archiveClassifier.set("javadoc")
-    from(dokkaHtml.outputDirectory)
+    from(layout.buildDirectory.dir("dokka/html"))
 }
 
 publishing {
