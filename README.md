@@ -35,27 +35,27 @@
 
 Type Markdown syntax directly and watch it convert as you write — no mode switching, no preview pane required.
 
-| Syntax              | Style             |
-| ------------------- | ----------------- |
-| `**text**`          | **Bold**          |
-| `*text*`            | _Italic_          |
-| `__text__`          | Underline         |
-| `` `text` ``        | `Inline code`     |
-| `~~text~~`          | ~~Strikethrough~~ |
-| `==text==`          | Highlight         |
-| `# ` at line start  | Heading 1         |
-| `## ` at line start | Heading 2         |
-| `### ` at line start| Heading 3         |
-| `#### ` at line start| Heading 4        |
-| `##### ` at line start| Heading 5       |
-| `###### ` at line start| Heading 6      |
-| `- ` at line start  | Bullet list       |
-| `1. ` at line start | Ordered list      |
-| `> ` at line start  | Blockquote        |
+| Syntax                  | Style             |
+| ----------------------- | ----------------- |
+| `**text**`              | **Bold**          |
+| `*text*`                | _Italic_          |
+| `__text__`              | Underline         |
+| `` `text` ``            | `Inline code`     |
+| `~~text~~`              | ~~Strikethrough~~ |
+| `==text==`              | Highlight         |
+| `# ` at line start      | Heading 1         |
+| `## ` at line start     | Heading 2         |
+| `### ` at line start    | Heading 3         |
+| `#### ` at line start   | Heading 4         |
+| `##### ` at line start  | Heading 5         |
+| `###### ` at line start | Heading 6         |
+| `- ` at line start      | Bullet list       |
+| `1. ` at line start     | Ordered list      |
+| `> ` at line start      | Blockquote        |
 
 ### 📋 Markdown Clipboard
 
-Copy and paste **preserve formatting**. Copying a selection serializes it to Markdown automatically — paste into any Markdown-aware editor and all styles travel with it. On web, the native `copy` event is intercepted so browser clipboard behaviour is handled correctly on all platforms.
+Cut, copy, and paste all work across Android, Desktop, and Web. Copying a selection serializes it to Markdown automatically, paste into any Markdown-aware editor and all formatting travels with it.
 
 ### ⌨️ Keyboard Shortcuts
 
@@ -101,7 +101,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.1.0-alpha01"
+hyphen = "0.2.0-alpha01"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -130,7 +130,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.1.0-alpha01")
+            implementation("io.github.densermeerkat:hyphen:0.2.0-alpha01")
         }
     }
 }
@@ -276,24 +276,24 @@ viewModelScope.launch {
 
 ### `HyphenBasicTextEditor`
 
-| Parameter          | Type                        | Default                                    | Description                                                                                      |
-| ------------------ | --------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| `state`            | `HyphenTextState`           | —                                          | Required. Holds text, spans, selection, and history.                                             |
-| `modifier`         | `Modifier`                  | `Modifier`                                 | Applied to the underlying `BasicTextField`.                                                      |
-| `enabled`          | `Boolean`                   | `true`                                     | When `false`, the field is neither editable nor focusable.                                       |
-| `readOnly`         | `Boolean`                   | `false`                                    | When `true`, the field cannot be edited but can be focused and copied from.                      |
-| `textStyle`        | `TextStyle`                 | `16sp`                                     | Typography applied to the visible text.                                                          |
-| `styleConfig`      | `HyphenStyleConfig`         | `HyphenStyleConfig()`                      | Visual appearance of each `MarkupStyle` — colors, weights, decorations.                         |
-| `keyboardOptions`  | `KeyboardOptions`           | Sentences, no autocorrect                  | Software keyboard configuration.                                                                 |
-| `lineLimits`       | `TextFieldLineLimits`       | `Default`                                  | Single-line or multi-line behaviour.                                                             |
-| `scrollState`      | `ScrollState`               | `rememberScrollState()`                    | Controls vertical or horizontal scroll of the field content.                                     |
-| `interactionSource`| `MutableInteractionSource?` | `null`                                     | Hoist to observe focus, hover, and press interactions externally.                                |
-| `cursorBrush`      | `Brush`                     | `SolidColor(Color.Black)`                  | Cursor color. Pass `SolidColor(Color.Unspecified)` to hide.                                     |
-| `decorator`        | `TextFieldDecorator?`       | `null`                                     | Wraps the field with labels, icons, or borders (e.g. a Material3 decorator).                    |
-| `onTextLayout`     | `(Density.(...) -> Unit)?`  | `null`                                     | Invoked on every text layout recalculation. Useful for cursor drawing or hit testing.            |
-| `clipboardLabel`   | `String`                    | `"Markdown Text"`                          | Label attached to the clipboard entry when text is copied.                                       |
-| `onTextChange`     | `((String) -> Unit)?`       | `null`                                     | Invoked whenever the plain undecorated text changes.                                             |
-| `onMarkdownChange` | `((String) -> Unit)?`       | `null`                                     | Invoked whenever text or formatting changes, providing the full serialized Markdown string.      |
+| Parameter           | Type                        | Default                   | Description                                                                                 |
+| ------------------- | --------------------------- | ------------------------- | ------------------------------------------------------------------------------------------- |
+| `state`             | `HyphenTextState`           | —                         | Required. Holds text, spans, selection, and history.                                        |
+| `modifier`          | `Modifier`                  | `Modifier`                | Applied to the underlying `BasicTextField`.                                                 |
+| `enabled`           | `Boolean`                   | `true`                    | When `false`, the field is neither editable nor focusable.                                  |
+| `readOnly`          | `Boolean`                   | `false`                   | When `true`, the field cannot be edited but can be focused and copied from.                 |
+| `textStyle`         | `TextStyle`                 | `16sp`                    | Typography applied to the visible text.                                                     |
+| `styleConfig`       | `HyphenStyleConfig`         | `HyphenStyleConfig()`     | Visual appearance of each `MarkupStyle` — colors, weights, decorations.                     |
+| `keyboardOptions`   | `KeyboardOptions`           | Sentences, no autocorrect | Software keyboard configuration.                                                            |
+| `lineLimits`        | `TextFieldLineLimits`       | `Default`                 | Single-line or multi-line behaviour.                                                        |
+| `scrollState`       | `ScrollState`               | `rememberScrollState()`   | Controls vertical or horizontal scroll of the field content.                                |
+| `interactionSource` | `MutableInteractionSource?` | `null`                    | Hoist to observe focus, hover, and press interactions externally.                           |
+| `cursorBrush`       | `Brush`                     | `SolidColor(Color.Black)` | Cursor color. Pass `SolidColor(Color.Unspecified)` to hide.                                 |
+| `decorator`         | `TextFieldDecorator?`       | `null`                    | Wraps the field with labels, icons, or borders (e.g. a Material3 decorator).                |
+| `onTextLayout`      | `(Density.(...) -> Unit)?`  | `null`                    | Invoked on every text layout recalculation. Useful for cursor drawing or hit testing.       |
+| `clipboardLabel`    | `String`                    | `"Markdown Text"`         | Label attached to the clipboard entry when text is copied.                                  |
+| `onTextChange`      | `((String) -> Unit)?`       | `null`                    | Invoked whenever the plain undecorated text changes.                                        |
+| `onMarkdownChange`  | `((String) -> Unit)?`       | `null`                    | Invoked whenever text or formatting changes, providing the full serialized Markdown string. |
 
 ### `HyphenTextState`
 
@@ -318,7 +318,7 @@ viewModelScope.launch {
 ### `HyphenStyleConfig`
 
 | Property              | Default                            |
-| --------------------- |------------------------------------|
+| --------------------- | ---------------------------------- |
 | `boldStyle`           | `FontWeight.Bold`                  |
 | `italicStyle`         | `FontStyle.Italic`                 |
 | `underlineStyle`      | `TextDecoration.Underline`         |
@@ -326,12 +326,12 @@ viewModelScope.launch {
 | `highlightStyle`      | Semi-transparent yellow background |
 | `inlineCodeStyle`     | Monospace, light grey background   |
 | `blockquoteSpanStyle` | Italic, grey, faint background     |
-| `h1Style`             | `24.sp`, bold                      |
-| `h2Style`             | `22.sp`, bold                      |
-| `h3Style`             | `20.sp`, bold                      |
-| `h4Style`             | `18.sp`, bold                      |
-| `h5Style`             | `17.sp`, bold                      |
-| `h6Style`             | `16.sp`, bold                      |
+| `h1Style`             | `24.sp`, `FontWeight.Bold`         |
+| `h2Style`             | `22.sp`, `FontWeight.Bold`         |
+| `h3Style`             | `20.sp`, `FontWeight.Bold`         |
+| `h4Style`             | `18.sp`, `FontWeight.Bold`         |
+| `h5Style`             | `17.sp`, `FontWeight.Bold`         |
+| `h6Style`             | `16.sp`, `FontWeight.Bold`         |
 
 ### `MarkupStyle`
 

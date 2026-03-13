@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "io.github.densermeerkat"
-version = "0.1.0-alpha01"
+version = "0.2.0-alpha01"
 
 android {
     namespace = "com.denser.hyphen"

@@ -311,7 +311,7 @@ private fun EditorPane(
                 scrollState = editorScrollState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                    .padding(12.dp),
                 textStyle = TextStyle(
                     fontSize = 16.sp,
                     color = MaterialTheme.colorScheme.onSurface,
