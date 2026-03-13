@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.NativeClipboard
 import com.denser.hyphen.state.HyphenTextState
+import com.denser.hyphen.markdown.MarkdownSerializer
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.w3c.dom.events.Event
@@ -24,38 +25,37 @@ internal actual fun rememberMarkdownClipboard(
     clipboardLabel: String,
 ): Clipboard {
     var lastKnownSelection by remember { mutableStateOf(state.selection) }
+    var lastKnownText by remember { mutableStateOf(state.text) }
+    var lastKnownSpans by remember { mutableStateOf(state.spans.toList()) }
+
     if (state.selection.start != state.selection.end) {
         lastKnownSelection = state.selection
+        lastKnownText = state.text
+        lastKnownSpans = state.spans.toList()
     }
 
     val originalClipboard = LocalClipboard.current
 
     DisposableEffect(state, lastKnownSelection) {
-        val copyListener: (Event) -> Unit = listener@{ event ->
+        val copyCutListener: (Event) -> Unit = listener@{ event ->
             val clipboardEvent = event as? ClipboardEvent ?: return@listener
 
-            val currentSelection = state.selection
-            val currentText = state.text
+            val start = lastKnownSelection.start.coerceAtMost(lastKnownSelection.end)
+            val end = lastKnownSelection.start.coerceAtLeast(lastKnownSelection.end)
 
-            var start = currentSelection.start.coerceAtMost(currentSelection.end)
-            var end = currentSelection.start.coerceAtLeast(currentSelection.end)
-
-            if (start == end) {
-                start = lastKnownSelection.start.coerceAtMost(lastKnownSelection.end)
-                end = lastKnownSelection.start.coerceAtLeast(lastKnownSelection.end)
-            }
-
-            if (start != -1 && start < end && end <= currentText.length) {
-                val markdown = state.toMarkdown(start, end)
+            if (start < end && end <= lastKnownText.length) {
+                val markdown = MarkdownSerializer.serialize(lastKnownText, lastKnownSpans, start, end)
                 clipboardEvent.preventDefault()
                 clipboardEvent.clipboardData?.setData("text/plain", markdown)
             }
         }
 
-        document.addEventListener("copy", copyListener)
+        document.addEventListener("copy", copyCutListener)
+        document.addEventListener("cut", copyCutListener)
 
         onDispose {
-            document.removeEventListener("copy", copyListener)
+            document.removeEventListener("copy", copyCutListener)
+            document.removeEventListener("cut", copyCutListener)
         }
     }
 
@@ -69,19 +69,11 @@ internal actual fun rememberMarkdownClipboard(
                     return
                 }
 
-                val currentSelection = state.selection
-                val currentText = state.text
+                val start = lastKnownSelection.start.coerceAtMost(lastKnownSelection.end)
+                val end = lastKnownSelection.start.coerceAtLeast(lastKnownSelection.end)
 
-                var start = currentSelection.start.coerceAtMost(currentSelection.end)
-                var end = currentSelection.start.coerceAtLeast(currentSelection.end)
-
-                if (start == end) {
-                    start = lastKnownSelection.start.coerceAtMost(lastKnownSelection.end)
-                    end = lastKnownSelection.start.coerceAtLeast(lastKnownSelection.end)
-                }
-
-                if (start != -1 && start < end && end <= currentText.length) {
-                    val markdown = state.toMarkdown(start, end)
+                if (start < end && end <= lastKnownText.length) {
+                    val markdown = MarkdownSerializer.serialize(lastKnownText, lastKnownSpans, start, end)
                     try {
                         window.navigator.clipboard.writeText(markdown)
                     } catch (e: Exception) {

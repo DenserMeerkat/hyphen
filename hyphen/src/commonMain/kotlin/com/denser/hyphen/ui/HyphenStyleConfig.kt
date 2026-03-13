@@ -6,6 +6,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.sp
 
 /**
  * Visual configuration for the Hyphen editor's inline and block formatting styles.
@@ -46,9 +47,21 @@ import androidx.compose.ui.text.style.TextDecoration
  * @property inlineCodeStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.InlineCode] spans.
  *   Defaults to [FontFamily.Monospace] with a light grey background.
  * @property blockquoteSpanStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Blockquote] spans.
- *   Defaults to italic text in [Color.DarkGray] with a faint grey background. Note that
+ *   Defaults to italic text in [Color.Gray] with a faint grey background. Note that
  *   block-level decoration (e.g. a vertical bar) must be added separately via a custom
  *   layout or draw modifier, as [SpanStyle] only controls character-level appearance.
+ * @property h1Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H1] spans.
+ *   Defaults to 24 sp bold. Triggered by `# ` at the start of a line.
+ * @property h2Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H2] spans.
+ *   Defaults to 22 sp bold. Triggered by `## ` at the start of a line.
+ * @property h3Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H3] spans.
+ *   Defaults to 20 sp bold. Triggered by `### ` at the start of a line.
+ * @property h4Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H4] spans.
+ *   Defaults to 18 sp bold. Triggered by `#### ` at the start of a line.
+ * @property h5Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H5] spans.
+ *   Defaults to 17 sp bold. Triggered by `##### ` at the start of a line.
+ * @property h6Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H6] spans.
+ *   Defaults to 16 sp bold. Triggered by `###### ` at the start of a line.
  */
 data class HyphenStyleConfig(
     val boldStyle: SpanStyle = SpanStyle(fontWeight = FontWeight.Bold),
@@ -65,4 +78,10 @@ data class HyphenStyleConfig(
         color = Color.Gray,
         background = Color.Gray.copy(alpha = 0.05f),
     ),
+    val h1Style: SpanStyle = SpanStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold),
+    val h2Style: SpanStyle = SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold),
+    val h3Style: SpanStyle = SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold),
+    val h4Style: SpanStyle = SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold),
+    val h5Style: SpanStyle = SpanStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold),
+    val h6Style: SpanStyle = SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold),
 )

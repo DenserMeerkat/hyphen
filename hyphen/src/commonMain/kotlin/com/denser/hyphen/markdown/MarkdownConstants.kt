@@ -39,4 +39,40 @@ internal object MarkdownConstants {
         pattern = """^[>┃] (.*?)$""",
         option = RegexOption.MULTILINE
     )
+
+    // # Heading 1
+    val H1_REGEX = Regex(
+        pattern = """^# (.+?)$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // ## Heading 2
+    val H2_REGEX = Regex(
+        pattern = """^## (.+?)$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // ### Heading 3
+    val H3_REGEX = Regex(
+        pattern = """^### (.+?)$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // # Heading 4
+    val H4_REGEX = Regex(
+        pattern = """^#### (.+?)$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // ## Heading 5
+    val H5_REGEX = Regex(
+        pattern = """^##### (.+?)$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // ### Heading 6
+    val H6_REGEX = Regex(
+        pattern = """^###### (.+?)$""",
+        option = RegexOption.MULTILINE
+    )
 }

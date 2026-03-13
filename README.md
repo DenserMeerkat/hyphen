@@ -43,6 +43,12 @@ Type Markdown syntax directly and watch it convert as you write — no mode swit
 | `` `text` ``        | `Inline code`     |
 | `~~text~~`          | ~~Strikethrough~~ |
 | `==text==`          | Highlight         |
+| `# ` at line start  | Heading 1         |
+| `## ` at line start | Heading 2         |
+| `### ` at line start| Heading 3         |
+| `#### ` at line start| Heading 4        |
+| `##### ` at line start| Heading 5       |
+| `###### ` at line start| Heading 6      |
 | `- ` at line start  | Bullet list       |
 | `1. ` at line start | Ordered list      |
 | `> ` at line start  | Blockquote        |
@@ -55,20 +61,25 @@ Copy and paste **preserve formatting**. Copying a selection serializes it to Mar
 
 Full hardware keyboard support on Desktop and Web:
 
-| Shortcut                         | Action                        |
-| -------------------------------- | ----------------------------- |
-| `Ctrl / Cmd + B`                 | Toggle bold                   |
-| `Ctrl / Cmd + I`                 | Toggle italic                 |
-| `Ctrl / Cmd + U`                 | Toggle underline              |
-| `Ctrl / Cmd + Shift + S`         | Toggle strikethrough          |
-| `Ctrl / Cmd + Shift + X`         | Toggle strikethrough          |
-| `Ctrl / Cmd + Alt + X`           | Toggle strikethrough          |
-| `Ctrl / Cmd + Shift + H`         | Toggle highlight              |
-| `Ctrl / Cmd + Space`             | Clear all styles on selection |
-| `Ctrl / Cmd + Z`                 | Undo                          |
-| `Ctrl / Cmd + Y`                 | Redo                          |
-| `Ctrl / Cmd + Shift + Z`         | Redo                          |
-| `Enter` inside list / blockquote | Smart continuation or exit    |
+| Shortcut                 | Action                        |
+| ------------------------ | ----------------------------- |
+| `Ctrl / Cmd + B`         | Toggle bold                   |
+| `Ctrl / Cmd + I`         | Toggle italic                 |
+| `Ctrl / Cmd + U`         | Toggle underline              |
+| `Ctrl / Cmd + Shift + S` | Toggle strikethrough          |
+| `Ctrl / Cmd + Shift + X` | Toggle strikethrough          |
+| `Ctrl / Cmd + Alt + X`   | Toggle strikethrough          |
+| `Ctrl / Cmd + Shift + H` | Toggle highlight              |
+| `Ctrl / Cmd + Space`     | Clear all styles on selection |
+| `Ctrl / Cmd + 1`         | Toggle Heading 1              |
+| `Ctrl / Cmd + 2`         | Toggle Heading 2              |
+| `Ctrl / Cmd + 3`         | Toggle Heading 3              |
+| `Ctrl / Cmd + 4`         | Toggle Heading 4              |
+| `Ctrl / Cmd + 5`         | Toggle Heading 5              |
+| `Ctrl / Cmd + 6`         | Toggle Heading 6              |
+| `Ctrl / Cmd + Z`         | Undo                          |
+| `Ctrl / Cmd + Y`         | Redo                          |
+| `Ctrl / Cmd + Shift + Z` | Redo                          |
 
 ### ↩️ Undo / Redo History
 
@@ -265,24 +276,24 @@ viewModelScope.launch {
 
 ### `HyphenBasicTextEditor`
 
-| Parameter           | Type                        | Default                   | Description                                                                                 |
-| ------------------- | --------------------------- | ------------------------- | ------------------------------------------------------------------------------------------- |
-| `state`             | `HyphenTextState`           | —                         | Required. Holds text, spans, selection, and history.                                        |
-| `modifier`          | `Modifier`                  | `Modifier`                | Applied to the underlying `BasicTextField`.                                                 |
-| `enabled`           | `Boolean`                   | `true`                    | When `false`, the field is neither editable nor focusable.                                  |
-| `readOnly`          | `Boolean`                   | `false`                   | When `true`, the field cannot be edited but can be focused and copied from.                 |
-| `textStyle`         | `TextStyle`                 | `16sp`                    | Typography applied to the visible text.                                                     |
-| `styleConfig`       | `HyphenStyleConfig`         | `HyphenStyleConfig()`     | Visual appearance of each `MarkupStyle` — colors, weights, decorations.                     |
-| `keyboardOptions`   | `KeyboardOptions`           | Sentences, no autocorrect | Software keyboard configuration.                                                            |
-| `lineLimits`        | `TextFieldLineLimits`       | `Default`                 | Single-line or multi-line behaviour.                                                        |
-| `scrollState`       | `ScrollState`               | `rememberScrollState()`   | Controls vertical or horizontal scroll of the field content.                                |
-| `interactionSource` | `MutableInteractionSource?` | `null`                    | Hoist to observe focus, hover, and press interactions externally.                           |
-| `cursorBrush`       | `Brush`                     | `SolidColor(Color.Black)` | Cursor color. Pass `SolidColor(Color.Unspecified)` to hide.                                 |
-| `decorator`         | `TextFieldDecorator?`       | `null`                    | Wraps the field with labels, icons, or borders (e.g. a Material3 decorator).                |
-| `onTextLayout`      | `(Density.(...) -> Unit)?`  | `null`                    | Invoked on every text layout recalculation. Useful for cursor drawing or hit testing.       |
-| `clipboardLabel`    | `String`                    | `"Markdown Text"`         | Label attached to the clipboard entry when text is copied.                                  |
-| `onTextChange`      | `((String) -> Unit)?`       | `null`                    | Invoked whenever the plain undecorated text changes.                                        |
-| `onMarkdownChange`  | `((String) -> Unit)?`       | `null`                    | Invoked whenever text or formatting changes, providing the full serialized Markdown string. |
+| Parameter          | Type                        | Default                                    | Description                                                                                      |
+| ------------------ | --------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `state`            | `HyphenTextState`           | —                                          | Required. Holds text, spans, selection, and history.                                             |
+| `modifier`         | `Modifier`                  | `Modifier`                                 | Applied to the underlying `BasicTextField`.                                                      |
+| `enabled`          | `Boolean`                   | `true`                                     | When `false`, the field is neither editable nor focusable.                                       |
+| `readOnly`         | `Boolean`                   | `false`                                    | When `true`, the field cannot be edited but can be focused and copied from.                      |
+| `textStyle`        | `TextStyle`                 | `16sp`                                     | Typography applied to the visible text.                                                          |
+| `styleConfig`      | `HyphenStyleConfig`         | `HyphenStyleConfig()`                      | Visual appearance of each `MarkupStyle` — colors, weights, decorations.                         |
+| `keyboardOptions`  | `KeyboardOptions`           | Sentences, no autocorrect                  | Software keyboard configuration.                                                                 |
+| `lineLimits`       | `TextFieldLineLimits`       | `Default`                                  | Single-line or multi-line behaviour.                                                             |
+| `scrollState`      | `ScrollState`               | `rememberScrollState()`                    | Controls vertical or horizontal scroll of the field content.                                     |
+| `interactionSource`| `MutableInteractionSource?` | `null`                                     | Hoist to observe focus, hover, and press interactions externally.                                |
+| `cursorBrush`      | `Brush`                     | `SolidColor(Color.Black)`                  | Cursor color. Pass `SolidColor(Color.Unspecified)` to hide.                                     |
+| `decorator`        | `TextFieldDecorator?`       | `null`                                     | Wraps the field with labels, icons, or borders (e.g. a Material3 decorator).                    |
+| `onTextLayout`     | `(Density.(...) -> Unit)?`  | `null`                                     | Invoked on every text layout recalculation. Useful for cursor drawing or hit testing.            |
+| `clipboardLabel`   | `String`                    | `"Markdown Text"`                          | Label attached to the clipboard entry when text is copied.                                       |
+| `onTextChange`     | `((String) -> Unit)?`       | `null`                                     | Invoked whenever the plain undecorated text changes.                                             |
+| `onMarkdownChange` | `((String) -> Unit)?`       | `null`                                     | Invoked whenever text or formatting changes, providing the full serialized Markdown string.      |
 
 ### `HyphenTextState`
 
@@ -306,15 +317,21 @@ viewModelScope.launch {
 
 ### `HyphenStyleConfig`
 
-| Property              | Default                             |
-| --------------------- | ----------------------------------- |
-| `boldStyle`           | `FontWeight.Bold`                   |
-| `italicStyle`         | `FontStyle.Italic`                  |
-| `underlineStyle`      | `TextDecoration.Underline`          |
-| `strikethroughStyle`  | `TextDecoration.LineThrough`        |
-| `highlightStyle`      | Semi-transparent yellow background  |
-| `inlineCodeStyle`     | Monospace, light grey background    |
-| `blockquoteSpanStyle` | Italic, dark grey, faint background |
+| Property              | Default                            |
+| --------------------- |------------------------------------|
+| `boldStyle`           | `FontWeight.Bold`                  |
+| `italicStyle`         | `FontStyle.Italic`                 |
+| `underlineStyle`      | `TextDecoration.Underline`         |
+| `strikethroughStyle`  | `TextDecoration.LineThrough`       |
+| `highlightStyle`      | Semi-transparent yellow background |
+| `inlineCodeStyle`     | Monospace, light grey background   |
+| `blockquoteSpanStyle` | Italic, grey, faint background     |
+| `h1Style`             | `24.sp`, bold                      |
+| `h2Style`             | `22.sp`, bold                      |
+| `h3Style`             | `20.sp`, bold                      |
+| `h4Style`             | `18.sp`, bold                      |
+| `h5Style`             | `17.sp`, bold                      |
+| `h6Style`             | `16.sp`, bold                      |
 
 ### `MarkupStyle`
 
@@ -326,6 +343,14 @@ MarkupStyle.Underline
 MarkupStyle.Strikethrough
 MarkupStyle.InlineCode
 MarkupStyle.Highlight
+
+// Heading styles
+MarkupStyle.H1
+MarkupStyle.H2
+MarkupStyle.H3
+MarkupStyle.H4
+MarkupStyle.H5
+MarkupStyle.H6
 
 // Block styles
 MarkupStyle.BulletList

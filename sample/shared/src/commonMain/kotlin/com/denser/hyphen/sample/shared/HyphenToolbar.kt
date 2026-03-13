@@ -40,6 +40,12 @@ import hyphen.sample.shared.generated.resources.format_strikethrough_24dp
 import hyphen.sample.shared.generated.resources.format_underlined_24dp
 import hyphen.sample.shared.generated.resources.redo_24dp
 import hyphen.sample.shared.generated.resources.undo_24dp
+import hyphen.sample.shared.generated.resources.format_h1_24dp
+import hyphen.sample.shared.generated.resources.format_h2_24dp
+import hyphen.sample.shared.generated.resources.format_h3_24dp
+import hyphen.sample.shared.generated.resources.format_h4_24dp
+import hyphen.sample.shared.generated.resources.format_h5_24dp
+import hyphen.sample.shared.generated.resources.format_h6_24dp
 
 @Composable
 fun HyphenToolbar(
@@ -95,6 +101,47 @@ fun HyphenToolbar(
                     isActive = state.hasStyle(MarkupStyle.Highlight),
                     onClick = { state.toggleStyle(MarkupStyle.Highlight) }
                 )
+
+                VerticalDivider(modifier = Modifier.height(16.dp).padding(horizontal = 2.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+                FormatToggleButton(
+                    icon = Res.drawable.format_h1_24dp,
+                    contentDescription = "Heading 1",
+                    isActive = state.hasStyle(MarkupStyle.H1),
+                    onClick = { state.toggleStyle(MarkupStyle.H1) }
+                )
+                FormatToggleButton(
+                    icon = Res.drawable.format_h2_24dp,
+                    contentDescription = "Heading 2",
+                    isActive = state.hasStyle(MarkupStyle.H2),
+                    onClick = { state.toggleStyle(MarkupStyle.H2) }
+                )
+                FormatToggleButton(
+                    icon = Res.drawable.format_h3_24dp,
+                    contentDescription = "Heading 3",
+                    isActive = state.hasStyle(MarkupStyle.H3),
+                    onClick = { state.toggleStyle(MarkupStyle.H3) }
+                )
+                FormatToggleButton(
+                    icon = Res.drawable.format_h4_24dp,
+                    contentDescription = "Heading 4",
+                    isActive = state.hasStyle(MarkupStyle.H4),
+                    onClick = { state.toggleStyle(MarkupStyle.H4) }
+                )
+                FormatToggleButton(
+                    icon = Res.drawable.format_h5_24dp,
+                    contentDescription = "Heading 5",
+                    isActive = state.hasStyle(MarkupStyle.H5),
+                    onClick = { state.toggleStyle(MarkupStyle.H5) }
+                )
+                FormatToggleButton(
+                    icon = Res.drawable.format_h6_24dp,
+                    contentDescription = "Heading 6",
+                    isActive = state.hasStyle(MarkupStyle.H6),
+                    onClick = { state.toggleStyle(MarkupStyle.H6) }
+                )
+
+                VerticalDivider(modifier = Modifier.height(16.dp).padding(horizontal = 2.dp), color = MaterialTheme.colorScheme.outlineVariant)
 
                 FormatToggleButton(
                     icon = Res.drawable.format_quote_24dp,

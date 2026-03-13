@@ -5,9 +5,10 @@ package com.denser.hyphen.model
  *
  * Styles are divided into two categories:
  *
- * **Inline styles** apply within a run of text and are represented as character-level
- * [MarkupStyleRange] spans. They can be toggled on a selection or set as a pending typing
- * override at a collapsed cursor via [com.denser.hyphen.state.HyphenTextState.toggleStyle].
+ * **Inline & Heading styles** apply to text and are represented as [MarkupStyleRange] spans.
+ * They can be toggled via [com.denser.hyphen.state.HyphenTextState.toggleStyle]. Headings
+ * automatically expand their spans to cover the entire line they sit on, keeping their Markdown
+ * syntax hidden from the raw text state.
  *
  * | Style | Markdown syntax | Visual effect |
  * |---|---|---|
@@ -17,6 +18,7 @@ package com.denser.hyphen.model
  * | [Strikethrough] | `~~text~~` | Line-through decoration |
  * | [InlineCode] | `` `text` `` | Monospace, highlighted background |
  * | [Highlight] | `==text==` | Coloured background highlight |
+ * | [H1]..[H6] | `# text` to `###### text` | Scaled, bold headings (line-spanning) |
  *
  * **Block styles** apply to entire lines and are represented as line-prefix characters
  * inserted directly into [com.denser.hyphen.state.HyphenTextState.text] by [com.denser.hyphen.state.BlockStyleManager]. Smart Enter
@@ -72,4 +74,22 @@ sealed interface MarkupStyle {
      * Pressing Enter on an empty prefix line exits the blockquote.
      */
     data object Blockquote : MarkupStyle
+
+    /** Heading level 1. Spans the entire line. Serialized as `# text`. */
+    data object H1 : MarkupStyle
+
+    /** Heading level 2. Spans the entire line. Serialized as `## text`. */
+    data object H2 : MarkupStyle
+
+    /** Heading level 3. Spans the entire line. Serialized as `### text`. */
+    data object H3 : MarkupStyle
+
+    /** Heading level 4. Spans the entire line. Serialized as `#### text`. */
+    data object H4 : MarkupStyle
+
+    /** Heading level 5. Spans the entire line. Serialized as `##### text`. */
+    data object H5 : MarkupStyle
+
+    /** Heading level 6. Spans the entire line. Serialized as `###### text`. */
+    data object H6 : MarkupStyle
 }

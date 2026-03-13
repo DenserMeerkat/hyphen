@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -60,9 +61,11 @@ import androidx.compose.ui.unit.sp
 import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.state.rememberHyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
+import androidx.compose.ui.platform.LocalUriHandler
 import hyphen.sample.shared.generated.resources.Res
 import hyphen.sample.shared.generated.resources.bug_report_24dp
 import hyphen.sample.shared.generated.resources.dark_mode_24dp
+import hyphen.sample.shared.generated.resources.github
 import hyphen.sample.shared.generated.resources.light_mode_24dp
 import hyphen.sample.shared.generated.resources.markdown_24dp
 import org.jetbrains.compose.resources.painterResource
@@ -208,6 +211,20 @@ private fun SampleTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    val uriHandler = LocalUriHandler.current
+                    IconButton(
+                        onClick = { uriHandler.openUri("https://github.com/DenserMeerkat/hyphen") },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .size(40.dp)
+                            .focusProperties { canFocus = false },
+                    ) {
+                        Icon(
+                            painterResource(Res.drawable.github),
+                            contentDescription = "GitHub",
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                     IconButton(
                         onClick = onToggleTheme,
                         shape = RoundedCornerShape(12.dp),
@@ -336,27 +353,10 @@ private fun MarkdownPreviewPanel(
     val scrollState = rememberScrollState()
 
     Column(modifier = modifier) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiary),
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "Markdown output",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = FontFamily.Monospace,
-            )
-        }
+        PanelHeader(
+            dot = MaterialTheme.colorScheme.tertiary,
+            label = "Markdown output",
+        )
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Box(
             modifier = Modifier
@@ -425,37 +425,81 @@ fun StateInspectorPanel(
 
     val scrollState = rememberScrollState()
 
-    Box(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-                .padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            InspectorHeader()
-            if (horizontal) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f)) { selectionGroup() }
-                    Box(Modifier.weight(1f)) { historyGroup() }
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) {
+        PanelHeader(
+            dot = MaterialTheme.colorScheme.primary,
+            label = "State Inspector",
+        )
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (horizontal) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(Modifier.weight(1f)) { selectionGroup() }
+                        Box(Modifier.weight(1f)) { historyGroup() }
+                    }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(Modifier.weight(1f)) { statsGroup() }
+                    }
+                } else {
+                    selectionGroup()
+                    historyGroup()
+                    statsGroup()
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.weight(1f)) { statsGroup() }
-                }
-            } else {
-                selectionGroup()
-                historyGroup()
-                statsGroup()
+                ActiveSpansList(state)
+                Spacer(Modifier.height(4.dp))
             }
-            ActiveSpansList(state)
-            Spacer(Modifier.height(4.dp))
+            verticalScrollbar?.invoke(
+                scrollState,
+                Modifier
+                    .align(Alignment.CenterEnd)
+                    .fillMaxHeight()
+                    .padding(vertical = 4.dp, horizontal = 2.dp),
+            )
         }
-        verticalScrollbar?.invoke(
-            scrollState,
-            Modifier
-                .align(Alignment.CenterEnd)
-                .fillMaxHeight()
-                .padding(vertical = 4.dp, horizontal = 2.dp),
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared panel header
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PanelHeader(
+    dot: Color,
+    label: String,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(dot),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace,
         )
     }
 }
@@ -470,28 +514,6 @@ private fun ActiveSpansList(state: HyphenTextState) {
             }
             if (state.spans.size > 40) InspectorEmptyHint("+ ${state.spans.size - 40} more")
         }
-    }
-}
-
-@Composable
-private fun InspectorHeader() {
-    Row(
-        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(6.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary),
-        )
-        Text(
-            text = "State Inspector",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
     }
 }
 
@@ -581,6 +603,13 @@ private fun InspectorEmptyHint(text: String) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 private val DEMO_TEXT = """
+    # Heading 1
+    ## Heading 2
+    ### Heading 3
+    #### Heading 4
+    ##### Heading 5
+    ###### Heading 6
+    
     This is a paragraph demonstrating formatting:
     **Bold**, *Italic*, __Underline__, ~~Strikethrough~~, ==Highlight==, and `Inline Code`.
 

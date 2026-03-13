@@ -52,11 +52,11 @@ internal object MarkdownProcessor {
                 val innerShift = prefixAdded.length - prefixRemoved
                 val totalShift = innerShift + (suffixAdded.length - suffixRemoved)
 
-                extractedSpans =
-                    SpanManager.shiftSpans(extractedSpans, startIndex + prefixRemoved, innerShift)
+                extractedSpans = SpanManager.shiftSpans(extractedSpans, startIndex, innerShift)
+                val suffixChangeStart = startIndex + match.value.length - suffixRemoved + innerShift
                 extractedSpans = SpanManager.shiftSpans(
                     extractedSpans,
-                    startIndex + match.value.length + innerShift,
+                    suffixChangeStart,
                     suffixAdded.length - suffixRemoved,
                 )
 
@@ -112,6 +112,13 @@ internal object MarkdownProcessor {
             getPrefixRemoved = { match -> match.value.indexOf('.') + 2 },
             getPrefixAdded = { match -> match.value.substring(0, match.value.indexOf('.') + 2) }
         )
+
+        applyRule(MarkdownConstants.H1_REGEX, MarkupStyle.H1, getPrefixRemoved = { 2 })
+        applyRule(MarkdownConstants.H2_REGEX, MarkupStyle.H2, getPrefixRemoved = { 3 })
+        applyRule(MarkdownConstants.H3_REGEX, MarkupStyle.H3, getPrefixRemoved = { 4 })
+        applyRule(MarkdownConstants.H4_REGEX, MarkupStyle.H4, getPrefixRemoved = { 5 })
+        applyRule(MarkdownConstants.H5_REGEX, MarkupStyle.H5, getPrefixRemoved = { 6 })
+        applyRule(MarkdownConstants.H6_REGEX, MarkupStyle.H6, getPrefixRemoved = { 7 })
 
         if (!hasChanges) return null
 

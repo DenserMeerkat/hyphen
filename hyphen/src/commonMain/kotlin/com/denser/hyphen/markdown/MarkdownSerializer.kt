@@ -2,9 +2,27 @@ package com.denser.hyphen.markdown
 
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
+import com.denser.hyphen.model.StyleSets
 
 object MarkdownSerializer {
-    private data class Insertion(val index: Int, val symbol: String, val isClosing: Boolean)
+    private data class Insertion(
+        val index: Int,
+        val symbol: String,
+        val isClosing: Boolean,
+        val priority: Int
+    )
+
+    private fun getStylePriority(style: MarkupStyle): Int = when (style) {
+        is MarkupStyle.InlineCode -> 1
+        is MarkupStyle.Bold -> 2
+        is MarkupStyle.Italic -> 3
+        is MarkupStyle.Strikethrough -> 4
+        is MarkupStyle.Underline -> 5
+        is MarkupStyle.Highlight -> 6
+        is MarkupStyle.H1, is MarkupStyle.H2, is MarkupStyle.H3,
+        is MarkupStyle.H4, is MarkupStyle.H5, is MarkupStyle.H6 -> 10
+        else -> 100
+    }
 
     fun serialize(text: String, spans: List<MarkupStyleRange>, start: Int, end: Int): String {
         if (start >= end) return ""
@@ -34,23 +52,49 @@ object MarkdownSerializer {
         val insertions = mutableListOf<Insertion>()
 
         for (span in spans) {
-            val symbol = when (span.style) {
+            val startSymbol = when (span.style) {
                 is MarkupStyle.Bold -> "**"
                 is MarkupStyle.Italic -> "*"
                 is MarkupStyle.Underline -> "__"
                 is MarkupStyle.Strikethrough -> "~~"
                 is MarkupStyle.Highlight -> "=="
                 is MarkupStyle.InlineCode -> "`"
+                is MarkupStyle.H1 -> "# "
+                is MarkupStyle.H2 -> "## "
+                is MarkupStyle.H3 -> "### "
+                is MarkupStyle.H4 -> "#### "
+                is MarkupStyle.H5 -> "##### "
+                is MarkupStyle.H6 -> "###### "
                 else -> null
             }
 
-            if (symbol != null) {
-                insertions.add(Insertion(span.start, symbol, isClosing = false))
-                insertions.add(Insertion(span.end, symbol, isClosing = true))
+            val endSymbol = when (span.style) {
+                in StyleSets.allHeadings -> ""
+                else -> startSymbol
+            }
+
+            if (startSymbol != null) {
+                val priority = getStylePriority(span.style)
+                insertions.add(Insertion(span.start, startSymbol, isClosing = false, priority))
+                if (endSymbol != null && endSymbol.isNotEmpty()) {
+                    insertions.add(Insertion(span.end, endSymbol, isClosing = true, priority))
+                }
             }
         }
 
-        insertions.sortWith(compareByDescending<Insertion> { it.index }.thenBy { it.isClosing })
+        insertions.sortWith(Comparator { a, b ->
+            if (a.index != b.index) {
+                b.index.compareTo(a.index)
+            } else if (a.isClosing != b.isClosing) {
+                a.isClosing.compareTo(b.isClosing)
+            } else {
+                if (a.isClosing) {
+                    b.priority.compareTo(a.priority)
+                } else {
+                    a.priority.compareTo(b.priority)
+                }
+            }
+        })
 
         for (insertion in insertions) {
             val safeIndex = insertion.index.coerceIn(0, builder.length)

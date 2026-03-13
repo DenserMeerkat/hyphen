@@ -192,19 +192,34 @@ class HyphenTextState(
 
         saveSnapshot(force = !canUndo || isPasting || isWordBoundary)
 
+        val deletedNewlines = previousText.count { it == '\n' } > newText.count { it == '\n' }
+
         val cursorPosition = buffer.selection.start
         val changeOrigin = SpanManager.resolveChangeOrigin(
             cursorPosition,
             rawLengthDifference,
             previousText.length
         )
-        val activeInlineStyles = StyleSets.allInline.filter { hasStyle(it) }
+
+        var safeSpans = _spans.toList()
+        if (rawLengthDifference < 0) {
+            val deleteEnd = changeOrigin - rawLengthDifference
+            safeSpans = safeSpans.filterNot { span ->
+                span.start in changeOrigin..<deleteEnd
+            }
+        }
+
+        val activeInlineStyles = StyleSets.allInline.filter { style ->
+            hasStyle(style) && (style !in StyleSets.allHeadings || pendingOverrides[style] == true)
+        }
+
         val markdownResult = MarkdownProcessor.process(newText, cursorPosition)
         var updatedSpans: List<MarkupStyleRange>
 
         if (markdownResult != null) {
             val cleanLengthDifference = markdownResult.cleanText.length - previousText.length
-            var baseSpans = SpanManager.shiftSpans(_spans, changeOrigin, cleanLengthDifference)
+
+            var baseSpans = SpanManager.shiftSpans(safeSpans, changeOrigin, cleanLengthDifference)
 
             if (cleanLengthDifference > 0) {
                 val insertEnd = changeOrigin + cleanLengthDifference
@@ -236,7 +251,7 @@ class HyphenTextState(
 
             saveSnapshot()
         } else {
-            var shifted = SpanManager.shiftSpans(_spans, changeOrigin, rawLengthDifference)
+            var shifted = SpanManager.shiftSpans(safeSpans, changeOrigin, rawLengthDifference)
             shifted = shifted.filterNot { BlockStyleManager.isBlockStyle(it.style) }
 
             if (rawLengthDifference > 0) {
@@ -253,8 +268,34 @@ class HyphenTextState(
             }
         }
 
+        val finalSpans = updatedSpans.mapNotNull { span ->
+            val isHeading = span.style in StyleSets.allHeadings
+
+            if (isHeading) {
+                if (span.start >= span.end) return@mapNotNull null
+
+                val bufferStr = buffer.asCharSequence()
+
+                val lastNewline = bufferStr.lastIndexOf('\n', (span.start - 1).coerceAtLeast(0))
+                val lineStart = if (lastNewline == -1) 0 else lastNewline + 1
+
+                if (deletedNewlines && span.start > lineStart) {
+                    return@mapNotNull null
+                }
+
+                val nextNewline = bufferStr.indexOf('\n', lineStart)
+                val lineEnd = if (nextNewline == -1) buffer.length else nextNewline
+
+                if (lineStart >= lineEnd) return@mapNotNull null
+
+                span.copy(start = lineStart, end = lineEnd)
+            } else {
+                span
+            }
+        }
+
         _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(updatedSpans))
+        _spans.addAll(SpanManager.consolidateSpans(finalSpans))
     }
 
     // -------------------------------------------------------------------------
@@ -497,14 +538,73 @@ class HyphenTextState(
     }
 
     private fun applyInlineStyleInternal(style: MarkupStyle) {
-        val (selStart, selEnd) = resolvedSelection()
+        val isHeading = style in StyleSets.allHeadings
+
+        val (selStart, selEnd) = if (isHeading) {
+            val startLine = text.lastIndexOf('\n', (selection.start - 1).coerceAtLeast(0)).let { if (it == -1) 0 else it + 1 }
+            val endLine = text.indexOf('\n', selection.end).let { if (it == -1) text.length else it }
+            startLine to endLine
+        } else {
+            resolvedSelection()
+        }
+
         if (selStart == selEnd) {
             pendingOverrides = pendingOverrides + (style to !hasStyle(style))
+
+            if (isHeading && pendingOverrides[style] == true) {
+                StyleSets.allHeadings.filter { it != style }.forEach { conflicting ->
+                    pendingOverrides = pendingOverrides + (conflicting to false)
+                }
+            }
             return
         }
-        val newSpans = SpanManager.toggleStyle(_spans, style, selStart, selEnd)
+
+        var newSpans = SpanManager.toggleStyle(_spans, style, selStart, selEnd)
+
+        if (isHeading && !hasStyle(style)) {
+            val otherHeadings = StyleSets.allHeadings.filter { it != style }
+
+            newSpans = newSpans.flatMap { span ->
+                when (span.style) {
+                    in otherHeadings -> {
+                        when {
+                            span.end <= selStart || span.start >= selEnd -> listOf(span)
+                            span.start >= selStart && span.end <= selEnd -> emptyList()
+                            span.start < selStart && span.end > selEnd -> listOf(
+                                span.copy(end = selStart),
+                                span.copy(start = selEnd),
+                            )
+
+                            span.start < selStart -> listOf(span.copy(end = selStart))
+                            else -> listOf(span.copy(start = selEnd))
+                        }
+                    }
+                    style -> {
+                        if (span.start >= selStart && span.end <= selEnd) {
+                            val splitSpans = mutableListOf<MarkupStyleRange>()
+                            var currentS = span.start
+                            while (currentS < span.end) {
+                                val nextNewline = text.indexOf('\n', currentS)
+                                val eIdx = if (nextNewline == -1 || nextNewline >= span.end) span.end else nextNewline
+                                if (currentS < eIdx) {
+                                    splitSpans.add(span.copy(start = currentS, end = eIdx))
+                                }
+                                currentS = eIdx + 1
+                            }
+                            splitSpans
+                        } else {
+                            listOf(span)
+                        }
+                    }
+                    else -> {
+                        listOf(span)
+                    }
+                }
+            }
+        }
+
         _spans.clear()
-        _spans.addAll(newSpans)
+        _spans.addAll(SpanManager.consolidateSpans(newSpans))
     }
 
     private fun getCurrentSnapshot() = EditorSnapshot(text, selection, _spans.toList())

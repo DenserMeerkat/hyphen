@@ -11,11 +11,13 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.text.TextStyle
 import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.model.StyleSets
 import com.denser.hyphen.state.BlockStyleManager
 import com.denser.hyphen.state.HyphenTextState
-import androidx.compose.ui.input.key.isAltPressed
 
 internal fun handleHardwareKeyEvent(
     event: KeyEvent,
@@ -49,6 +51,12 @@ internal fun handleHardwareKeyEvent(
                 Key.Z -> { state.undo(); true }
                 Key.Y -> { state.redo(); true }
                 Key.Spacebar -> { state.clearAllStyles(); true }
+                Key.One -> { state.toggleStyle(MarkupStyle.H1); true }
+                Key.Two -> { state.toggleStyle(MarkupStyle.H2); true }
+                Key.Three -> { state.toggleStyle(MarkupStyle.H3); true }
+                Key.Four -> { state.toggleStyle(MarkupStyle.H4); true }
+                Key.Five -> { state.toggleStyle(MarkupStyle.H5); true }
+                Key.Six -> { state.toggleStyle(MarkupStyle.H6); true }
                 else -> false
             }
         }
@@ -75,12 +83,31 @@ internal fun handleHardwareKeyEvent(
 internal fun applyMarkdownStyles(
     state: HyphenTextState,
     styleConfig: HyphenStyleConfig,
+    baseTextStyle: TextStyle,
     buffer: TextFieldBuffer
 ) {
     with(buffer) {
-        state.spans.forEach { span ->
-            val safeStart = span.start.coerceIn(0, length)
-            val safeEnd = span.end.coerceIn(0, length)
+        val needsBaselineAnchor = state.spans.any { it.start == 0 && it.style in StyleSets.allHeadings }
+        if (needsBaselineAnchor) {
+            insert(0, "\u200B")
+        }
+        val offset = if (needsBaselineAnchor) 1 else 0
+
+        val baseSpanStyle = baseTextStyle.toSpanStyle()
+        val textSeq = asCharSequence()
+        for (i in textSeq.indices) {
+            if (textSeq[i] == '\n') {
+                addStyle(baseSpanStyle, i, i + 1)
+            }
+        }
+
+        val sortedSpans = state.spans.sortedBy { span ->
+            if (span.style in StyleSets.allHeadings) 0 else 1
+        }
+
+        sortedSpans.forEach { span ->
+            val safeStart = (span.start + offset).coerceIn(0, length)
+            val safeEnd = (span.end + offset).coerceIn(0, length)
             if (safeStart >= safeEnd) return@forEach
 
             when (span.style) {
@@ -93,6 +120,13 @@ internal fun applyMarkdownStyles(
                 is MarkupStyle.BulletList -> {}
                 is MarkupStyle.OrderedList -> {}
                 is MarkupStyle.Blockquote -> addStyle(styleConfig.blockquoteSpanStyle, safeStart, safeEnd)
+
+                is MarkupStyle.H1 -> addStyle(styleConfig.h1Style, safeStart, safeEnd)
+                is MarkupStyle.H2 -> addStyle(styleConfig.h2Style, safeStart, safeEnd)
+                is MarkupStyle.H3 -> addStyle(styleConfig.h3Style, safeStart, safeEnd)
+                is MarkupStyle.H4 -> addStyle(styleConfig.h4Style, safeStart, safeEnd)
+                is MarkupStyle.H5 -> addStyle(styleConfig.h5Style, safeStart, safeEnd)
+                is MarkupStyle.H6 -> addStyle(styleConfig.h6Style, safeStart, safeEnd)
             }
         }
     }

@@ -50,6 +50,7 @@ import com.denser.hyphen.state.HyphenTextState
  * | Ctrl/Cmd + Shift + S / X | Toggle strikethrough |
  * | Ctrl/Cmd + Shift + H | Toggle highlight |
  * | Enter (inside list/quote) | Smart continuation or exit |
+ * | Ctrl/Cmd + [1-6] | Toggle Heading 1-6 |
  *
  * **Clipboard**
  *
@@ -140,7 +141,7 @@ fun HyphenBasicTextEditor(
             decorator = decorator,
             onTextLayout = onTextLayout,
             outputTransformation = {
-                applyMarkdownStyles(state, styleConfig, this)
+                applyMarkdownStyles(state, styleConfig, textStyle, this)
             },
             inputTransformation = {
                 processMarkdownInput(state, this)
