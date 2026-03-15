@@ -92,6 +92,7 @@ internal fun applyMarkdownStyles(
             insert(0, "\u200B")
         }
         val offset = if (needsBaselineAnchor) 1 else 0
+        insert(length, "\u200B")
 
         val baseSpanStyle = baseTextStyle.toSpanStyle()
         val textSeq = asCharSequence()

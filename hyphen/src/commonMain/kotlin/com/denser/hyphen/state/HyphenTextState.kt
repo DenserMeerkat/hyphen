@@ -205,7 +205,7 @@ class HyphenTextState(
         if (rawLengthDifference < 0) {
             val deleteEnd = changeOrigin - rawLengthDifference
             safeSpans = safeSpans.filterNot { span ->
-                span.start in changeOrigin..<deleteEnd
+                span.start >= changeOrigin && span.end <= deleteEnd
             }
         }
 
@@ -229,7 +229,6 @@ class HyphenTextState(
                     changeOrigin,
                     insertEnd
                 )
-                clearPendingOverrides()
             }
 
             val inlineBaseSpans = baseSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
@@ -239,9 +238,7 @@ class HyphenTextState(
             buffer.selection =
                 TextRange(markdownResult.newCursorPosition.coerceIn(0, buffer.length))
 
-            val stylesJustClosed = markdownResult.newSpans
-                .filter { it.end == markdownResult.newCursorPosition }
-                .map { it.style }
+            val stylesJustClosed = markdownResult.explicitlyClosedStyles
 
             if (stylesJustClosed.isNotEmpty()) {
                 pendingOverrides = pendingOverrides.toMutableMap().apply {
@@ -262,7 +259,6 @@ class HyphenTextState(
                     changeOrigin,
                     insertEnd
                 )
-                clearPendingOverrides()
             } else {
                 updatedSpans = shifted
             }
@@ -384,7 +380,7 @@ class HyphenTextState(
      * - **Inline styles with a selection**: returns `true` only if a span of the given style
      *   fully covers the entire selected range.
      * - **Inline styles with a collapsed cursor**: returns `true` if the cursor sits inside
-     *   (or at the start boundary of) a span of the given style.
+     *   (or at the end boundary of) a span of the given style.
      *
      * @param style The [MarkupStyle] to query.
      */
@@ -396,7 +392,7 @@ class HyphenTextState(
 
         val (selStart, selEnd) = resolvedSelection()
         return if (selStart == selEnd) {
-            _spans.any { span -> span.style == style && selStart >= span.start && selStart <= span.end }
+            _spans.any { span -> span.style == style && selStart > span.start && selStart <= span.end }
         } else {
             val adjustedEnd = if (selEnd > selStart) selEnd - 1 else selEnd
             _spans.any { span -> span.style == style && span.start <= selStart && span.end > adjustedEnd }

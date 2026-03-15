@@ -2,25 +2,25 @@ package com.denser.hyphen.markdown
 
 internal object MarkdownConstants {
     // **text**
-    val BOLD_REGEX = Regex("\\*\\*(.*?)\\*\\*")
+    val BOLD_REGEX = Regex("\\*\\*(?!\\s)(.+?)\\*\\*")
 
     // *text*
-    val ITALIC_ASTERISK_REGEX = Regex("(?<!\\*)\\*(?!\\*)(.*?)(?<!\\*)\\*(?!\\*)")
+    val ITALIC_ASTERISK_REGEX = Regex("(?<!\\*)\\*(?!\\*|\\s)(.+?)(?<!\\*)\\*(?!\\*)")
 
     // _text_
-    val ITALIC_UNDERSCORE_REGEX = Regex("(?<!_)_(?!_)(.*?)(?<!_)_(?!_)")
+    val ITALIC_UNDERSCORE_REGEX = Regex("(?<!_)_(?!_|\\s)(.+?)(?<!_)_(?!_)")
 
     // ~~text~~
-    val STRIKETHROUGH_REGEX = Regex("~~(.*?)~~")
+    val STRIKETHROUGH_REGEX = Regex("~~(?!\\s)(.+?)~~")
 
     // __text__
-    val UNDERLINE_REGEX = Regex("__(.*?)__")
+    val UNDERLINE_REGEX = Regex("__(?!\\s)(.+?)__")
 
     // `text`
-    val INLINE_CODE_REGEX = Regex("`(.*?)`")
+    val INLINE_CODE_REGEX = Regex("`(?!\\s)(.+?)`")
 
     // ==text==
-    val HIGHLIGHT_REGEX = Regex("==(.*?)==")
+    val HIGHLIGHT_REGEX = Regex("==(?!\\s)(.+?)==")
 
     // -, *, or • at line start
     val BULLET_LIST_REGEX = Regex(
@@ -58,19 +58,19 @@ internal object MarkdownConstants {
         option = RegexOption.MULTILINE
     )
 
-    // # Heading 4
+    // #### Heading 4
     val H4_REGEX = Regex(
         pattern = """^#### (.+?)$""",
         option = RegexOption.MULTILINE
     )
 
-    // ## Heading 5
+    // ##### Heading 5
     val H5_REGEX = Regex(
         pattern = """^##### (.+?)$""",
         option = RegexOption.MULTILINE
     )
 
-    // ### Heading 6
+    // ###### Heading 6
     val H6_REGEX = Regex(
         pattern = """^###### (.+?)$""",
         option = RegexOption.MULTILINE

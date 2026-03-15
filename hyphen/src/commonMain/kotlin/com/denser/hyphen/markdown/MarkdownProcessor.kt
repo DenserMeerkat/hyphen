@@ -3,7 +3,6 @@ package com.denser.hyphen.markdown
 import com.denser.hyphen.state.SpanManager
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
-import kotlin.collections.plus
 
 internal object MarkdownProcessor {
 
@@ -11,6 +10,7 @@ internal object MarkdownProcessor {
         val cleanText: String,
         val newSpans: List<MarkupStyleRange>,
         val newCursorPosition: Int,
+        val explicitlyClosedStyles: Set<MarkupStyle> = emptySet(),
     )
 
     fun process(rawText: String, cursorPosition: Int): ProcessResult? {
@@ -18,6 +18,7 @@ internal object MarkdownProcessor {
         var extractedSpans = listOf<MarkupStyleRange>()
         var currentCursor = cursorPosition
         var hasChanges = false
+        val closedStyles = mutableSetOf<MarkupStyle>()
 
         fun applyRule(
             regex: Regex,
@@ -32,6 +33,10 @@ internal object MarkdownProcessor {
             while (match != null) {
                 val innerText = match.groupValues[1]
                 val startIndex = match.range.first
+
+                if (currentCursor == startIndex + match.value.length) {
+                    closedStyles.add(style)
+                }
 
                 val prefixRemoved = getPrefixRemoved(match)
                 val suffixRemoved = getSuffixRemoved(match)
@@ -126,6 +131,7 @@ internal object MarkdownProcessor {
             cleanText = processedText,
             newSpans = extractedSpans,
             newCursorPosition = currentCursor,
+            explicitlyClosedStyles = closedStyles
         )
     }
 }
