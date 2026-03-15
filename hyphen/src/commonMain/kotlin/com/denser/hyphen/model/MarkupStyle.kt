@@ -29,6 +29,8 @@ package com.denser.hyphen.model
  * | [BulletList] | `- `, `* `, or `• ` | Unordered list item |
  * | [OrderedList] | `1. `, `2. `, etc. | Auto-numbered ordered list |
  * | [Blockquote] | `> ` or `┃ ` | Indented quotation block |
+ * | [CheckboxUnchecked] | `- [ ] ` or `* [ ] ` | Unchecked task list item |
+ * | [CheckboxChecked] | `- [x] ` or `* [X] ` | Checked task list item |
  */
 sealed interface MarkupStyle {
 
@@ -74,6 +76,16 @@ sealed interface MarkupStyle {
      * Pressing Enter on an empty prefix line exits the blockquote.
      */
     data object Blockquote : MarkupStyle
+
+    /**
+     * Unchecked task list item. Represented by a `- [ ] ` or `* [ ] ` prefix on the line.
+     */
+    data object CheckboxUnchecked : MarkupStyle
+
+    /**
+     * Checked task list item. Represented by a `- [x] ` or `* [X] ` prefix on the line.
+     */
+    data object CheckboxChecked : MarkupStyle
 
     /** Heading level 1. Spans the entire line. Serialized as `# text`. */
     data object H1 : MarkupStyle

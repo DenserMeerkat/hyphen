@@ -40,6 +40,20 @@ internal object BlockStyleManager {
         val lineText = bufferText.substring(lineStart, cursor)
 
         return when {
+            (state.isStyleAt(lineStart, MarkupStyle.CheckboxUnchecked) && MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText)) ||
+                    (state.isStyleAt(lineStart, MarkupStyle.CheckboxChecked) && MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)) -> {
+
+                val prefix = "- [ ] "
+                val currentPrefixLen = 6
+
+                if (lineText.length == currentPrefixLen) {
+                    buffer.replace(lineStart, cursor, "")
+                } else {
+                    buffer.insert(cursor, "\n$prefix")
+                }
+                true
+            }
+
             state.isStyleAt(lineStart, MarkupStyle.BulletList) && MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText) -> {
                 val prefix = lineText.take(2)
                 if (lineText == prefix) buffer.replace(lineStart, cursor, "")

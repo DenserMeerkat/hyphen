@@ -121,7 +121,8 @@ internal fun applyMarkdownStyles(
                 is MarkupStyle.BulletList -> {}
                 is MarkupStyle.OrderedList -> {}
                 is MarkupStyle.Blockquote -> addStyle(styleConfig.blockquoteSpanStyle, safeStart, safeEnd)
-
+                is MarkupStyle.CheckboxUnchecked -> {}
+                is MarkupStyle.CheckboxChecked -> {}
                 is MarkupStyle.H1 -> addStyle(styleConfig.h1Style, safeStart, safeEnd)
                 is MarkupStyle.H2 -> addStyle(styleConfig.h2Style, safeStart, safeEnd)
                 is MarkupStyle.H3 -> addStyle(styleConfig.h3Style, safeStart, safeEnd)

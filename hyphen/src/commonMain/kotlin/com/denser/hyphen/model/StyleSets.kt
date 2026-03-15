@@ -18,7 +18,9 @@ object StyleSets {
     val allBlock = listOf(
         MarkupStyle.Blockquote,
         MarkupStyle.BulletList,
-        MarkupStyle.OrderedList
+        MarkupStyle.OrderedList,
+        MarkupStyle.CheckboxUnchecked,
+        MarkupStyle.CheckboxChecked
     )
     val allHeadings = listOf(
         MarkupStyle.H1,

@@ -40,6 +40,18 @@ internal object MarkdownConstants {
         option = RegexOption.MULTILINE
     )
 
+    // - [ ] or * [ ] at line start
+    val CHECKBOX_UNCHECKED_REGEX = Regex(
+        pattern = """^[\-*] \[\s] (.*?)$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // - [x] or * [X] at line start
+    val CHECKBOX_CHECKED_REGEX = Regex(
+        pattern = """^[\-*] \[[xX]] (.*?)$""",
+        option = RegexOption.MULTILINE
+    )
+
     // # Heading 1
     val H1_REGEX = Regex(
         pattern = """^# (.+?)$""",

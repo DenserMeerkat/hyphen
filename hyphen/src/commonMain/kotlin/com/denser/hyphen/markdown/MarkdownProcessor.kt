@@ -100,6 +100,19 @@ internal object MarkdownProcessor {
         applyRule(MarkdownConstants.ITALIC_UNDERSCORE_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
 
         applyRule(
+            MarkdownConstants.CHECKBOX_UNCHECKED_REGEX,
+            MarkupStyle.CheckboxUnchecked,
+            getPrefixRemoved = { 6 },
+            getPrefixAdded = { match -> match.value.substring(0, 6) }
+        )
+        applyRule(
+            MarkdownConstants.CHECKBOX_CHECKED_REGEX,
+            MarkupStyle.CheckboxChecked,
+            getPrefixRemoved = { 6 },
+            getPrefixAdded = { match -> match.value.substring(0, 6) }
+        )
+
+        applyRule(
             MarkdownConstants.BULLET_LIST_REGEX,
             MarkupStyle.BulletList,
             getPrefixRemoved = { 2 },
