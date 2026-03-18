@@ -40,6 +40,23 @@ class BlockStyleManagerTest {
         assertFalse(BlockStyleManager.hasBlockStyle(text, TextRange(30), MarkupStyle.BulletList))
     }
 
+    @Test
+    fun `hasBlockStyle distinguishes checkboxes from bullet lists`() {
+        val text = "- [ ] Task 1\n- Regular bullet\n- [x] Task 2"
+
+        // Line 1: Unchecked task
+        assertTrue(BlockStyleManager.hasBlockStyle(text, TextRange(2), MarkupStyle.CheckboxUnchecked))
+        assertFalse(BlockStyleManager.hasBlockStyle(text, TextRange(2), MarkupStyle.BulletList))
+
+        // Line 2: Regular bullet
+        assertTrue(BlockStyleManager.hasBlockStyle(text, TextRange(15), MarkupStyle.BulletList))
+        assertFalse(BlockStyleManager.hasBlockStyle(text, TextRange(15), MarkupStyle.CheckboxUnchecked))
+
+        // Line 3: Checked task
+        assertTrue(BlockStyleManager.hasBlockStyle(text, TextRange(35), MarkupStyle.CheckboxChecked))
+        assertFalse(BlockStyleManager.hasBlockStyle(text, TextRange(35), MarkupStyle.BulletList))
+    }
+
     // --- handleSmartEnter Tests ---
     @Test
     fun `handleSmartEnter continues bullet list`() {
@@ -83,6 +100,19 @@ class BlockStyleManagerTest {
     }
 
     @Test
+    fun `handleSmartEnter continues checkboxes as unchecked`() {
+        val state = HyphenTextState("- [x] Finished Task")
+
+        state.textFieldState.edit {
+            this.selection = TextRange(19)
+            val handled = BlockStyleManager.handleSmartEnter(state, this)
+            assertTrue(handled)
+        }
+
+        assertEquals("- [x] Finished Task\n- [ ] ", state.textFieldState.text.toString())
+    }
+
+    @Test
     fun `handleSmartEnter clears empty list item`() {
         val state = HyphenTextState("- ") // User hit enter on an empty bullet
 
@@ -93,6 +123,19 @@ class BlockStyleManagerTest {
         }
 
         // Assert the empty prefix is removed completely
+        assertEquals("", state.textFieldState.text.toString())
+    }
+
+    @Test
+    fun `handleSmartEnter clears empty checkbox`() {
+        val state = HyphenTextState("- [ ] ")
+
+        state.textFieldState.edit {
+            this.selection = TextRange(6)
+            val handled = BlockStyleManager.handleSmartEnter(state, this)
+            assertTrue(handled)
+        }
+
         assertEquals("", state.textFieldState.text.toString())
     }
 
@@ -109,6 +152,17 @@ class BlockStyleManagerTest {
     }
 
     @Test
+    fun `applyBlockStyle applies checkbox prefix`() {
+        val state = TextFieldState("Buy groceries")
+
+        state.edit {
+            BlockStyleManager.applyBlockStyle(this, emptyList(), TextRange(5), MarkupStyle.CheckboxUnchecked)
+        }
+
+        assertEquals("- [ ] Buy groceries", state.text.toString())
+    }
+
+    @Test
     fun `applyBlockStyle removes prefix if already applied`() {
         val state = TextFieldState("> Blockquote text")
 
@@ -120,15 +174,20 @@ class BlockStyleManagerTest {
     }
 
     @Test
-    fun `applyBlockStyle converts between list types seamlessly`() {
+    fun `applyBlockStyle converts between list types seamlessly including checkboxes`() {
         val state = TextFieldState("- Bullet point")
 
         state.edit {
             // Apply OrderedList over a BulletList
             BlockStyleManager.applyBlockStyle(this, emptyList(), TextRange(5), MarkupStyle.OrderedList)
         }
-
         assertEquals("1. Bullet point", state.text.toString())
+
+        state.edit {
+            // Apply Checkbox over OrderedList
+            BlockStyleManager.applyBlockStyle(this, emptyList(), TextRange(5), MarkupStyle.CheckboxUnchecked)
+        }
+        assertEquals("- [ ] Bullet point", state.text.toString())
     }
 
     @Test
@@ -146,16 +205,13 @@ class BlockStyleManagerTest {
 
     @Test
     fun `applyBlockStyle heals and auto-renumbers ordered lists`() {
-        // We have list item 1, a gap, and list item 1 again.
         val text = "1. First\nSecond\n1. Third"
         val state = TextFieldState(text)
 
         state.edit {
-            // Cursor on "Second". We apply an OrderedList to it.
             BlockStyleManager.applyBlockStyle(this, emptyList(), TextRange(10), MarkupStyle.OrderedList)
         }
 
-        // The manager should turn "Second" into "2.", and heal "1. Third" into "3."
         assertEquals("1. First\n2. Second\n3. Third", state.text.toString())
     }
 
@@ -165,11 +221,58 @@ class BlockStyleManagerTest {
         val state = TextFieldState(text)
 
         state.edit {
-            // Apply ordered list to the 3rd line ("Item")
             BlockStyleManager.applyBlockStyle(this, emptyList(), TextRange(text.length - 1), MarkupStyle.OrderedList)
         }
 
-        // The Plain Text breaks the chain, so the 3rd line should start back at 1.
         assertEquals("1. Item\nPlain Text\n1. Item", state.text.toString())
+    }
+
+    // --- toggleCheckbox Tests ---
+    @Test
+    fun `toggleCheckbox flips between checked and unchecked states`() {
+        val state = TextFieldState("- [ ] Task")
+
+        state.edit {
+            val toggled = BlockStyleManager.toggleCheckbox(this, 0, strictPrefixCheck = false)
+            assertTrue(toggled)
+        }
+        assertEquals("- [x] Task", state.text.toString())
+
+        state.edit {
+            val toggled = BlockStyleManager.toggleCheckbox(this, 0, strictPrefixCheck = false)
+            assertTrue(toggled)
+        }
+        assertEquals("- [ ] Task", state.text.toString())
+    }
+
+    @Test
+    fun `toggleCheckbox respects strictPrefixCheck bounds`() {
+        val state = TextFieldState("- [ ] Task")
+
+        state.edit {
+            // Offset 8 is inside the word "Task". strictPrefixCheck = true should ignore it.
+            val toggled = BlockStyleManager.toggleCheckbox(this, 8, strictPrefixCheck = true)
+            assertFalse(toggled)
+        }
+        assertEquals("- [ ] Task", state.text.toString())
+
+        state.edit {
+            // strictPrefixCheck = false allows toggling from anywhere on the line
+            val toggled = BlockStyleManager.toggleCheckbox(this, 8, strictPrefixCheck = false)
+            assertTrue(toggled)
+        }
+        assertEquals("- [x] Task", state.text.toString())
+    }
+
+    @Test
+    fun `toggleCheckbox allows clicking inside prefix with strictPrefixCheck true`() {
+        val state = TextFieldState("- [ ] Task")
+
+        state.edit {
+            // Offset 3 is inside the "- [ ] " prefix
+            val toggled = BlockStyleManager.toggleCheckbox(this, 3, strictPrefixCheck = true)
+            assertTrue(toggled)
+        }
+        assertEquals("- [x] Task", state.text.toString())
     }
 }

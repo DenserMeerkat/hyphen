@@ -80,6 +80,31 @@ class MarkdownProcessorTest {
     }
 
     @Test
+    fun `process identifies checkbox block styles`() {
+        val textsAndStyles = listOf(
+            "- [ ] Unchecked task" to MarkupStyle.CheckboxUnchecked,
+            "- [x] Checked task" to MarkupStyle.CheckboxChecked,
+            "* [X] Another checked" to MarkupStyle.CheckboxChecked
+        )
+
+        for ((text, expectedStyle) in textsAndStyles) {
+            val result = MarkdownProcessor.process(text, cursorPosition = 0)
+
+            assertNotNull(result, "Failed on: $text")
+
+            // Checkbox block styles should preserve the prefix
+            assertEquals(text, result?.cleanText)
+
+            // Checkboxes might also generate a BulletList span since they start with "- "
+            // We just need to assert that the specific Checkbox span was generated and covers the line.
+            val span = result?.newSpans?.find { it.style == expectedStyle }
+            assertNotNull(span, "Missing expected $expectedStyle for text: $text")
+            assertEquals(0, span?.start)
+            assertEquals(text.length, span?.end)
+        }
+    }
+
+    @Test
     fun `cursor shifts correctly when typing AFTER an inline markdown block`() {
         // Raw text: "**abc**d"
         // Let's say the cursor is at the very end (index 8)

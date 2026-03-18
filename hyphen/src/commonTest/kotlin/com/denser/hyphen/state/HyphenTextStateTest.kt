@@ -83,6 +83,57 @@ class HyphenTextStateTest {
     }
 
     @Test
+    fun `checkbox formatting acts as a block style via toggleStyle`() {
+        val state = HyphenTextState("Clean dishes")
+        state.isFocused = true
+        state.select(0)
+
+        // Add checkbox formatting
+        state.toggleStyle(MarkupStyle.CheckboxUnchecked)
+        assertEquals("- [ ] Clean dishes", state.text)
+        assertTrue(state.hasStyle(MarkupStyle.CheckboxUnchecked))
+
+        // Remove checkbox formatting
+        state.toggleStyle(MarkupStyle.CheckboxUnchecked)
+        assertEquals("Clean dishes", state.text)
+        assertFalse(state.hasStyle(MarkupStyle.CheckboxUnchecked))
+    }
+
+    @Test
+    fun `toggleCheckboxAtCursor switches state between checked and unchecked`() {
+        val state = HyphenTextState("- [ ] Write tests")
+        state.isFocused = true
+
+        // Cursor is anywhere on the line
+        state.select(10)
+
+        // 1. Toggle to Checked
+        state.toggleCheckboxAtCursor()
+        assertEquals("- [x] Write tests", state.text)
+        assertTrue(state.hasStyle(MarkupStyle.CheckboxChecked))
+        assertFalse(state.hasStyle(MarkupStyle.CheckboxUnchecked))
+
+        // 2. Toggle back to Unchecked
+        state.toggleCheckboxAtCursor()
+        assertEquals("- [ ] Write tests", state.text)
+        assertTrue(state.hasStyle(MarkupStyle.CheckboxUnchecked))
+        assertFalse(state.hasStyle(MarkupStyle.CheckboxChecked))
+    }
+
+    @Test
+    fun `toggleCheckboxAtCursor does nothing on lines without checkboxes`() {
+        val text = "Just a normal line"
+        val state = HyphenTextState(text)
+        state.isFocused = true
+        state.select(5)
+
+        state.toggleCheckboxAtCursor()
+
+        // Assert text hasn't changed
+        assertEquals(text, state.text)
+    }
+
+    @Test
     fun `clearAllStyles punches holes in spans and handles pending overrides`() {
         val state = HyphenTextState("**Hello** *World*")
         state.isFocused = true

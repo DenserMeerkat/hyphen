@@ -331,12 +331,29 @@ class HyphenTextState(
      * Does nothing if the current line does not contain a checkbox.
      */
     fun toggleCheckboxAtCursor() {
+        saveSnapshot(force = true)
+
+        val effectiveSel = selectionManager.effectiveSelection(selection)
+        var toggled = false
+
         textFieldState.edit {
-            val toggled = BlockStyleManager.toggleCheckbox(this, selection.start, strictPrefixCheck = false)
-            if (toggled) {
-                processInput(this)
-            }
+            toggled = BlockStyleManager.toggleCheckbox(this, effectiveSel.start, strictPrefixCheck = false)
         }
+
+        if (toggled) {
+            val result = MarkdownProcessor.process(text, selection.start)
+            val inlineSpans = _spans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
+
+            _spans.clear()
+            _spans.addAll(
+                if (result != null) {
+                    SpanManager.consolidateSpans(SpanManager.mergeSpans(inlineSpans, result.newSpans))
+                } else {
+                    SpanManager.consolidateSpans(inlineSpans)
+                }
+            )
+        }
+        selectionManager.clear()
     }
 
     /**
