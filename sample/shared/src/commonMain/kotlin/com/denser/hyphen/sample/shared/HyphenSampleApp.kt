@@ -10,7 +10,6 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -21,15 +20,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,12 +44,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -62,6 +55,8 @@ import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.state.rememberHyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
 import androidx.compose.ui.platform.LocalUriHandler
+import com.denser.hyphen.sample.shared.components.MarkdownPreviewPanel
+import com.denser.hyphen.sample.shared.components.StateInspectorPanel
 import hyphen.sample.shared.generated.resources.Res
 import hyphen.sample.shared.generated.resources.bug_report_24dp
 import hyphen.sample.shared.generated.resources.dark_mode_24dp
@@ -342,260 +337,6 @@ private fun EditorPane(
             }
         }
     }
-}
-
-@Composable
-private fun MarkdownPreviewPanel(
-    markdown: String,
-    modifier: Modifier = Modifier,
-    verticalScrollbar: VerticalScrollbarSlot?,
-) {
-    val scrollState = rememberScrollState()
-
-    Column(modifier = modifier) {
-        PanelHeader(
-            dot = MaterialTheme.colorScheme.tertiary,
-            label = "Markdown output",
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
-        ) {
-            Text(
-                text = markdown.ifEmpty { "// empty" },
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    color = if (markdown.isEmpty())
-                        MaterialTheme.colorScheme.outlineVariant
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            )
-            verticalScrollbar?.invoke(
-                scrollState,
-                Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight()
-                    .padding(vertical = 4.dp, horizontal = 2.dp),
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// State inspector panel
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-fun StateInspectorPanel(
-    state: HyphenTextState,
-    modifier: Modifier = Modifier,
-    horizontal: Boolean = false,
-    verticalScrollbar: VerticalScrollbarSlot? = null,
-) {
-    val selectionGroup = @Composable {
-        InspectorGroup(title = "Selection") {
-            val sel = state.selection
-            InspectorRow(
-                "index",
-                if (sel.collapsed) "@ ${sel.start}" else "${sel.start}..${sel.end}",
-            )
-            InspectorRow("active", state.isFocused.toString(), accent = state.isFocused)
-        }
-    }
-
-    val historyGroup = @Composable {
-        InspectorGroup(title = "History Stack") {
-            InspectorRow("undoable", state.canUndo.toString(), accent = state.canUndo)
-            InspectorRow("redoable", state.canRedo.toString(), accent = state.canRedo)
-        }
-    }
-
-    val statsGroup = @Composable {
-        InspectorGroup(title = "Document Stats") {
-            InspectorRow("chars", state.text.length.toString())
-            InspectorRow("spans", state.spans.size.toString(), accent = state.spans.isNotEmpty())
-        }
-    }
-
-    val scrollState = rememberScrollState()
-
-    Column(modifier = modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) {
-        PanelHeader(
-            dot = MaterialTheme.colorScheme.primary,
-            label = "State Inspector",
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (horizontal) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Box(Modifier.weight(1f)) { selectionGroup() }
-                        Box(Modifier.weight(1f)) { historyGroup() }
-                    }
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Box(Modifier.weight(1f)) { statsGroup() }
-                    }
-                } else {
-                    selectionGroup()
-                    historyGroup()
-                    statsGroup()
-                }
-                ActiveSpansList(state)
-                Spacer(Modifier.height(4.dp))
-            }
-            verticalScrollbar?.invoke(
-                scrollState,
-                Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight()
-                    .padding(vertical = 4.dp, horizontal = 2.dp),
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared panel header
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun PanelHeader(
-    dot: Color,
-    label: String,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(CircleShape)
-                .background(dot),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontFamily = FontFamily.Monospace,
-        )
-    }
-}
-
-@Composable
-private fun ActiveSpansList(state: HyphenTextState) {
-    InspectorGroup(title = "Live Spans (${state.spans.size})") {
-        if (state.spans.isEmpty()) InspectorEmptyHint("no formatting")
-        else {
-            state.spans.take(40).forEach { span ->
-                InspectorRow(span.style.toString().split(".").last(), "${span.start}..${span.end}")
-            }
-            if (state.spans.size > 40) InspectorEmptyHint("+ ${state.spans.size - 40} more")
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Inspector primitives
-// ─────────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun InspectorGroup(
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .widthIn(min = 200.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            letterSpacing = 0.4.sp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            content()
-        }
-    }
-}
-
-@Composable
-private fun InspectorRow(
-    key: String,
-    value: String,
-    accent: Boolean = false,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = key,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.weight(1f),
-        )
-        Spacer(Modifier.width(8.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.labelSmall.copy(
-                color = if (accent)
-                    MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = if (accent) FontWeight.SemiBold else FontWeight.Normal,
-            ),
-        )
-    }
-}
-
-@Composable
-private fun InspectorEmptyHint(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.outlineVariant,
-        fontFamily = FontFamily.Monospace,
-        modifier = Modifier.padding(vertical = 2.dp),
-    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
