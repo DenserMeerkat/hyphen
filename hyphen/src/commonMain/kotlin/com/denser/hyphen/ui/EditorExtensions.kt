@@ -148,18 +148,12 @@ internal fun applyMarkdownStyles(
 
                 is MarkupStyle.CheckboxUnchecked -> {
                     val prefixEnd = (safeStart + 6).coerceAtMost(safeEnd)
-                    if (prefixEnd - safeStart == 6) {
-                        buffer.replace(safeStart, prefixEnd, "  \u2610\uFE0E  ")
-                    }
                     styleConfig.checkboxUncheckedStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
                     styleConfig.checkboxUncheckedStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
                 }
 
                 is MarkupStyle.CheckboxChecked -> {
                     val prefixEnd = (safeStart + 6).coerceAtMost(safeEnd)
-                    if (prefixEnd - safeStart == 6) {
-                        buffer.replace(safeStart, prefixEnd, "  \u25A0\uFE0E  ")
-                    }
                     styleConfig.checkboxCheckedStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
                     styleConfig.checkboxCheckedStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
                 }

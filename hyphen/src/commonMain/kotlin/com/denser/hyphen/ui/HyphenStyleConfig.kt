@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.sp
  * ```
  *
  * @property prefixStyle [SpanStyle] applied to the marker portion of the list item —
- *   the bullet (`-`), number (`1.`), or checkbox symbol (`☐` / `■`). Defaults to
+ *   the bullet (`-`), number (`1.`), or raw checkbox syntax (`- [ ] ` / `- [x] `). Defaults to
  *   `null`, which inherits the base [androidx.compose.ui.text.TextStyle] set on the editor.
  * @property contentStyle [SpanStyle] applied to the text content after the marker.
  *   Defaults to `null`, which inherits the base [androidx.compose.ui.text.TextStyle]
@@ -103,10 +103,10 @@ data class ListItemStyle(
  *   the number and period (e.g. `1.`); [ListItemStyle.contentStyle] is applied to the text
  *   that follows.
  * @property checkboxUncheckedStyle [ListItemStyle] controlling the visual appearance of
- *   unchecked checkbox items (`☐`). [ListItemStyle.prefixStyle] is applied to the symbol;
+ *   unchecked checkbox items (`- [ ]`). [ListItemStyle.prefixStyle] is applied to the symbol;
  *   [ListItemStyle.contentStyle] is applied to the label text.
  * @property checkboxCheckedStyle [ListItemStyle] controlling the visual appearance of
- *   checked checkbox items (`■`). [ListItemStyle.prefixStyle] is applied to the symbol;
+ *   checked checkbox items (`- [x]`). [ListItemStyle.prefixStyle] is applied to the symbol;
  *   [ListItemStyle.contentStyle] is applied to the label text. A common pattern is to set
  *   `contentStyle = SpanStyle(textDecoration = TextDecoration.LineThrough, color = Color.Gray)`
  *   to visually strike through completed items.

@@ -42,13 +42,13 @@ internal object MarkdownConstants {
 
     // - [ ] or * [ ] at line start
     val CHECKBOX_UNCHECKED_REGEX = Regex(
-        pattern = """^[\-*] \[\s] (.*?)$""",
+        pattern = """^[\-*] \[\s\] (.*?)$""",
         option = RegexOption.MULTILINE
     )
 
     // - [x] or * [X] at line start
     val CHECKBOX_CHECKED_REGEX = Regex(
-        pattern = """^[\-*] \[[xX]] (.*?)$""",
+        pattern = """^[\-*] \[[xX]\] (.*?)$""",
         option = RegexOption.MULTILINE
     )
 
