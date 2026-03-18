@@ -31,7 +31,18 @@ internal fun handleHardwareKeyEvent(
     val isAlt = event.isAltPressed
 
     return when {
-        event.key == Key.Enter -> {
+        isPrimaryModifier && !isShift && !isAlt && event.key == Key.Enter -> {
+            var consumed = false
+            state.textFieldState.edit {
+                val toggled = BlockStyleManager.toggleCheckbox(this, selection.start, strictPrefixCheck = false)
+                if (toggled) {
+                    state.processInput(this)
+                    consumed = true
+                }
+            }
+            consumed
+        }
+        event.key == Key.Enter && !isPrimaryModifier && !isShift && !isAlt -> {
             var consumed = false
             state.textFieldState.edit {
                 val handled = BlockStyleManager.handleSmartEnter(state, this)
@@ -118,11 +129,41 @@ internal fun applyMarkdownStyles(
                 is MarkupStyle.Strikethrough -> addStyle(styleConfig.strikethroughStyle, safeStart, safeEnd)
                 is MarkupStyle.Highlight -> addStyle(styleConfig.highlightStyle, safeStart, safeEnd)
                 is MarkupStyle.InlineCode -> addStyle(styleConfig.inlineCodeStyle, safeStart, safeEnd)
-                is MarkupStyle.BulletList -> {}
-                is MarkupStyle.OrderedList -> {}
                 is MarkupStyle.Blockquote -> addStyle(styleConfig.blockquoteSpanStyle, safeStart, safeEnd)
-                is MarkupStyle.CheckboxUnchecked -> {}
-                is MarkupStyle.CheckboxChecked -> {}
+
+                is MarkupStyle.BulletList -> {
+                    val prefixEnd = (safeStart + 2).coerceAtMost(safeEnd)
+                    styleConfig.bulletListStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
+                    styleConfig.bulletListStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                }
+
+                is MarkupStyle.OrderedList -> {
+                    val lineText = asCharSequence().substring(safeStart, safeEnd)
+                    val dotIndex = lineText.indexOf('.')
+                    val prefixLen = if (dotIndex != -1) (dotIndex + 2).coerceAtMost(lineText.length) else 3
+                    val prefixEnd = (safeStart + prefixLen).coerceAtMost(safeEnd)
+                    styleConfig.orderedListStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
+                    styleConfig.orderedListStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                }
+
+                is MarkupStyle.CheckboxUnchecked -> {
+                    val prefixEnd = (safeStart + 6).coerceAtMost(safeEnd)
+                    if (prefixEnd - safeStart == 6) {
+                        buffer.replace(safeStart, prefixEnd, "  \u2610\uFE0E  ")
+                    }
+                    styleConfig.checkboxUncheckedStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
+                    styleConfig.checkboxUncheckedStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                }
+
+                is MarkupStyle.CheckboxChecked -> {
+                    val prefixEnd = (safeStart + 6).coerceAtMost(safeEnd)
+                    if (prefixEnd - safeStart == 6) {
+                        buffer.replace(safeStart, prefixEnd, "  \u25A0\uFE0E  ")
+                    }
+                    styleConfig.checkboxCheckedStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
+                    styleConfig.checkboxCheckedStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                }
+
                 is MarkupStyle.H1 -> addStyle(styleConfig.h1Style, safeStart, safeEnd)
                 is MarkupStyle.H2 -> addStyle(styleConfig.h2Style, safeStart, safeEnd)
                 is MarkupStyle.H3 -> addStyle(styleConfig.h3Style, safeStart, safeEnd)

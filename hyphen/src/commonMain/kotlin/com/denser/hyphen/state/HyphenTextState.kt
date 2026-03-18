@@ -327,6 +327,19 @@ class HyphenTextState(
     }
 
     /**
+     * Toggles the checked/unchecked state of a checkbox on the current line.
+     * Does nothing if the current line does not contain a checkbox.
+     */
+    fun toggleCheckboxAtCursor() {
+        textFieldState.edit {
+            val toggled = BlockStyleManager.toggleCheckbox(this, selection.start, strictPrefixCheck = false)
+            if (toggled) {
+                processInput(this)
+            }
+        }
+    }
+
+    /**
      * Removes all inline formatting from the current selection.
      *
      * - **With a selection**: every [MarkupStyleRange] overlapping the selected range is

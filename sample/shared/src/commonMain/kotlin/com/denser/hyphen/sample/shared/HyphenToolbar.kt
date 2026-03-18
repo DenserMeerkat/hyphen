@@ -29,6 +29,8 @@ import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.state.HyphenTextState
 import org.jetbrains.compose.resources.DrawableResource
 import hyphen.sample.shared.generated.resources.Res
+import hyphen.sample.shared.generated.resources.check_box_24dp
+import hyphen.sample.shared.generated.resources.checklist_24dp
 import hyphen.sample.shared.generated.resources.code_24dp
 import hyphen.sample.shared.generated.resources.format_bold_24dp
 import hyphen.sample.shared.generated.resources.format_ink_highlighter_24dp
@@ -170,6 +172,22 @@ fun HyphenToolbar(
                     isActive = state.hasStyle(MarkupStyle.OrderedList),
                     onClick = { state.toggleStyle(MarkupStyle.OrderedList) }
                 )
+
+                FormatToggleButton(
+                    icon = Res.drawable.checklist_24dp,
+                    contentDescription = "Task List",
+                    isActive = state.hasStyle(MarkupStyle.CheckboxUnchecked) || state.hasStyle(MarkupStyle.CheckboxChecked),
+                    onClick = { state.toggleStyle(MarkupStyle.CheckboxUnchecked) }
+                )
+
+                FormatToggleButton(
+                    icon = Res.drawable.check_box_24dp,
+                    contentDescription = "Mark as Done",
+                    isActive = state.hasStyle(MarkupStyle.CheckboxChecked),
+                    onClick = { state.toggleCheckboxAtCursor() },
+                    enabled = state.hasStyle(MarkupStyle.CheckboxUnchecked) || state.hasStyle(MarkupStyle.CheckboxChecked),
+                )
+
                 Spacer(Modifier.width(4.dp))
             }
         }
@@ -220,7 +238,8 @@ private fun FormatToggleButton(
     isActive: Boolean,
     onClick: () -> Unit,
     icon: DrawableResource,
-    contentDescription: String? = null
+    contentDescription: String? = null,
+    enabled: Boolean = true,
 ) {
     IconToggleButton(
         checked = isActive,
@@ -228,6 +247,7 @@ private fun FormatToggleButton(
         modifier = Modifier
             .size(40.dp)
             .focusProperties { canFocus = false },
+        enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         colors = IconButtonDefaults.iconToggleButtonColors(
             checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,

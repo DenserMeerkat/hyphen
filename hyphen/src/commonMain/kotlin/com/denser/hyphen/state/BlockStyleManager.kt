@@ -23,7 +23,11 @@ internal object BlockStyleManager {
         val lineText = text.substring(lineStart, lineEnd)
 
         return when (style) {
-            is MarkupStyle.BulletList -> MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText)
+            is MarkupStyle.CheckboxUnchecked -> MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText)
+            is MarkupStyle.CheckboxChecked -> MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)
+            is MarkupStyle.BulletList -> MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText) &&
+                    !MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText) &&
+                    !MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)
             is MarkupStyle.OrderedList -> MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)
             is MarkupStyle.Blockquote -> MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText)
             else -> false
@@ -91,6 +95,8 @@ internal object BlockStyleManager {
             is MarkupStyle.BulletList -> "- "
             is MarkupStyle.OrderedList -> "1. "
             is MarkupStyle.Blockquote -> "> "
+            is MarkupStyle.CheckboxUnchecked -> "- [ ] "
+            is MarkupStyle.CheckboxChecked -> "- [x] "
             else -> return spans
         }
 
@@ -119,6 +125,9 @@ internal object BlockStyleManager {
         val firstLineText = bufferText.substring(lineStarts.first(), firstLineEnd)
 
         val isRemoving = when (style) {
+            is MarkupStyle.CheckboxUnchecked, is MarkupStyle.CheckboxChecked ->
+                MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(firstLineText) ||
+                        MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(firstLineText)
             is MarkupStyle.OrderedList -> MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(firstLineText)
             is MarkupStyle.BulletList -> MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(firstLineText)
             is MarkupStyle.Blockquote -> MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(firstLineText)
@@ -135,6 +144,8 @@ internal object BlockStyleManager {
             var existingPrefixLen = 0
             if (MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)) {
                 existingPrefixLen = lineText.indexOf('.') + 2
+            } else if (MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText) || MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)) {
+                existingPrefixLen = 6
             } else if (MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText)) {
                 existingPrefixLen = 2
             } else if (MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText)) {
@@ -143,6 +154,9 @@ internal object BlockStyleManager {
 
             if (isRemoving) {
                 val matchTarget = when (style) {
+                    is MarkupStyle.CheckboxUnchecked, is MarkupStyle.CheckboxChecked ->
+                        MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText) ||
+                                MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)
                     is MarkupStyle.OrderedList -> MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)
                     is MarkupStyle.BulletList -> MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText)
                     is MarkupStyle.Blockquote -> MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText)
@@ -197,5 +211,29 @@ internal object BlockStyleManager {
             }
         }
         return currentSpans
+    }
+
+    fun toggleCheckbox(buffer: TextFieldBuffer, offset: Int, strictPrefixCheck: Boolean): Boolean {
+        val bufferText = buffer.asCharSequence()
+        if (offset < 0 || offset > bufferText.length) return false
+
+        val lastNewline = bufferText.lastIndexOf('\n', (offset - 1).coerceAtLeast(0))
+        val lineStart = if (lastNewline == -1) 0 else lastNewline + 1
+        val lineEnd = bufferText.indexOf('\n', lineStart).let { if (it == -1) buffer.length else it }
+        val lineText = bufferText.substring(lineStart, lineEnd)
+
+        val isInPrefix = offset >= lineStart && offset <= lineStart + 6
+
+        if (!strictPrefixCheck || isInPrefix) {
+            if (MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText)) {
+                buffer.replace(lineStart, lineStart + 6, "- [x] ")
+                return true
+            }
+            if (MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)) {
+                buffer.replace(lineStart, lineStart + 6, "- [ ] ")
+                return true
+            }
+        }
+        return false
     }
 }
