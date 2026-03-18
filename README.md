@@ -35,23 +35,25 @@
 
 Type Markdown syntax directly and watch it convert as you write — no mode switching, no preview pane required.
 
-| Syntax                  | Style             |
-| ----------------------- | ----------------- |
-| `**text**`              | **Bold**          |
-| `*text*`                | _Italic_          |
-| `__text__`              | Underline         |
-| `` `text` ``            | `Inline code`     |
-| `~~text~~`              | ~~Strikethrough~~ |
-| `==text==`              | Highlight         |
-| `# ` at line start      | Heading 1         |
-| `## ` at line start     | Heading 2         |
-| `### ` at line start    | Heading 3         |
-| `#### ` at line start   | Heading 4         |
-| `##### ` at line start  | Heading 5         |
-| `###### ` at line start | Heading 6         |
-| `- ` at line start      | Bullet list       |
-| `1. ` at line start     | Ordered list      |
-| `> ` at line start      | Blockquote        |
+| Syntax                  | Style                |
+| ----------------------- | -------------------- |
+| `**text**`              | **Bold**             |
+| `*text*`                | _Italic_             |
+| `__text__`              | Underline            |
+| `` `text` ``            | `Inline code`        |
+| `~~text~~`              | ~~Strikethrough~~    |
+| `==text==`              | Highlight            |
+| `# ` at line start      | Heading 1            |
+| `## ` at line start     | Heading 2            |
+| `### ` at line start    | Heading 3            |
+| `#### ` at line start   | Heading 4            |
+| `##### ` at line start  | Heading 5            |
+| `###### ` at line start | Heading 6            |
+| `- ` at line start      | Bullet list          |
+| `1. ` at line start     | Ordered list         |
+| `> ` at line start      | Blockquote           |
+| `- [ ] ` at line start  | Checkbox (unchecked) |
+| `- [x] ` at line start  | Checkbox (checked)   |
 
 ### 📋 Markdown Clipboard
 
@@ -61,25 +63,26 @@ Cut, copy, and paste all work across Android, Desktop, and Web. Copying a select
 
 Full hardware keyboard support on Desktop and Web:
 
-| Shortcut                 | Action                        |
-| ------------------------ | ----------------------------- |
-| `Ctrl / Cmd + B`         | Toggle bold                   |
-| `Ctrl / Cmd + I`         | Toggle italic                 |
-| `Ctrl / Cmd + U`         | Toggle underline              |
-| `Ctrl / Cmd + Shift + S` | Toggle strikethrough          |
-| `Ctrl / Cmd + Shift + X` | Toggle strikethrough          |
-| `Ctrl / Cmd + Alt + X`   | Toggle strikethrough          |
-| `Ctrl / Cmd + Shift + H` | Toggle highlight              |
-| `Ctrl / Cmd + Space`     | Clear all styles on selection |
-| `Ctrl / Cmd + 1`         | Toggle Heading 1              |
-| `Ctrl / Cmd + 2`         | Toggle Heading 2              |
-| `Ctrl / Cmd + 3`         | Toggle Heading 3              |
-| `Ctrl / Cmd + 4`         | Toggle Heading 4              |
-| `Ctrl / Cmd + 5`         | Toggle Heading 5              |
-| `Ctrl / Cmd + 6`         | Toggle Heading 6              |
-| `Ctrl / Cmd + Z`         | Undo                          |
-| `Ctrl / Cmd + Y`         | Redo                          |
-| `Ctrl / Cmd + Shift + Z` | Redo                          |
+| Shortcut                 | Action                            |
+| ------------------------ | --------------------------------- |
+| `Ctrl / Cmd + B`         | Toggle bold                       |
+| `Ctrl / Cmd + I`         | Toggle italic                     |
+| `Ctrl / Cmd + U`         | Toggle underline                  |
+| `Ctrl / Cmd + Shift + S` | Toggle strikethrough              |
+| `Ctrl / Cmd + Shift + X` | Toggle strikethrough              |
+| `Ctrl / Cmd + Alt + X`   | Toggle strikethrough              |
+| `Ctrl / Cmd + Shift + H` | Toggle highlight                  |
+| `Ctrl / Cmd + Space`     | Clear all styles on selection     |
+| `Ctrl / Cmd + 1`         | Toggle Heading 1                  |
+| `Ctrl / Cmd + 2`         | Toggle Heading 2                  |
+| `Ctrl / Cmd + 3`         | Toggle Heading 3                  |
+| `Ctrl / Cmd + 4`         | Toggle Heading 4                  |
+| `Ctrl / Cmd + 5`         | Toggle Heading 5                  |
+| `Ctrl / Cmd + 6`         | Toggle Heading 6                  |
+| `Ctrl / Cmd + Enter`     | Toggle checkbox checked/unchecked |
+| `Ctrl / Cmd + Z`         | Undo                              |
+| `Ctrl / Cmd + Y`         | Redo                              |
+| `Ctrl / Cmd + Shift + Z` | Redo                              |
 
 ### ↩️ Undo / Redo History
 
@@ -101,7 +104,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.2.0-alpha01"
+hyphen = "0.3.0-alpha01"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -130,7 +133,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.2.0-alpha01")
+            implementation("io.github.densermeerkat:hyphen:0.3.0-alpha01")
         }
     }
 }
@@ -317,21 +320,25 @@ viewModelScope.launch {
 
 ### `HyphenStyleConfig`
 
-| Property              | Default                            |
-| --------------------- | ---------------------------------- |
-| `boldStyle`           | `FontWeight.Bold`                  |
-| `italicStyle`         | `FontStyle.Italic`                 |
-| `underlineStyle`      | `TextDecoration.Underline`         |
-| `strikethroughStyle`  | `TextDecoration.LineThrough`       |
-| `highlightStyle`      | Semi-transparent yellow background |
-| `inlineCodeStyle`     | Monospace, light grey background   |
-| `blockquoteSpanStyle` | Italic, grey, faint background     |
-| `h1Style`             | `24.sp`, `FontWeight.Bold`         |
-| `h2Style`             | `22.sp`, `FontWeight.Bold`         |
-| `h3Style`             | `20.sp`, `FontWeight.Bold`         |
-| `h4Style`             | `18.sp`, `FontWeight.Bold`         |
-| `h5Style`             | `17.sp`, `FontWeight.Bold`         |
-| `h6Style`             | `16.sp`, `FontWeight.Bold`         |
+| Property                 | Default                            |
+| ------------------------ | ---------------------------------- |
+| `boldStyle`              | `FontWeight.Bold`                  |
+| `italicStyle`            | `FontStyle.Italic`                 |
+| `underlineStyle`         | `TextDecoration.Underline`         |
+| `strikethroughStyle`     | `TextDecoration.LineThrough`       |
+| `highlightStyle`         | Semi-transparent yellow background |
+| `inlineCodeStyle`        | Monospace, light grey background   |
+| `blockquoteSpanStyle`    | Italic, grey, faint background     |
+| `bulletListStyle`        | `ListItemStyle()` — inherits base  |
+| `orderedListStyle`       | `ListItemStyle()` — inherits base  |
+| `checkboxUncheckedStyle` | `ListItemStyle()` — inherits base  |
+| `checkboxCheckedStyle`   | `ListItemStyle()` — inherits base  |
+| `h1Style`                | `24.sp`, `FontWeight.Bold`         |
+| `h2Style`                | `22.sp`, `FontWeight.Bold`         |
+| `h3Style`                | `20.sp`, `FontWeight.Bold`         |
+| `h4Style`                | `18.sp`, `FontWeight.Bold`         |
+| `h5Style`                | `17.sp`, `FontWeight.Bold`         |
+| `h6Style`                | `16.sp`, `FontWeight.Bold`         |
 
 ### `MarkupStyle`
 
@@ -356,6 +363,29 @@ MarkupStyle.H6
 MarkupStyle.BulletList
 MarkupStyle.OrderedList
 MarkupStyle.Blockquote
+MarkupStyle.CheckboxUnchecked
+MarkupStyle.CheckboxChecked
+```
+
+### `ListItemStyle`
+
+Controls the prefix marker and content text of a list item independently. Used by `bulletListStyle`, `orderedListStyle`, `checkboxUncheckedStyle`, and `checkboxCheckedStyle` on `HyphenStyleConfig`.
+
+| Property       | Type         | Default | Description                                          |
+| -------------- | ------------ | ------- |------------------------------------------------------|
+| `prefixStyle`  | `SpanStyle?` | `null`  | Applied to the marker (`-`, `1.`, `- [ ]`, `- [x]`). |
+| `contentStyle` | `SpanStyle?` | `null`  | Applied to the text after the marker.                |
+
+A common pattern for checked items:
+
+```kotlin
+checkboxCheckedStyle = ListItemStyle(
+    prefixStyle = SpanStyle(color = MaterialTheme.colorScheme.primary),
+    contentStyle = SpanStyle(
+        textDecoration = TextDecoration.LineThrough,
+        color = Color.Gray,
+    ),
+)
 ```
 
 ---

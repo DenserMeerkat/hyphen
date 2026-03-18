@@ -49,12 +49,14 @@ import com.denser.hyphen.state.HyphenTextState
  * | Ctrl/Cmd + Space | Clear all styles on selection |
  * | Ctrl/Cmd + Shift + S / X | Toggle strikethrough |
  * | Ctrl/Cmd + Shift + H | Toggle highlight |
- * | Enter (inside list/quote) | Smart continuation or exit |
- * | Ctrl/Cmd + [1-6] | Toggle Heading 1-6 |
+ * | Ctrl/Cmd + [1–6] | Toggle Heading 1–6 |
+ * | Ctrl/Cmd + Enter | Toggle checkbox checked / unchecked |
+ * | Ctrl/Cmd + Z | Undo |
+ * | Ctrl/Cmd + Y / Shift + Z | Redo |
  *
  * **Clipboard**
  *
- * Copy operations serialize the selected range to Markdown via [HyphenTextState.toMarkdown],
+ * Cut, copy operations serialize the selected range to Markdown via [HyphenTextState.toMarkdown],
  * so pasting into another Markdown-aware editor preserves formatting.
  *
  * @param state The [HyphenTextState] that holds text content, spans, selection, and undo/redo

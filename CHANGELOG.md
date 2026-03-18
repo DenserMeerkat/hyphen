@@ -1,3 +1,16 @@
+## [0.3.0-alpha01] - 2026-03-18
+
+### ✨ Added
+* **Task Lists:** Added support for Markdown checkboxes (`- [ ]` and `- [x]`).
+* **List Item Styling:** Introduced `ListItemStyle` to independently style list markers (bullets, numbers, checkboxes) and their content.
+* **Shortcut:** Added `Ctrl/Cmd + Enter` shortcut to toggle checkbox states.
+
+### 🛠️ Fixed
+* **Style Boundaries & Cursor Sync:** Fixed span destruction on partial character deletion.
+* **Continuous Typing:** Enabled continuous typing inside empty tags.
+
+---
+
 ## [0.2.0-alpha01] - 2026-03-14
 
 ### ✨ Added

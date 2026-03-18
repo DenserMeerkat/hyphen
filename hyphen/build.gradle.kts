@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "io.github.densermeerkat"
-version = "0.2.0-alpha01"
+version = "0.3.0-alpha01"
 
 android {
     namespace = "com.denser.hyphen"
@@ -96,7 +96,6 @@ kotlin {
 
 publishing {
     publications.withType<MavenPublication> {
-
         val pubName = name
         val javadocJarTask = project.tasks.register("javadocJar${pubName.replaceFirstChar { it.uppercaseChar() }}", Jar::class) {
             dependsOn(project.tasks.named("dokkaGenerate"))
@@ -109,7 +108,7 @@ publishing {
 
         pom {
             name.set("Hyphen")
-            description.set("A Multiplatform WYSIWYG Markdown editor.")
+            description.set("A lightweight WYSIWYG Markdown editor for Compose Multiplatform (KMP).")
             url.set("https://github.com/DenserMeerkat/hyphen")
 
             licenses {
@@ -136,20 +135,6 @@ publishing {
         maven {
             name = "LocalTest"
             url = uri(layout.buildDirectory.dir("repo"))
-        }
-
-        maven {
-            name = "OSSRH"
-            url = uri(
-                if (version.toString().endsWith("SNAPSHOT"))
-                    "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-                else
-                    "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-            )
-            credentials {
-                username = project.findProperty("sonatypeUsername")?.toString()
-                password = project.findProperty("sonatypePassword")?.toString()
-            }
         }
     }
 }

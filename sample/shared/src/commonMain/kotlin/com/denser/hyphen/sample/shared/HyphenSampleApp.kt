@@ -620,4 +620,7 @@ private val DEMO_TEXT = """
 
     1. Ordered list item 1
     2. Ordered list item 2
+    
+    - [ ] Checklist task 1
+    - [x] Checklist task 2
 """.trimIndent()
