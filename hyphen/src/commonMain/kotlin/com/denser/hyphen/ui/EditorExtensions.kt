@@ -14,8 +14,8 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.text.TextStyle
-import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.model.StyleSets
+import com.denser.hyphen.core.model.MarkupStyle
+import com.denser.hyphen.core.model.StyleSets
 import com.denser.hyphen.state.BlockStyleManager
 import com.denser.hyphen.state.HyphenTextState
 

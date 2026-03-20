@@ -11,18 +11,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.text.TextRange
-import com.denser.hyphen.markdown.MarkdownProcessor
-import com.denser.hyphen.markdown.MarkdownSerializer
-import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.model.MarkupStyleRange
-import com.denser.hyphen.model.StyleSets
+import com.denser.hyphen.core.markdown.MarkdownProcessor
+import com.denser.hyphen.core.markdown.MarkdownSerializer
+import com.denser.hyphen.core.model.MarkupStyle
+import com.denser.hyphen.core.model.StyleRange
+import com.denser.hyphen.core.model.StyleSets
+import com.denser.hyphen.core.state.SelectionManager
+import com.denser.hyphen.core.state.SpanManager
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Hoisted state for a Hyphen markdown text editor.
  *
  * [HyphenTextState] is the single source of truth for all editor content. It holds the raw
- * plain text (stripped of Markdown syntax), the list of active [MarkupStyleRange] spans that
+ * plain text (stripped of Markdown syntax), the list of active [StyleRange] spans that
  * describe formatting, pending typing overrides, and the full undo/redo history.
  *
  * Markdown syntax entered by the user is processed by [MarkdownProcessor] and immediately
@@ -76,14 +78,14 @@ class HyphenTextState(
     /** The current cursor position or selected range within [text]. */
     val selection: TextRange get() = textFieldState.selection
 
-    private val _spans = mutableStateListOf<MarkupStyleRange>()
+    private val _spans = mutableStateListOf<StyleRange>()
 
     /**
-     * The active list of [MarkupStyleRange] entries describing all inline and block
+     * The active list of [StyleRange] entries describing all inline and block
      * formatting applied to [text]. Observed as Compose snapshot state — any composable
      * reading this list will recompose when spans change.
      */
-    val spans: List<MarkupStyleRange> get() = _spans
+    val spans: List<StyleRange> get() = _spans
 
     /**
      * Transient formatting intent for the next typed character(s).
@@ -214,7 +216,7 @@ class HyphenTextState(
         }
 
         val markdownResult = MarkdownProcessor.process(newText, cursorPosition)
-        var updatedSpans: List<MarkupStyleRange>
+        var updatedSpans: List<StyleRange>
 
         if (markdownResult != null) {
             val cleanLengthDifference = markdownResult.cleanText.length - previousText.length
@@ -359,7 +361,7 @@ class HyphenTextState(
     /**
      * Removes all inline formatting from the current selection.
      *
-     * - **With a selection**: every [MarkupStyleRange] overlapping the selected range is
+     * - **With a selection**: every [StyleRange] overlapping the selected range is
      *   trimmed or removed. Spans extending beyond the selection boundaries are preserved
      *   outside the cleared region. An undo snapshot is saved before the operation.
      * - **Without a selection (collapsed cursor)**: all active inline styles at the cursor
@@ -607,7 +609,7 @@ class HyphenTextState(
                     }
                     style -> {
                         if (span.start >= selStart && span.end <= selEnd) {
-                            val splitSpans = mutableListOf<MarkupStyleRange>()
+                            val splitSpans = mutableListOf<StyleRange>()
                             var currentS = span.start
                             while (currentS < span.end) {
                                 val nextNewline = text.indexOf('\n', currentS)

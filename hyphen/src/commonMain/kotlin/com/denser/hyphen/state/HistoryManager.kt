@@ -2,14 +2,14 @@ package com.denser.hyphen.state
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.text.TextRange
-import com.denser.hyphen.model.MarkupStyleRange
+import com.denser.hyphen.core.model.StyleRange
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
 internal data class EditorSnapshot(
     val text: String,
     val selection: TextRange,
-    val spans: List<MarkupStyleRange>
+    val spans: List<StyleRange>
 )
 
 internal class HistoryManager(

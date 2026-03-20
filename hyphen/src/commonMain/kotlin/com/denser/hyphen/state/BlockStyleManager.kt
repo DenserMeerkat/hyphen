@@ -3,10 +3,11 @@ package com.denser.hyphen.state
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.ui.text.TextRange
-import com.denser.hyphen.markdown.MarkdownConstants
-import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.model.MarkupStyleRange
-import com.denser.hyphen.model.StyleSets
+import com.denser.hyphen.core.markdown.MarkdownConstants
+import com.denser.hyphen.core.model.MarkupStyle
+import com.denser.hyphen.core.model.StyleRange
+import com.denser.hyphen.core.model.StyleSets
+import com.denser.hyphen.core.state.SpanManager
 
 internal object BlockStyleManager {
 
@@ -87,10 +88,10 @@ internal object BlockStyleManager {
 
     fun applyBlockStyle(
         buffer: TextFieldBuffer,
-        spans: List<MarkupStyleRange>,
+        spans: List<StyleRange>,
         selection: TextRange,
         style: MarkupStyle
-    ): List<MarkupStyleRange> {
+    ): List<StyleRange> {
         val prefix = when (style) {
             is MarkupStyle.BulletList -> "- "
             is MarkupStyle.OrderedList -> "1. "

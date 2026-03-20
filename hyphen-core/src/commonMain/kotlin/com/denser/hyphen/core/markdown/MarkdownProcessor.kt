@@ -1,21 +1,34 @@
-package com.denser.hyphen.markdown
+package com.denser.hyphen.core.markdown
 
-import com.denser.hyphen.state.SpanManager
-import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.model.MarkupStyleRange
+import com.denser.hyphen.core.model.MarkupStyle
+import com.denser.hyphen.core.model.StyleRange
+import com.denser.hyphen.core.state.SpanManager
 
-internal object MarkdownProcessor {
+/**
+ * Detects and strips Markdown syntax from raw text, returning clean text and
+ * a list of [StyleRange] spans.
+ */
+object MarkdownProcessor {
 
     data class ProcessResult(
         val cleanText: String,
-        val newSpans: List<MarkupStyleRange>,
+        val newSpans: List<StyleRange>,
         val newCursorPosition: Int,
         val explicitlyClosedStyles: Set<MarkupStyle> = emptySet(),
     )
 
-    fun process(rawText: String, cursorPosition: Int): ProcessResult? {
+    /**
+     * @param inlineOnly When `true`, only inline rules are applied.
+     * @return A [ProcessResult] if any Markdown was detected and stripped,
+     *   or `null` if the text required no changes.
+     */
+    fun process(
+        rawText: String,
+        cursorPosition: Int,
+        inlineOnly: Boolean = false,
+    ): ProcessResult? {
         var processedText = rawText
-        var extractedSpans = listOf<MarkupStyleRange>()
+        var extractedSpans = listOf<StyleRange>()
         var currentCursor = cursorPosition
         var hasChanges = false
         val closedStyles = mutableSetOf<MarkupStyle>()
@@ -26,7 +39,7 @@ internal object MarkdownProcessor {
             getPrefixRemoved: (MatchResult) -> Int,
             getSuffixRemoved: (MatchResult) -> Int = { 0 },
             getPrefixAdded: (MatchResult) -> String = { "" },
-            getSuffixAdded: (MatchResult) -> String = { "" }
+            getSuffixAdded: (MatchResult) -> String = { "" },
         ) {
             var match = regex.find(processedText)
 
@@ -47,7 +60,7 @@ internal object MarkdownProcessor {
                 if (transformedContent == match.value) {
                     hasChanges = true
                     val spanEnd = startIndex + transformedContent.length
-                    extractedSpans = extractedSpans + MarkupStyleRange(style, startIndex, spanEnd)
+                    extractedSpans = extractedSpans + StyleRange(style, startIndex, spanEnd)
                     match = regex.find(processedText, match.range.last + 1)
                     continue
                 }
@@ -85,7 +98,7 @@ internal object MarkdownProcessor {
                 processedText = processedText.replaceRange(match.range, transformedContent)
 
                 val spanEnd = startIndex + transformedContent.length
-                extractedSpans = extractedSpans + MarkupStyleRange(style, startIndex, spanEnd)
+                extractedSpans = extractedSpans + StyleRange(style, startIndex, spanEnd)
 
                 match = regex.find(processedText)
             }
@@ -99,44 +112,44 @@ internal object MarkdownProcessor {
         applyRule(MarkdownConstants.ITALIC_ASTERISK_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
         applyRule(MarkdownConstants.ITALIC_UNDERSCORE_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
 
-        applyRule(
-            MarkdownConstants.CHECKBOX_UNCHECKED_REGEX,
-            MarkupStyle.CheckboxUnchecked,
-            getPrefixRemoved = { 6 },
-            getPrefixAdded = { match -> match.value.substring(0, 6) }
-        )
-        applyRule(
-            MarkdownConstants.CHECKBOX_CHECKED_REGEX,
-            MarkupStyle.CheckboxChecked,
-            getPrefixRemoved = { 6 },
-            getPrefixAdded = { match -> match.value.substring(0, 6) }
-        )
-
-        applyRule(
-            MarkdownConstants.BULLET_LIST_REGEX,
-            MarkupStyle.BulletList,
-            getPrefixRemoved = { 2 },
-            getPrefixAdded = { match -> match.value.substring(0, 2) }
-        )
-        applyRule(
-            MarkdownConstants.BLOCKQUOTE_REGEX,
-            MarkupStyle.Blockquote,
-            getPrefixRemoved = { 2 },
-            getPrefixAdded = { match -> match.value.substring(0, 2) }
-        )
-        applyRule(
-            MarkdownConstants.ORDERED_LIST_REGEX,
-            MarkupStyle.OrderedList,
-            getPrefixRemoved = { match -> match.value.indexOf('.') + 2 },
-            getPrefixAdded = { match -> match.value.substring(0, match.value.indexOf('.') + 2) }
-        )
-
-        applyRule(MarkdownConstants.H1_REGEX, MarkupStyle.H1, getPrefixRemoved = { 2 })
-        applyRule(MarkdownConstants.H2_REGEX, MarkupStyle.H2, getPrefixRemoved = { 3 })
-        applyRule(MarkdownConstants.H3_REGEX, MarkupStyle.H3, getPrefixRemoved = { 4 })
-        applyRule(MarkdownConstants.H4_REGEX, MarkupStyle.H4, getPrefixRemoved = { 5 })
-        applyRule(MarkdownConstants.H5_REGEX, MarkupStyle.H5, getPrefixRemoved = { 6 })
-        applyRule(MarkdownConstants.H6_REGEX, MarkupStyle.H6, getPrefixRemoved = { 7 })
+        if (!inlineOnly) {
+            applyRule(
+                MarkdownConstants.CHECKBOX_UNCHECKED_REGEX,
+                MarkupStyle.CheckboxUnchecked,
+                getPrefixRemoved = { 6 },
+                getPrefixAdded = { match -> match.value.substring(0, 6) },
+            )
+            applyRule(
+                MarkdownConstants.CHECKBOX_CHECKED_REGEX,
+                MarkupStyle.CheckboxChecked,
+                getPrefixRemoved = { 6 },
+                getPrefixAdded = { match -> match.value.substring(0, 6) },
+            )
+            applyRule(
+                MarkdownConstants.BULLET_LIST_REGEX,
+                MarkupStyle.BulletList,
+                getPrefixRemoved = { 2 },
+                getPrefixAdded = { match -> match.value.substring(0, 2) },
+            )
+            applyRule(
+                MarkdownConstants.BLOCKQUOTE_REGEX,
+                MarkupStyle.Blockquote,
+                getPrefixRemoved = { 2 },
+                getPrefixAdded = { match -> match.value.substring(0, 2) },
+            )
+            applyRule(
+                MarkdownConstants.ORDERED_LIST_REGEX,
+                MarkupStyle.OrderedList,
+                getPrefixRemoved = { match -> match.value.indexOf('.') + 2 },
+                getPrefixAdded = { match -> match.value.substring(0, match.value.indexOf('.') + 2) },
+            )
+            applyRule(MarkdownConstants.H1_REGEX, MarkupStyle.H1, getPrefixRemoved = { 2 })
+            applyRule(MarkdownConstants.H2_REGEX, MarkupStyle.H2, getPrefixRemoved = { 3 })
+            applyRule(MarkdownConstants.H3_REGEX, MarkupStyle.H3, getPrefixRemoved = { 4 })
+            applyRule(MarkdownConstants.H4_REGEX, MarkupStyle.H4, getPrefixRemoved = { 5 })
+            applyRule(MarkdownConstants.H5_REGEX, MarkupStyle.H5, getPrefixRemoved = { 6 })
+            applyRule(MarkdownConstants.H6_REGEX, MarkupStyle.H6, getPrefixRemoved = { 7 })
+        }
 
         if (!hasChanges) return null
 
@@ -144,7 +157,7 @@ internal object MarkdownProcessor {
             cleanText = processedText,
             newSpans = extractedSpans,
             newCursorPosition = currentCursor,
-            explicitlyClosedStyles = closedStyles
+            explicitlyClosedStyles = closedStyles,
         )
     }
 }

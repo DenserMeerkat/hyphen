@@ -1,8 +1,8 @@
-package com.denser.hyphen.markdown
+package com.denser.hyphen.core.markdown
 
-import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.model.MarkupStyleRange
-import com.denser.hyphen.model.StyleSets
+import com.denser.hyphen.core.model.MarkupStyle
+import com.denser.hyphen.core.model.StyleRange
+import com.denser.hyphen.core.model.StyleSets
 
 object MarkdownSerializer {
     private data class Insertion(
@@ -24,7 +24,7 @@ object MarkdownSerializer {
         else -> 100
     }
 
-    fun serialize(text: String, spans: List<MarkupStyleRange>, start: Int, end: Int): String {
+    fun serialize(text: String, spans: List<StyleRange>, start: Int, end: Int): String {
         if (start >= end) return ""
 
         val safeStart = start.coerceIn(0, text.length)
@@ -36,7 +36,7 @@ object MarkdownSerializer {
             val intersectEnd = minOf(safeEnd, span.end)
 
             if (intersectStart < intersectEnd) {
-                MarkupStyleRange(
+                StyleRange(
                     style = span.style,
                     start = intersectStart - safeStart,
                     end = intersectEnd - safeStart
@@ -47,7 +47,7 @@ object MarkdownSerializer {
         return serialize(selectedText, selectedSpans)
     }
 
-    fun serialize(text: String, spans: List<MarkupStyleRange>): String {
+    fun serialize(text: String, spans: List<StyleRange>): String {
         val builder = StringBuilder(text)
         val insertions = mutableListOf<Insertion>()
 

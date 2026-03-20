@@ -25,7 +25,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
-import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.core.model.MarkupStyle
 import com.denser.hyphen.state.HyphenTextState
 import org.jetbrains.compose.resources.DrawableResource
 import hyphen.sample.shared.generated.resources.Res

@@ -1,6 +1,10 @@
-package com.denser.hyphen.markdown
+package com.denser.hyphen.core.markdown
 
-internal object MarkdownConstants {
+/**
+ * Regex patterns for all Markdown syntax recognised by the Hyphen editor family.
+ */
+object MarkdownConstants {
+
     // **text**
     val BOLD_REGEX = Regex("\\*\\*(?!\\s)(.+?)\\*\\*")
 
@@ -25,66 +29,66 @@ internal object MarkdownConstants {
     // -, *, or • at line start
     val BULLET_LIST_REGEX = Regex(
         pattern = """^[\-*•] (.*?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // 1. at line start
     val ORDERED_LIST_REGEX = Regex(
         pattern = """^\d+\. (.*?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // > or ┃ at line start
     val BLOCKQUOTE_REGEX = Regex(
         pattern = """^[>┃] (.*?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // - [ ] or * [ ] at line start
     val CHECKBOX_UNCHECKED_REGEX = Regex(
         pattern = """^[\-*] \[\s\] (.*?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // - [x] or * [X] at line start
     val CHECKBOX_CHECKED_REGEX = Regex(
         pattern = """^[\-*] \[[xX]\] (.*?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // # Heading 1
     val H1_REGEX = Regex(
         pattern = """^# (.+?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // ## Heading 2
     val H2_REGEX = Regex(
         pattern = """^## (.+?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // ### Heading 3
     val H3_REGEX = Regex(
         pattern = """^### (.+?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // #### Heading 4
     val H4_REGEX = Regex(
         pattern = """^#### (.+?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // ##### Heading 5
     val H5_REGEX = Regex(
         pattern = """^##### (.+?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 
     // ###### Heading 6
     val H6_REGEX = Regex(
         pattern = """^###### (.+?)$""",
-        option = RegexOption.MULTILINE
+        option = RegexOption.MULTILINE,
     )
 }

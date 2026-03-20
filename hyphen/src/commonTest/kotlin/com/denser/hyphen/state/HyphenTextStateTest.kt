@@ -1,7 +1,7 @@
 package com.denser.hyphen.state
 
 import androidx.compose.ui.text.TextRange
-import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.core.model.MarkupStyle
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue

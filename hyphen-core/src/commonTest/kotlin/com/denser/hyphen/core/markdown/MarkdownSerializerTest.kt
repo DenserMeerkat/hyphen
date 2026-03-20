@@ -1,23 +1,28 @@
-package com.denser.hyphen.markdown
+package com.denser.hyphen.core.markdown
 
-import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.model.MarkupStyleRange
-import kotlin.test.assertEquals
+import com.denser.hyphen.core.model.MarkupStyle
+import com.denser.hyphen.core.model.StyleRange
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class MarkdownSerializerTest {
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Full String Serialization Tests
+    // ─────────────────────────────────────────────────────────────────────────────
 
     @Test
     fun `serialize handles overlapping styles perfectly without tangling tags`() {
         val text = "Overlap"
         val spans = listOf(
-            MarkupStyleRange(MarkupStyle.Bold, 0, 7),
-            MarkupStyleRange(MarkupStyle.Italic, 0, 7)
+            StyleRange(MarkupStyle.Bold, 0, 7),
+            StyleRange(MarkupStyle.Italic, 0, 7)
         )
 
         val result = MarkdownSerializer.serialize(text, spans)
 
         // Verifies the `.thenBy { it.isClosing }` sorting logic works correctly
+        // by ensuring tags close in the reverse order they were opened.
         assertEquals("***Overlap***", result)
     }
 
@@ -25,13 +30,13 @@ class MarkdownSerializerTest {
     fun `serialize adds heading prefixes correctly without closing tags`() {
         val text = "Heading 1\nSubheading"
         val spans = listOf(
-            MarkupStyleRange(MarkupStyle.H1, 0, 9),
-            MarkupStyleRange(MarkupStyle.H3, 10, 20)
+            StyleRange(MarkupStyle.H1, 0, 9),
+            StyleRange(MarkupStyle.H3, 10, 20)
         )
 
         val result = MarkdownSerializer.serialize(text, spans)
 
-        // Headings only have start symbols, no end symbols
+        // Headings only have start symbols ("# "), no end symbols
         assertEquals("# Heading 1\n### Subheading", result)
     }
 
@@ -39,8 +44,8 @@ class MarkdownSerializerTest {
     fun `serialize ignores list block styles because they remain in text buffer`() {
         val text = "- [x] Finished Task\n- Bullet"
         val spans = listOf(
-            MarkupStyleRange(MarkupStyle.CheckboxChecked, 0, 19),
-            MarkupStyleRange(MarkupStyle.BulletList, 20, 28)
+            StyleRange(MarkupStyle.CheckboxChecked, 0, 19),
+            StyleRange(MarkupStyle.BulletList, 20, 28)
         )
 
         val result = MarkdownSerializer.serialize(text, spans)
@@ -51,11 +56,29 @@ class MarkdownSerializerTest {
     }
 
     @Test
+    fun `serialize combines block prefix preservation and inline wrapping flawlessly`() {
+        // The buffer contains the literal checkbox prefix AND the text
+        val text = "- [ ] Buy Milk"
+        val spans = listOf(
+            StyleRange(MarkupStyle.CheckboxUnchecked, 0, 14),
+            StyleRange(MarkupStyle.Bold, 10, 14) // "Milk" is bold
+        )
+
+        val result = MarkdownSerializer.serialize(text, spans)
+
+        assertEquals("- [ ] Buy **Milk**", result)
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Substring (Selection/Clipboard) Serialization Tests
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    @Test
     fun `substring serialize safely truncates a span cut in half`() {
         // "This is a sentence"
         // Let's say "is a sentence" (5 to 18) is Bold.
         val text = "This is a sentence"
-        val spans = listOf(MarkupStyleRange(MarkupStyle.Bold, 5, 18))
+        val spans = listOf(StyleRange(MarkupStyle.Bold, 5, 18))
 
         // If the user only selects/copies "is a" (indices 5 to 9)
         val result = MarkdownSerializer.serialize(text, spans, start = 5, end = 9)
@@ -68,8 +91,8 @@ class MarkdownSerializerTest {
     fun `substring serialize drops spans completely outside the selection`() {
         val text = "Bold and Italic"
         val spans = listOf(
-            MarkupStyleRange(MarkupStyle.Bold, 0, 4),   // "Bold"
-            MarkupStyleRange(MarkupStyle.Italic, 9, 15) // "Italic"
+            StyleRange(MarkupStyle.Bold, 0, 4),   // "Bold"
+            StyleRange(MarkupStyle.Italic, 9, 15) // "Italic"
         )
 
         // Select only the word "Italic"
@@ -82,7 +105,7 @@ class MarkdownSerializerTest {
     @Test
     fun `substring serialize handles negative and out of bounds indices safely`() {
         val text = "Text"
-        val spans = listOf(MarkupStyleRange(MarkupStyle.Bold, 0, 4))
+        val spans = listOf(StyleRange(MarkupStyle.Bold, 0, 4))
 
         // Attempt to copy from -10 to +100
         val result = MarkdownSerializer.serialize(text, spans, start = -10, end = 100)
@@ -94,26 +117,12 @@ class MarkdownSerializerTest {
     @Test
     fun `substring serialize returns empty string if start is greater than or equal to end`() {
         val text = "Text"
-        val spans = listOf(MarkupStyleRange(MarkupStyle.Bold, 0, 4))
+        val spans = listOf(StyleRange(MarkupStyle.Bold, 0, 4))
 
         val reversedBoundsResult = MarkdownSerializer.serialize(text, spans, start = 4, end = 2)
         val identicalBoundsResult = MarkdownSerializer.serialize(text, spans, start = 2, end = 2)
 
         assertEquals("", reversedBoundsResult)
         assertEquals("", identicalBoundsResult)
-    }
-
-    @Test
-    fun `serialize combines block prefix preservation and inline wrapping flawlessly`() {
-        // The buffer contains the bullet prefix AND the bold text
-        val text = "- [ ] Buy Milk"
-        val spans = listOf(
-            MarkupStyleRange(MarkupStyle.CheckboxUnchecked, 0, 14),
-            MarkupStyleRange(MarkupStyle.Bold, 10, 14) // "Milk" is bold
-        )
-
-        val result = MarkdownSerializer.serialize(text, spans)
-
-        assertEquals("- [ ] Buy **Milk**", result)
     }
 }

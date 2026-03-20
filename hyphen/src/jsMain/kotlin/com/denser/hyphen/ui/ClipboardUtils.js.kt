@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.NativeClipboard
 import com.denser.hyphen.state.HyphenTextState
-import com.denser.hyphen.markdown.MarkdownSerializer
+import com.denser.hyphen.core.markdown.MarkdownSerializer
 import kotlinx.browser.document
 import kotlinx.browser.window
 import org.w3c.dom.events.Event

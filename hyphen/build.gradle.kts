@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "io.github.densermeerkat"
-version = "0.3.0-alpha01"
+version = "1.0.0-alpha01"
 
 android {
     namespace = "com.denser.hyphen"
@@ -70,6 +70,8 @@ kotlin {
     sourceSets {
         commonMain {
             dependencies {
+                api(project(":hyphen-core"))
+
                 implementation(libs.runtime)
                 implementation(libs.foundation)
                 implementation(libs.material3)
@@ -136,9 +138,24 @@ publishing {
             name = "LocalTest"
             url = uri(layout.buildDirectory.dir("repo"))
         }
+        maven {
+            name = "Sonatype"
+            url = uri(
+                if (version.toString().endsWith("SNAPSHOT"))
+                    "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                else
+                    "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            )
+            credentials {
+                username = findProperty("sonatypeUsername") as String?
+                password = findProperty("sonatypePassword") as String?
+            }
+        }
     }
 }
 
 signing {
-    sign(publishing.publications)
+    if (project.findProperty("signing.keyId") != null) {
+        sign(publishing.publications)
+    }
 }
