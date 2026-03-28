@@ -15,7 +15,9 @@ import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.text.TextStyle
 import com.denser.hyphen.core.model.MarkupStyle
+
 import com.denser.hyphen.core.model.StyleSets
+import com.denser.hyphen.core.constants.EditorConstants
 import com.denser.hyphen.state.BlockStyleManager
 import com.denser.hyphen.state.HyphenTextState
 
@@ -100,10 +102,10 @@ internal fun applyMarkdownStyles(
     with(buffer) {
         val needsBaselineAnchor = state.spans.any { it.start == 0 && it.style in StyleSets.allHeadings }
         if (needsBaselineAnchor) {
-            insert(0, "\u200B")
+            insert(0, EditorConstants.ZWSP)
         }
         val offset = if (needsBaselineAnchor) 1 else 0
-        insert(length, "\u200B")
+        insert(length, EditorConstants.ZWSP)
 
         val baseSpanStyle = baseTextStyle.toSpanStyle()
         val textSeq = asCharSequence()

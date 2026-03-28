@@ -1,4 +1,4 @@
-package com.denser.hyphen.sample.shared
+package com.denser.hyphen.sample.shared.components
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -11,23 +11,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import com.denser.hyphen.core.model.MarkupStyle
 import com.denser.hyphen.state.HyphenTextState
-import org.jetbrains.compose.resources.DrawableResource
 import hyphen.sample.shared.generated.resources.Res
 import hyphen.sample.shared.generated.resources.check_box_24dp
 import hyphen.sample.shared.generated.resources.checklist_24dp
@@ -230,36 +225,5 @@ fun HyphenToolbar(
                 modifier = Modifier.size(20.dp)
             )
         }
-    }
-}
-
-@Composable
-private fun FormatToggleButton(
-    isActive: Boolean,
-    onClick: () -> Unit,
-    icon: DrawableResource,
-    contentDescription: String? = null,
-    enabled: Boolean = true,
-) {
-    IconToggleButton(
-        checked = isActive,
-        onCheckedChange = { onClick() },
-        modifier = Modifier
-            .size(40.dp)
-            .focusProperties { canFocus = false },
-        enabled = enabled,
-        shape = RoundedCornerShape(12.dp),
-        colors = IconButtonDefaults.iconToggleButtonColors(
-            checkedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-            checkedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-            containerColor = Color.Transparent,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    ) {
-        Icon(
-            painterResource(icon),
-            contentDescription = contentDescription,
-            modifier = Modifier.size(20.dp)
-        )
     }
 }

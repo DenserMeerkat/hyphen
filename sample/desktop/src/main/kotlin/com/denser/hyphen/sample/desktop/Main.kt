@@ -9,6 +9,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.ui.window.rememberWindowState
+import com.denser.hyphen.sample.shared.HyphenBlocksSampleApp
 import com.denser.hyphen.sample.shared.HyphenSampleApp
 
 fun main() = application {
@@ -23,14 +24,15 @@ fun main() = application {
         title = "Hyphen Editor",
         state = state
     ) {
-        HyphenSampleApp(
-            verticalScrollbar = { scrollState, modifier ->
-                VerticalScrollbar(
-                    adapter = rememberScrollbarAdapter(scrollState),
-                    modifier = modifier,
-                    style = LocalScrollbarStyle.current
-                )
-            }
-        )
+        HyphenBlocksSampleApp()
+//        HyphenSampleApp(
+//            verticalScrollbar = { scrollState, modifier ->
+//                VerticalScrollbar(
+//                    adapter = rememberScrollbarAdapter(scrollState),
+//                    modifier = modifier,
+//                    style = LocalScrollbarStyle.current
+//                )
+//            }
+//        )
     }
 }

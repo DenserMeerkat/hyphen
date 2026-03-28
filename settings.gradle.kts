@@ -21,7 +21,9 @@ dependencyResolutionManagement {
 rootProject.name = "Hyphen"
 
 include(":hyphen-core")
+include(":hyphen-inline")
 include(":hyphen")
+include(":hyphen-blocks")
 include(":sample:shared")
 include(":sample:android")
 include(":sample:desktop")

@@ -55,6 +55,7 @@ import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.state.rememberHyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
 import androidx.compose.ui.platform.LocalUriHandler
+import com.denser.hyphen.sample.shared.components.HyphenToolbar
 import com.denser.hyphen.sample.shared.components.MarkdownPreviewPanel
 import com.denser.hyphen.sample.shared.components.StateInspectorPanel
 import hyphen.sample.shared.generated.resources.Res

@@ -49,7 +49,7 @@ data class ListItemStyle(
 /**
  * Visual configuration for the Hyphen editor's inline and block formatting styles.
  *
- * Each property maps a [com.denser.hyphen.model.MarkupStyle] variant to a Compose [SpanStyle] that is applied by
+ * Each property maps a [com.denser.hyphen.core.model.MarkupStyle] variant to a Compose [SpanStyle] that is applied by
  * the editor's `outputTransformation` whenever the corresponding span is active. Customize
  * any field to match your design system — for example, to use a brand accent color for
  * highlights or a custom monospace font for inline code.
@@ -79,27 +79,27 @@ data class ListItemStyle(
  * All properties have sensible defaults so only the fields you want to override need to be
  * specified.
  *
- * @property boldStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Bold] spans.
+ * @property boldStyle [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.Bold] spans.
  *   Defaults to [FontWeight.Bold].
- * @property italicStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Italic] spans.
+ * @property italicStyle [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.Italic] spans.
  *   Defaults to [FontStyle.Italic].
- * @property underlineStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Underline] spans.
+ * @property underlineStyle [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.Underline] spans.
  *   Defaults to [TextDecoration.Underline].
- * @property strikethroughStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Strikethrough] spans.
+ * @property strikethroughStyle [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.Strikethrough] spans.
  *   Defaults to [TextDecoration.LineThrough].
- * @property highlightStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Highlight] spans.
+ * @property highlightStyle [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.Highlight] spans.
  *   Defaults to a semi-transparent yellow background.
- * @property inlineCodeStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.InlineCode] spans.
+ * @property inlineCodeStyle [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.InlineCode] spans.
  *   Defaults to [FontFamily.Monospace] with a light grey background.
- * @property blockquoteSpanStyle [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Blockquote] spans.
+ * @property blockquoteSpanStyle [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.Blockquote] spans.
  *   Defaults to italic text in [Color.Gray] with a faint grey background. Note that
  *   block-level decoration (e.g. a vertical bar) must be added separately via a custom
  *   layout or draw modifier, as [SpanStyle] only controls character-level appearance.
  * @property bulletListStyle [ListItemStyle] controlling the visual appearance of
- *   [com.denser.hyphen.model.MarkupStyle.BulletList] items. [ListItemStyle.prefixStyle] is applied to
+ *   [com.denser.hyphen.core.model.MarkupStyle.BulletList] items. [ListItemStyle.prefixStyle] is applied to
  *   the `- ` marker; [ListItemStyle.contentStyle] is applied to the text that follows.
  * @property orderedListStyle [ListItemStyle] controlling the visual appearance of
- *   [com.denser.hyphen.model.MarkupStyle.OrderedList] items. [ListItemStyle.prefixStyle] is applied to
+ *   [com.denser.hyphen.core.model.MarkupStyle.OrderedList] items. [ListItemStyle.prefixStyle] is applied to
  *   the number and period (e.g. `1.`); [ListItemStyle.contentStyle] is applied to the text
  *   that follows.
  * @property checkboxUncheckedStyle [ListItemStyle] controlling the visual appearance of
@@ -110,17 +110,17 @@ data class ListItemStyle(
  *   [ListItemStyle.contentStyle] is applied to the label text. A common pattern is to set
  *   `contentStyle = SpanStyle(textDecoration = TextDecoration.LineThrough, color = Color.Gray)`
  *   to visually strike through completed items.
- * @property h1Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H1] spans.
+ * @property h1Style [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.H1] spans.
  *   Defaults to 24 sp bold. Triggered by `# ` at the start of a line.
- * @property h2Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H2] spans.
+ * @property h2Style [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.H2] spans.
  *   Defaults to 22 sp bold. Triggered by `## ` at the start of a line.
- * @property h3Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H3] spans.
+ * @property h3Style [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.H3] spans.
  *   Defaults to 20 sp bold. Triggered by `### ` at the start of a line.
- * @property h4Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H4] spans.
+ * @property h4Style [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.H4] spans.
  *   Defaults to 18 sp bold. Triggered by `#### ` at the start of a line.
- * @property h5Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H5] spans.
+ * @property h5Style [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.H5] spans.
  *   Defaults to 17 sp bold. Triggered by `##### ` at the start of a line.
- * @property h6Style [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.H6] spans.
+ * @property h6Style [SpanStyle] applied to [com.denser.hyphen.core.model.MarkupStyle.H6] spans.
  *   Defaults to 16 sp bold. Triggered by `###### ` at the start of a line.
  */
 data class HyphenStyleConfig(

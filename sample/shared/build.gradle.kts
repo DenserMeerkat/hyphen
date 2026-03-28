@@ -38,6 +38,7 @@ kotlin {
         commonMain {
             dependencies {
                 implementation(project(":hyphen"))
+                implementation(project(":hyphen-blocks"))
 
                 implementation(libs.runtime)
                 implementation(libs.foundation)
