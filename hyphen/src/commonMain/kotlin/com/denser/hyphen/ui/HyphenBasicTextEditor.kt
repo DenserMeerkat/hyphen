@@ -23,9 +23,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
 import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.model.StyleSets
 import com.denser.hyphen.state.HyphenTextState
-import com.denser.hyphen.ui.dialog.LinkEditDialog
+import com.denser.hyphen.ui.link.HyphenLinkConfig
+import com.denser.hyphen.ui.style.HyphenStyleConfig
+import com.denser.hyphen.ui.link.LinkEditDialog
+import com.denser.hyphen.ui.internal.InlineContentHost
+import com.denser.hyphen.ui.internal.applyMarkdownStyles
+import com.denser.hyphen.ui.internal.handleHardwareKeyEvent
+import com.denser.hyphen.ui.internal.processMarkdownInput
+import com.denser.hyphen.ui.internal.rememberMarkdownClipboard
 
 /**
  * A markdown-aware text editor that provides rich inline formatting, block-level styles,

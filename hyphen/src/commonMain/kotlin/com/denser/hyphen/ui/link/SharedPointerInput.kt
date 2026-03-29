@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui.inline
+package com.denser.hyphen.ui.link
 
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier

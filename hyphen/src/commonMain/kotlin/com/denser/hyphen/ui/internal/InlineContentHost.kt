@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.internal
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -11,8 +11,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.state.HyphenTextState
-import com.denser.hyphen.ui.inline.InlineCheckbox
-import com.denser.hyphen.ui.inline.InlineLink
+import com.denser.hyphen.ui.link.HyphenLinkConfig
+import com.denser.hyphen.ui.checkbox.InlineCheckbox
+import com.denser.hyphen.ui.link.InlineLink
 import kotlin.math.roundToInt
 
 @Composable

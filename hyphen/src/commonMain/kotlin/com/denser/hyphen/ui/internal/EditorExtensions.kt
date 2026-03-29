@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.internal
 
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.insert
@@ -20,6 +20,7 @@ import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.StyleSets
 import com.denser.hyphen.state.BlockStyleManager
 import com.denser.hyphen.state.HyphenTextState
+import com.denser.hyphen.ui.style.HyphenStyleConfig
 
 internal fun handleHardwareKeyEvent(
     event: KeyEvent,

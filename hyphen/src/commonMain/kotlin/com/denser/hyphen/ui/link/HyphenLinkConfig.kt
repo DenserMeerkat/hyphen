@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.link
 
 import androidx.compose.runtime.Composable
 import com.denser.hyphen.model.MarkupStyleRange
@@ -7,7 +7,7 @@ import com.denser.hyphen.model.MarkupStyleRange
  * Callbacks and composable slots that control how link interactions are handled in the
  * Hyphen editor.
  *
- * Pass a customized instance to [HyphenBasicTextEditor] via the `linkConfig` parameter to
+ * Pass a customized instance to [com.denser.hyphen.ui.HyphenBasicTextEditor] via the `linkConfig` parameter to
  * override the built-in dropdown menu, edit dialog, or both. Any slot left as `null` falls
  * back to the default built-in implementation.
  *
@@ -62,13 +62,13 @@ import com.denser.hyphen.model.MarkupStyleRange
  * @property dropdownContent Composable slot that replaces the built-in link context menu.
  *   When non-null it is invoked instead of the default [androidx.compose.material3.DropdownMenu].
  *   Parameters:
- *   - `span` — the [MarkupStyleRange] of the link that was interacted with.
+ *   - `span` — the [com.denser.hyphen.model.MarkupStyleRange] of the link that was interacted with.
  *   - `onDismiss` — call this to close the menu without any further action.
  *   - `onEditRequest` — call this to open the edit dialog (built-in or custom) for `span`.
  * @property dialogContent Composable slot that replaces the built-in link edit dialog.
  *   When non-null it is invoked instead of the default [androidx.compose.material3.AlertDialog].
  *   Parameters:
- *   - `span` — the [MarkupStyleRange] being edited (contains current text bounds and URL).
+ *   - `span` — the [com.denser.hyphen.model.MarkupStyleRange] being edited (contains current text bounds and URL).
  *   - `onDismiss` — call this to close the dialog without saving.
  *   - `onConfirm` — call this with `(newText, newUrl)` to commit the edit via
  *     [com.denser.hyphen.state.HyphenTextState.updateLink].

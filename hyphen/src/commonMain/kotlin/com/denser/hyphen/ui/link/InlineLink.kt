@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui.inline
+package com.denser.hyphen.ui.link
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.denser.hyphen.Res
@@ -17,7 +18,6 @@ import com.denser.hyphen.open_in_new_24dp
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.state.HyphenTextState
-import com.denser.hyphen.ui.HyphenLinkConfig
 
 
 @Composable
@@ -55,7 +55,7 @@ internal fun InlineLink(
         onShowMenu = { pressOffset ->
             val currentStart = state.selection.start
             state.textFieldState.edit {
-                selection = androidx.compose.ui.text.TextRange(currentStart)
+                selection = TextRange(currentStart)
             }
 
             menuOffset = pressOffset

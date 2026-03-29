@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.style
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle

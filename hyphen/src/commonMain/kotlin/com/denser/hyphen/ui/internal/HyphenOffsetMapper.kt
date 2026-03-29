@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.internal
 
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.StyleSets

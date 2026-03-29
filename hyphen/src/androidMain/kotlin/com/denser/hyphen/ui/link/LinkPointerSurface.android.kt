@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui.inline
+package com.denser.hyphen.ui.link
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope

@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.internal
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect

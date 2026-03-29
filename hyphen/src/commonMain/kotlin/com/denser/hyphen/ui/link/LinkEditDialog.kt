@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui.dialog
+package com.denser.hyphen.ui.link
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,6 +15,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -171,8 +172,8 @@ private fun LinkField(
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurface,
-                fontFamily = if (monospace) androidx.compose.ui.text.font.FontFamily.Monospace
-                else androidx.compose.ui.text.font.FontFamily.Default,
+                fontFamily = if (monospace) FontFamily.Monospace
+                else FontFamily.Default,
                 fontSize = if (monospace) 13.sp else 14.sp,
             ),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
@@ -183,8 +184,8 @@ private fun LinkField(
                         text = placeholder,
                         style = MaterialTheme.typography.bodyMedium.copy(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                            fontFamily = if (monospace) androidx.compose.ui.text.font.FontFamily.Monospace
-                            else androidx.compose.ui.text.font.FontFamily.Default,
+                            fontFamily = if (monospace) FontFamily.Monospace
+                            else FontFamily.Default,
                             fontSize = if (monospace) 13.sp else 14.sp,
                         ),
                     )

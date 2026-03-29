@@ -22,8 +22,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
-import com.denser.hyphen.ui.HyphenLinkConfig
-import com.denser.hyphen.ui.HyphenStyleConfig
+import com.denser.hyphen.ui.link.HyphenLinkConfig
+import com.denser.hyphen.ui.style.HyphenStyleConfig
 
 /**
  * [Material Design filled text field](https://m3.material.io/components/text-fields/overview)

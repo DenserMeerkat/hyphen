@@ -4,6 +4,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import com.denser.hyphen.state.HyphenTextState
+import com.denser.hyphen.ui.internal.processMarkdownInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

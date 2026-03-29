@@ -1,19 +1,24 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.internal
 
-import android.content.ClipData
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.NativeClipboard
 import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.markdown.MarkdownSerializer
-import kotlinx.coroutines.delay
+import kotlinx.browser.document
+import kotlinx.browser.window
+import org.w3c.dom.events.Event
+import org.w3c.dom.clipboard.ClipboardEvent
 
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalWasmJsInterop::class)
 @Composable
 internal actual fun rememberMarkdownClipboard(
     state: HyphenTextState,
@@ -31,6 +36,29 @@ internal actual fun rememberMarkdownClipboard(
 
     val originalClipboard = LocalClipboard.current
 
+    DisposableEffect(state, lastKnownSelection) {
+        val copyCutListener: (Event) -> Unit = listener@{ event ->
+            val clipboardEvent = event as? ClipboardEvent ?: return@listener
+
+            val start = lastKnownSelection.start.coerceAtMost(lastKnownSelection.end)
+            val end = lastKnownSelection.start.coerceAtLeast(lastKnownSelection.end)
+
+            if (start < end && end <= lastKnownText.length) {
+                val markdown = MarkdownSerializer.serialize(lastKnownText, lastKnownSpans, start, end)
+                clipboardEvent.preventDefault()
+                clipboardEvent.clipboardData?.setData("text/plain", markdown)
+            }
+        }
+
+        document.addEventListener("copy", copyCutListener)
+        document.addEventListener("cut", copyCutListener)
+
+        onDispose {
+            document.removeEventListener("copy", copyCutListener)
+            document.removeEventListener("cut", copyCutListener)
+        }
+    }
+
     return remember(originalClipboard, state, clipboardLabel) {
         object : Clipboard {
             override suspend fun getClipEntry(): ClipEntry? = originalClipboard.getClipEntry()
@@ -46,11 +74,11 @@ internal actual fun rememberMarkdownClipboard(
 
                 if (start < end && end <= lastKnownText.length) {
                     val markdown = MarkdownSerializer.serialize(lastKnownText, lastKnownSpans, start, end)
-                    val clipData = ClipData.newPlainText(clipboardLabel, markdown)
-
-                    delay(50)
-
-                    originalClipboard.setClipEntry(ClipEntry(clipData))
+                    try {
+                        window.navigator.clipboard.writeText(markdown)
+                    } catch (e: Exception) {
+                        originalClipboard.setClipEntry(clipEntry)
+                    }
                 } else {
                     originalClipboard.setClipEntry(clipEntry)
                 }

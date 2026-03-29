@@ -1,5 +1,6 @@
-package com.denser.hyphen.ui
+package com.denser.hyphen.ui.internal
 
+import android.content.ClipData
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,8 +12,7 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.NativeClipboard
 import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.markdown.MarkdownSerializer
-import java.awt.Toolkit
-import java.awt.datatransfer.StringSelection
+import kotlinx.coroutines.delay
 
 @Composable
 internal actual fun rememberMarkdownClipboard(
@@ -46,8 +46,11 @@ internal actual fun rememberMarkdownClipboard(
 
                 if (start < end && end <= lastKnownText.length) {
                     val markdown = MarkdownSerializer.serialize(lastKnownText, lastKnownSpans, start, end)
-                    val stringSelection = StringSelection(markdown)
-                    Toolkit.getDefaultToolkit().systemClipboard.setContents(stringSelection, null)
+                    val clipData = ClipData.newPlainText(clipboardLabel, markdown)
+
+                    delay(50)
+
+                    originalClipboard.setClipEntry(ClipEntry(clipData))
                 } else {
                     originalClipboard.setClipEntry(clipEntry)
                 }
