@@ -7,9 +7,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldDecorator
 import androidx.compose.foundation.text.input.TextFieldLineLimits
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
@@ -24,7 +22,10 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.sp
+import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.model.StyleSets
 import com.denser.hyphen.state.HyphenTextState
+import com.denser.hyphen.ui.dialog.LinkEditDialog
 
 /**
  * A markdown-aware text editor that provides rich inline formatting, block-level styles,
@@ -33,61 +34,36 @@ import com.denser.hyphen.state.HyphenTextState
  *
  * Markdown syntax typed by the user (e.g. `**bold**`, `_italic_`, `- list item`) is
  * automatically detected and stripped from the visible text. The corresponding visual styles
- * are applied via an [androidx.compose.foundation.text.input.OutputTransformation] so the underlying [HyphenTextState] always holds
- * clean, undecorated text.
+ * are applied via an [androidx.compose.foundation.text.input.OutputTransformation] so the
+ * underlying [HyphenTextState] always holds clean, undecorated text.
  *
- * Focus state and selection are tracked internally so that toolbar buttons invoked after the
- * field loses focus (e.g. a floating format bar) still operate on the correct range.
+ * **Link interactions**
  *
- * **Hardware keyboard shortcuts**
+ * Pass a [HyphenLinkConfig] to customise how link taps, context menus, and the edit dialog
+ * behave. Omit it (or pass `HyphenLinkConfig()`) to use the built-in Material3 UI.
  *
- * | Shortcut | Action |
- * |---|---|
- * | Ctrl/Cmd + B | Toggle bold |
- * | Ctrl/Cmd + I | Toggle italic |
- * | Ctrl/Cmd + U | Toggle underline |
- * | Ctrl/Cmd + Space | Clear all styles on selection |
- * | Ctrl/Cmd + Shift + S / X | Toggle strikethrough |
- * | Ctrl/Cmd + Shift + H | Toggle highlight |
- * | Ctrl/Cmd + [1–6] | Toggle Heading 1–6 |
- * | Ctrl/Cmd + Enter | Toggle checkbox checked / unchecked |
- * | Ctrl/Cmd + Z | Undo |
- * | Ctrl/Cmd + Y / Shift + Z | Redo |
- *
- * **Clipboard**
- *
- * Cut, copy operations serialize the selected range to Markdown via [HyphenTextState.toMarkdown],
- * so pasting into another Markdown-aware editor preserves formatting.
- *
- * @param state The [HyphenTextState] that holds text content, spans, selection, and undo/redo
- * history. Use [com.denser.hyphen.state.rememberHyphenTextState] to create and remember an instance.
+ * @param state The [HyphenTextState] that holds text content, spans, selection, and
+ *   undo/redo history. Use [com.denser.hyphen.state.rememberHyphenTextState] to create
+ *   and remember an instance.
  * @param modifier Optional [Modifier] applied to the underlying [BasicTextField].
- * @param enabled Controls the enabled state of the text field. When `false`, the field is
- * neither editable nor focusable, and its input cannot be selected.
- * @param readOnly Controls the editable state of the text field. When `true`, the field cannot
- * be modified but can be focused and its text can be copied.
- * @param textStyle Typographic style applied to the visible text. Defaults to 16 sp body text.
- * Color and font properties are merged with the active theme where applicable.
- * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle] — colors, weights, and
- * decorations used by the output transformation when rendering formatted text.
- * @param keyboardOptions Software keyboard options such as capitalization, autocorrect, and
- * [ImeAction]. Defaults to sentence capitalization with autocorrect disabled.
- * @param lineLimits Whether the field should be single-line (horizontal scroll) or multi-line
- * (vertical grow/scroll). Defaults to [TextFieldLineLimits.Default].
- * @param scrollState Scroll state managing vertical or horizontal scroll of the field content.
- * @param interactionSource Optional hoisted [MutableInteractionSource] for observing focus,
- * hover, and press interactions. If `null`, an internal source is used.
- * @param cursorBrush [Brush] used to paint the cursor. Pass [SolidColor] with
- * [Color.Unspecified] to hide the cursor entirely.
- * @param decorator Optional [TextFieldDecorator] that wraps the inner text field with
- * decorations such as labels, icons, or borders (e.g. a Material3 decorator).
- * @param onTextLayout Callback invoked whenever the text layout is recalculated. Provides a
- * deferred [TextLayoutResult] that can be used for cursor drawing or hit testing.
- * @param clipboardLabel Label attached to the clipboard entry when text is copied. Used by
- * some platforms to describe the clipboard contents.
- * @param onTextChange Optional callback invoked whenever the plain, undecorated text changes.
- * @param onMarkdownChange Optional callback invoked whenever the text OR formatting changes,
- * providing the fully serialized Markdown string. Ideal for syncing with ViewModels.
+ * @param enabled Controls the enabled state of the text field.
+ * @param readOnly When `true`, the field cannot be modified but can be focused and copied.
+ * @param textStyle Typographic style applied to the visible text. Defaults to 16 sp.
+ * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle].
+ * @param linkConfig Interaction configuration for link spans — custom dropdown menu, custom
+ *   edit dialog, and/or a custom URL-open handler. Defaults to built-in Material3 UI.
+ * @param keyboardOptions Software keyboard options. Defaults to sentence capitalisation with
+ *   autocorrect disabled.
+ * @param lineLimits Single-line or multi-line behaviour.
+ * @param scrollState Scroll state for the field content.
+ * @param interactionSource Optional hoisted [MutableInteractionSource].
+ * @param cursorBrush [Brush] used to paint the cursor.
+ * @param decorator Optional [TextFieldDecorator] for Material3 decorations.
+ * @param onTextLayout Callback invoked on text layout recalculation.
+ * @param clipboardLabel Label attached to clipboard entries on copy/cut.
+ * @param onTextChange Callback invoked whenever the plain text changes.
+ * @param onMarkdownChange Callback invoked whenever text or formatting changes, providing
+ *   the serialized Markdown string.
  */
 @Composable
 fun HyphenBasicTextEditor(
@@ -97,6 +73,7 @@ fun HyphenBasicTextEditor(
     readOnly: Boolean = false,
     textStyle: TextStyle = TextStyle(fontSize = 16.sp),
     styleConfig: HyphenStyleConfig = HyphenStyleConfig(),
+    linkConfig: HyphenLinkConfig = HyphenLinkConfig(),
     keyboardOptions: KeyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.Sentences,
         autoCorrectEnabled = false,
@@ -125,29 +102,62 @@ fun HyphenBasicTextEditor(
     }
 
     CompositionLocalProvider(LocalClipboard provides customClipboard) {
-        BasicTextField(
-            state = state.textFieldState,
-            modifier = modifier
-                .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
-                .onFocusChanged { focusState ->
-                    state.isFocused = focusState.isFocused
-                },
-            enabled = enabled,
-            readOnly = readOnly,
-            textStyle = textStyle,
-            keyboardOptions = keyboardOptions,
-            lineLimits = lineLimits,
+        var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+
+        InlineContentHost(
+            state = state,
+            textLayoutResult = { textLayoutResult },
             scrollState = scrollState,
-            interactionSource = interactionSource,
-            cursorBrush = cursorBrush,
-            decorator = decorator,
-            onTextLayout = onTextLayout,
-            outputTransformation = {
-                applyMarkdownStyles(state, styleConfig, textStyle, this)
-            },
-            inputTransformation = {
-                processMarkdownInput(state, this)
-            }
-        )
+            linkConfig = linkConfig,
+            textStyle = textStyle,
+            modifier = modifier,
+        ) {
+            BasicTextField(
+                state = state.textFieldState,
+                modifier = Modifier
+                    .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
+                    .onFocusChanged { focusState ->
+                        state.isFocused = focusState.isFocused
+                    },
+                enabled = enabled,
+                readOnly = readOnly,
+                textStyle = textStyle,
+                keyboardOptions = keyboardOptions,
+                lineLimits = lineLimits,
+                scrollState = scrollState,
+                interactionSource = interactionSource,
+                cursorBrush = cursorBrush,
+                decorator = decorator,
+                onTextLayout = { getResult ->
+                    textLayoutResult = getResult()
+                    onTextLayout?.invoke(this, getResult)
+                },
+                outputTransformation = {
+                    applyMarkdownStyles(state, styleConfig, textStyle, this)
+                },
+                inputTransformation = {
+                    processMarkdownInput(state, this)
+                },
+            )
+        }
+    }
+
+    val activeLink = state.activeLinkForEditing
+    if (activeLink != null && linkConfig.dialogContent == null) {
+        val linkStyle = activeLink.style as? MarkupStyle.Link
+        if (linkStyle != null) {
+            val currentText = state.textFieldState.text
+                .substring(activeLink.start.coerceAtMost(state.text.length),
+                    activeLink.end.coerceAtMost(state.text.length))
+            LinkEditDialog(
+                initialText = currentText,
+                initialUrl = linkStyle.url,
+                onDismiss = { state.activeLinkForEditing = null },
+                onConfirm = { newText, newUrl ->
+                    state.updateLink(activeLink, newText, newUrl)
+                    state.activeLinkForEditing = null
+                },
+            )
+        }
     }
 }

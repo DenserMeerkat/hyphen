@@ -65,11 +65,13 @@ object MarkdownSerializer {
                 is MarkupStyle.H4 -> "#### "
                 is MarkupStyle.H5 -> "##### "
                 is MarkupStyle.H6 -> "###### "
+                is MarkupStyle.Link -> "["
                 else -> null
             }
 
-            val endSymbol = when (span.style) {
+            val endSymbol = when (val style = span.style) {
                 in StyleSets.allHeadings -> ""
+                is MarkupStyle.Link -> "](${style.url})"
                 else -> startSymbol
             }
 

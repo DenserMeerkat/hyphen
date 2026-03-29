@@ -22,6 +22,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Density
 import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
+import com.denser.hyphen.ui.HyphenLinkConfig
 import com.denser.hyphen.ui.HyphenStyleConfig
 
 /**
@@ -54,49 +55,34 @@ import com.denser.hyphen.ui.HyphenStyleConfig
  * @param state The [HyphenTextState] that holds text content, spans, selection, and undo/redo
  *   history. Use [com.denser.hyphen.state.rememberHyphenTextState] to create and remember an instance.
  * @param modifier Optional [Modifier] applied to the text field container.
- * @param enabled Controls the enabled state of the text field. When `false`, the field is
- *   neither editable nor focusable, and it will appear visually disabled to accessibility
- *   services.
- * @param readOnly Controls the editable state of the text field. When `true`, the field cannot
- *   be modified but can be focused and its text can be copied.
+ * @param enabled Controls the enabled state of the text field.
+ * @param readOnly When `true`, the field cannot be modified but can be focused and copied.
  * @param textStyle Typographic style applied to the input text. Defaults to [LocalTextStyle].
- *   The text color is resolved from [colors] when not explicitly specified in the style.
- * @param labelPosition Controls where the label is displayed relative to the field. See
- *   [TextFieldLabelPosition].
- * @param label Optional label displayed inside or above the field. Uses
- *   [Typography.bodySmall] when minimized and [Typography.bodyLarge] when expanded.
- * @param placeholder Optional placeholder displayed when the input text is empty. Uses
- *   [Typography.bodyLarge].
- * @param leadingIcon Optional icon composable displayed at the start of the field container.
- * @param trailingIcon Optional icon composable displayed at the end of the field container.
- * @param prefix Optional composable displayed before the input text inside the field.
- * @param suffix Optional composable displayed after the input text inside the field.
- * @param supportingText Optional helper or error text displayed below the field container.
- * @param isError Indicates whether the field's current value is in an error state. When
- *   `true`, the label, bottom indicator, and trailing icon are tinted with the error color,
- *   and an error is announced to accessibility services.
- * @param keyboardOptions Software keyboard options such as keyboard type and IME action.
- *   Defaults to [KeyboardOptions.Default].
- * @param lineLimits Whether the field should be single-line (horizontal scroll) or multi-line
- *   (vertical grow/scroll). Defaults to [TextFieldLineLimits.Default].
- * @param scrollState Scroll state managing vertical or horizontal scroll of the field content.
- * @param shape The shape of the field's filled container. Defaults to
- *   [TextFieldDefaults.shape].
- * @param colors [TextFieldColors] used to resolve foreground and background colors across
- *   enabled, focused, and error states. See [TextFieldDefaults.colors].
- * @param contentPadding Padding between the inner text field and the surrounding decoration
- *   elements. Defaults to [TextFieldDefaults.contentPaddingWithLabel] when a label is present
- *   in attached position, or [TextFieldDefaults.contentPaddingWithoutLabel] otherwise.
- * @param interactionSource Optional hoisted [MutableInteractionSource] for observing
- *   interactions. If `null`, an internal source is created and used.
- * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle] — colors, weights, and
- *   decorations used when rendering formatted text.
- * @param onTextLayout Callback invoked whenever the text layout is recalculated. Provides a
- *   deferred [TextLayoutResult] useful for cursor drawing or hit testing.
- * @param clipboardLabel Label attached to the clipboard entry when text is copied.
- * @param onTextChange Optional callback invoked whenever the plain, undecorated text changes.
- * @param onMarkdownChange Optional callback invoked whenever the text OR formatting changes,
- * providing the fully serialized Markdown string. Ideal for syncing with ViewModels.
+ *   Color is resolved from [colors] unless set explicitly.
+ * @param labelPosition Controls where the label is displayed. See [TextFieldLabelPosition].
+ * @param label Optional label composable.
+ * @param placeholder Optional placeholder composable shown when the field is empty.
+ * @param leadingIcon Optional icon composable at the start of the field.
+ * @param trailingIcon Optional icon composable at the end of the field.
+ * @param prefix Optional composable before the input text.
+ * @param suffix Optional composable after the input text.
+ * @param supportingText Optional helper or error text below the field.
+ * @param isError Whether the field's current value is in an error state.
+ * @param keyboardOptions Software keyboard options. Defaults to [KeyboardOptions.Default].
+ * @param lineLimits Single-line or multi-line behaviour. Defaults to [TextFieldLineLimits.Default].
+ * @param scrollState Scroll state for the field content.
+ * @param shape Shape of the filled container. Defaults to [TextFieldDefaults.shape].
+ * @param colors [TextFieldColors] used for foreground and background colors across states.
+ * @param contentPadding Padding between the inner field and decoration elements.
+ * @param interactionSource Optional hoisted [MutableInteractionSource].
+ * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle].
+ * @param linkConfig Interaction configuration for link spans — custom dropdown, custom dialog,
+ *   and/or a custom URL-open handler. Defaults to built-in Material3 UI.
+ * @param onTextLayout Callback invoked on text layout recalculation.
+ * @param clipboardLabel Label attached to clipboard entries on copy/cut.
+ * @param onTextChange Callback invoked whenever the plain text changes.
+ * @param onMarkdownChange Callback invoked whenever text or formatting changes, providing the
+ *   serialized Markdown string.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,7 +92,6 @@ fun HyphenTextEditor(
     enabled: Boolean = true,
     readOnly: Boolean = false,
     textStyle: TextStyle = LocalTextStyle.current,
-
     labelPosition: TextFieldLabelPosition = TextFieldLabelPosition.Attached(),
     label: @Composable (() -> Unit)? = null,
     placeholder: @Composable (() -> Unit)? = null,
@@ -127,8 +112,8 @@ fun HyphenTextEditor(
         TextFieldDefaults.contentPaddingWithLabel()
     },
     interactionSource: MutableInteractionSource? = null,
-
     styleConfig: HyphenStyleConfig = HyphenStyleConfig(),
+    linkConfig: HyphenLinkConfig = HyphenLinkConfig(),
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
     onTextChange: ((String) -> Unit)? = null,
@@ -140,13 +125,12 @@ fun HyphenTextEditor(
     val textColor = textStyle.color.takeOrElse {
         when {
             !enabled -> colors.disabledTextColor
-            isError -> colors.errorTextColor
+            isError  -> colors.errorTextColor
             isFocused -> colors.focusedTextColor
             else -> colors.unfocusedTextColor
         }
     }
     val mergedTextStyle = textStyle.merge(TextStyle(color = textColor))
-
     val cursorColor = if (isError) colors.errorCursorColor else colors.cursorColor
 
     CompositionLocalProvider(LocalTextSelectionColors provides colors.textSelectionColors) {
@@ -162,6 +146,7 @@ fun HyphenTextEditor(
             readOnly = readOnly,
             textStyle = mergedTextStyle,
             styleConfig = styleConfig,
+            linkConfig = linkConfig,
             keyboardOptions = keyboardOptions,
             lineLimits = lineLimits,
             scrollState = scrollState,
@@ -171,7 +156,6 @@ fun HyphenTextEditor(
             clipboardLabel = clipboardLabel,
             onTextChange = onTextChange,
             onMarkdownChange = onMarkdownChange,
-
             decorator = TextFieldDefaults.decorator(
                 state = state.textFieldState,
                 enabled = enabled,
@@ -197,8 +181,8 @@ fun HyphenTextEditor(
                         colors = colors,
                         shape = shape,
                     )
-                }
-            )
+                },
+            ),
         )
     }
 }

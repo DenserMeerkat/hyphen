@@ -48,6 +48,7 @@ import hyphen.sample.shared.generated.resources.format_h3_24dp
 import hyphen.sample.shared.generated.resources.format_h4_24dp
 import hyphen.sample.shared.generated.resources.format_h5_24dp
 import hyphen.sample.shared.generated.resources.format_h6_24dp
+import hyphen.sample.shared.generated.resources.link_24dp
 
 @Composable
 fun HyphenToolbar(
@@ -104,6 +105,20 @@ fun HyphenToolbar(
                     onClick = { state.toggleStyle(MarkupStyle.Highlight) }
                 )
 
+                FormatToggleButton(
+                    icon = Res.drawable.code_24dp,
+                    contentDescription = "Inline Code",
+                    isActive = state.hasStyle(MarkupStyle.InlineCode),
+                    onClick = { state.toggleStyle(MarkupStyle.InlineCode) }
+                )
+
+                FormatToggleButton(
+                    icon = Res.drawable.link_24dp,
+                    contentDescription = "Link",
+                    isActive = state.hasStyle(MarkupStyle.Link("")),
+                    onClick = { state.toggleLink() }
+                )
+
                 VerticalDivider(modifier = Modifier.height(16.dp).padding(horizontal = 2.dp), color = MaterialTheme.colorScheme.outlineVariant)
 
                 FormatToggleButton(
@@ -153,13 +168,6 @@ fun HyphenToolbar(
                 )
 
                 FormatToggleButton(
-                    icon = Res.drawable.code_24dp,
-                    contentDescription = "Inline Code",
-                    isActive = state.hasStyle(MarkupStyle.InlineCode),
-                    onClick = { state.toggleStyle(MarkupStyle.InlineCode) }
-                )
-
-                FormatToggleButton(
                     icon = Res.drawable.format_list_bulleted_24dp,
                     contentDescription = "Bullet List",
                     isActive = state.hasStyle(MarkupStyle.BulletList),
@@ -184,7 +192,7 @@ fun HyphenToolbar(
                     icon = Res.drawable.check_box_24dp,
                     contentDescription = "Mark as Done",
                     isActive = state.hasStyle(MarkupStyle.CheckboxChecked),
-                    onClick = { state.toggleCheckboxAtCursor() },
+                    onClick = { state.toggleCheckbox() },
                     enabled = state.hasStyle(MarkupStyle.CheckboxUnchecked) || state.hasStyle(MarkupStyle.CheckboxChecked),
                 )
 

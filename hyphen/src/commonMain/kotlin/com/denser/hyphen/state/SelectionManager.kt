@@ -16,15 +16,23 @@ internal class SelectionManager {
         }
     }
 
-    fun resolve(current: TextRange): Pair<Int, Int> {
-        val effective = effectiveSelection(current)
-        return minOf(effective.start, effective.end) to maxOf(effective.start, effective.end)
+    fun resolve(current: TextRange, maxLength: Int): Pair<Int, Int> {
+        val effective = effectiveSelection(current, maxLength)
+        val start = effective.start.coerceIn(0, maxLength)
+        val end = effective.end.coerceIn(0, maxLength)
+        return minOf(start, end) to maxOf(start, end)
     }
 
-    fun effectiveSelection(current: TextRange): TextRange =
-        if (!isFocused && current.start == current.end && lastValidSelection.start != lastValidSelection.end) {
+    fun effectiveSelection(current: TextRange, maxLength: Int): TextRange {
+        val base = if (!isFocused && current.start == current.end && lastValidSelection.start != lastValidSelection.end) {
             lastValidSelection
         } else current
+        
+        return TextRange(
+            base.start.coerceIn(0, maxLength),
+            base.end.coerceIn(0, maxLength)
+        )
+    }
 
     fun clear() {
         lastValidSelection = TextRange.Zero

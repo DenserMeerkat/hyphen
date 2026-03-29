@@ -22,7 +22,7 @@ internal object MarkdownProcessor {
 
         fun applyRule(
             regex: Regex,
-            style: MarkupStyle,
+            styleFactory: (MatchResult) -> MarkupStyle,
             getPrefixRemoved: (MatchResult) -> Int,
             getSuffixRemoved: (MatchResult) -> Int = { 0 },
             getPrefixAdded: (MatchResult) -> String = { "" },
@@ -31,6 +31,7 @@ internal object MarkdownProcessor {
             var match = regex.find(processedText)
 
             while (match != null) {
+                val style = styleFactory(match)
                 val innerText = match.groupValues[1]
                 val startIndex = match.range.first
 
@@ -91,52 +92,59 @@ internal object MarkdownProcessor {
             }
         }
 
-        applyRule(MarkdownConstants.BOLD_REGEX, MarkupStyle.Bold, { 2 }, { 2 })
-        applyRule(MarkdownConstants.UNDERLINE_REGEX, MarkupStyle.Underline, { 2 }, { 2 })
-        applyRule(MarkdownConstants.STRIKETHROUGH_REGEX, MarkupStyle.Strikethrough, { 2 }, { 2 })
-        applyRule(MarkdownConstants.HIGHLIGHT_REGEX, MarkupStyle.Highlight, { 2 }, { 2 })
-        applyRule(MarkdownConstants.INLINE_CODE_REGEX, MarkupStyle.InlineCode, { 1 }, { 1 })
-        applyRule(MarkdownConstants.ITALIC_ASTERISK_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
-        applyRule(MarkdownConstants.ITALIC_UNDERSCORE_REGEX, MarkupStyle.Italic, { 1 }, { 1 })
+        applyRule(MarkdownConstants.BOLD_REGEX, { MarkupStyle.Bold }, { 2 }, { 2 })
+        applyRule(MarkdownConstants.UNDERLINE_REGEX, { MarkupStyle.Underline }, { 2 }, { 2 })
+        applyRule(MarkdownConstants.STRIKETHROUGH_REGEX, { MarkupStyle.Strikethrough }, { 2 }, { 2 })
+        applyRule(MarkdownConstants.HIGHLIGHT_REGEX, { MarkupStyle.Highlight }, { 2 }, { 2 })
+        applyRule(MarkdownConstants.INLINE_CODE_REGEX, { MarkupStyle.InlineCode }, { 1 }, { 1 })
+        applyRule(MarkdownConstants.ITALIC_ASTERISK_REGEX, { MarkupStyle.Italic }, { 1 }, { 1 })
+        applyRule(MarkdownConstants.ITALIC_UNDERSCORE_REGEX, { MarkupStyle.Italic }, { 1 }, { 1 })
 
         applyRule(
             MarkdownConstants.CHECKBOX_UNCHECKED_REGEX,
-            MarkupStyle.CheckboxUnchecked,
+            { MarkupStyle.CheckboxUnchecked },
             getPrefixRemoved = { 6 },
             getPrefixAdded = { match -> match.value.substring(0, 6) }
         )
         applyRule(
             MarkdownConstants.CHECKBOX_CHECKED_REGEX,
-            MarkupStyle.CheckboxChecked,
+            { MarkupStyle.CheckboxChecked },
             getPrefixRemoved = { 6 },
             getPrefixAdded = { match -> match.value.substring(0, 6) }
         )
 
         applyRule(
             MarkdownConstants.BULLET_LIST_REGEX,
-            MarkupStyle.BulletList,
+            { MarkupStyle.BulletList },
             getPrefixRemoved = { 2 },
             getPrefixAdded = { match -> match.value.substring(0, 2) }
         )
         applyRule(
             MarkdownConstants.BLOCKQUOTE_REGEX,
-            MarkupStyle.Blockquote,
+            { MarkupStyle.Blockquote },
             getPrefixRemoved = { 2 },
             getPrefixAdded = { match -> match.value.substring(0, 2) }
         )
         applyRule(
             MarkdownConstants.ORDERED_LIST_REGEX,
-            MarkupStyle.OrderedList,
+            { MarkupStyle.OrderedList },
             getPrefixRemoved = { match -> match.value.indexOf('.') + 2 },
             getPrefixAdded = { match -> match.value.substring(0, match.value.indexOf('.') + 2) }
         )
 
-        applyRule(MarkdownConstants.H1_REGEX, MarkupStyle.H1, getPrefixRemoved = { 2 })
-        applyRule(MarkdownConstants.H2_REGEX, MarkupStyle.H2, getPrefixRemoved = { 3 })
-        applyRule(MarkdownConstants.H3_REGEX, MarkupStyle.H3, getPrefixRemoved = { 4 })
-        applyRule(MarkdownConstants.H4_REGEX, MarkupStyle.H4, getPrefixRemoved = { 5 })
-        applyRule(MarkdownConstants.H5_REGEX, MarkupStyle.H5, getPrefixRemoved = { 6 })
-        applyRule(MarkdownConstants.H6_REGEX, MarkupStyle.H6, getPrefixRemoved = { 7 })
+        applyRule(MarkdownConstants.H1_REGEX, { MarkupStyle.H1 }, getPrefixRemoved = { 2 })
+        applyRule(MarkdownConstants.H2_REGEX, { MarkupStyle.H2 }, getPrefixRemoved = { 3 })
+        applyRule(MarkdownConstants.H3_REGEX, { MarkupStyle.H3 }, getPrefixRemoved = { 4 })
+        applyRule(MarkdownConstants.H4_REGEX, { MarkupStyle.H4 }, getPrefixRemoved = { 5 })
+        applyRule(MarkdownConstants.H5_REGEX, { MarkupStyle.H5 }, getPrefixRemoved = { 6 })
+        applyRule(MarkdownConstants.H6_REGEX, { MarkupStyle.H6 }, getPrefixRemoved = { 7 })
+
+        applyRule(
+            regex = MarkdownConstants.LINK_REGEX,
+            styleFactory = { match -> MarkupStyle.Link(match.groupValues[2]) },
+            getPrefixRemoved = { 1 },
+            getSuffixRemoved = { match -> match.groupValues[2].length + 3 }
+        )
 
         if (!hasChanges) return null
 

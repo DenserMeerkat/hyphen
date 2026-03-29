@@ -13,7 +13,9 @@ import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.em
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.StyleSets
 import com.denser.hyphen.state.BlockStyleManager
@@ -32,15 +34,8 @@ internal fun handleHardwareKeyEvent(
 
     return when {
         isPrimaryModifier && !isShift && !isAlt && event.key == Key.Enter -> {
-            var consumed = false
-            state.textFieldState.edit {
-                val toggled = BlockStyleManager.toggleCheckbox(this, selection.start, strictPrefixCheck = false)
-                if (toggled) {
-                    state.processInput(this)
-                    consumed = true
-                }
-            }
-            consumed
+            state.toggleCheckbox(state.selection.start)
+            true
         }
         event.key == Key.Enter && !isPrimaryModifier && !isShift && !isAlt -> {
             var consumed = false
@@ -68,6 +63,7 @@ internal fun handleHardwareKeyEvent(
                 Key.Four -> { state.toggleStyle(MarkupStyle.H4); true }
                 Key.Five -> { state.toggleStyle(MarkupStyle.H5); true }
                 Key.Six -> { state.toggleStyle(MarkupStyle.H6); true }
+                Key.K -> { state.toggleLink(); true }
                 else -> false
             }
         }
@@ -102,68 +98,76 @@ internal fun applyMarkdownStyles(
         if (needsBaselineAnchor) {
             insert(0, "\u200B")
         }
-        val offset = if (needsBaselineAnchor) 1 else 0
-        insert(length, "\u200B")
+
+        val checkboxes = state.spans
+            .filter { it.style is MarkupStyle.CheckboxUnchecked || it.style is MarkupStyle.CheckboxChecked }
+            .sortedByDescending { it.start }
+
+        val adjustment = if (needsBaselineAnchor) 1 else 0
+        checkboxes.forEach { cb ->
+            val safeStart = (cb.start + adjustment).coerceIn(0, length)
+            val safeEnd = (cb.start + adjustment + 6).coerceIn(0, length)
+            if (safeStart < safeEnd) {
+                replace(safeStart, safeEnd, "  ")
+            }
+        }
 
         val baseSpanStyle = baseTextStyle.toSpanStyle()
-        val textSeq = asCharSequence()
-        for (i in textSeq.indices) {
-            if (textSeq[i] == '\n') {
+        val currentTextSeq = asCharSequence()
+        for (i in currentTextSeq.indices) {
+            if (currentTextSeq[i] == '\n') {
                 addStyle(baseSpanStyle, i, i + 1)
             }
         }
 
-        val sortedSpans = state.spans.sortedBy { span ->
-            if (span.style in StyleSets.allHeadings) 0 else 1
-        }
-
-        sortedSpans.forEach { span ->
-            val safeStart = (span.start + offset).coerceIn(0, length)
-            val safeEnd = (span.end + offset).coerceIn(0, length)
-            if (safeStart >= safeEnd) return@forEach
+        state.spans.forEach { span ->
+            val visualStart = HyphenOffsetMapper.toVisual(span.start, state).coerceIn(0, length)
+            val visualEnd = HyphenOffsetMapper.toVisual(span.end, state).coerceIn(0, length)
+            if (visualStart >= visualEnd) return@forEach
 
             when (span.style) {
-                is MarkupStyle.Bold -> addStyle(styleConfig.boldStyle, safeStart, safeEnd)
-                is MarkupStyle.Italic -> addStyle(styleConfig.italicStyle, safeStart, safeEnd)
-                is MarkupStyle.Underline -> addStyle(styleConfig.underlineStyle, safeStart, safeEnd)
-                is MarkupStyle.Strikethrough -> addStyle(styleConfig.strikethroughStyle, safeStart, safeEnd)
-                is MarkupStyle.Highlight -> addStyle(styleConfig.highlightStyle, safeStart, safeEnd)
-                is MarkupStyle.InlineCode -> addStyle(styleConfig.inlineCodeStyle, safeStart, safeEnd)
-                is MarkupStyle.Blockquote -> addStyle(styleConfig.blockquoteSpanStyle, safeStart, safeEnd)
+                is MarkupStyle.Bold -> addStyle(styleConfig.boldStyle, visualStart, visualEnd)
+                is MarkupStyle.Italic -> addStyle(styleConfig.italicStyle, visualStart, visualEnd)
+                is MarkupStyle.Underline -> addStyle(styleConfig.underlineStyle, visualStart, visualEnd)
+                is MarkupStyle.Strikethrough -> addStyle(styleConfig.strikethroughStyle, visualStart, visualEnd)
+                is MarkupStyle.Highlight -> addStyle(styleConfig.highlightStyle, visualStart, visualEnd)
+                is MarkupStyle.InlineCode -> addStyle(styleConfig.inlineCodeStyle, visualStart, visualEnd)
+                is MarkupStyle.Link -> addStyle(styleConfig.linkStyle, visualStart, visualEnd)
+                is MarkupStyle.Blockquote -> addStyle(styleConfig.blockquoteSpanStyle, visualStart, visualEnd)
 
                 is MarkupStyle.BulletList -> {
-                    val prefixEnd = (safeStart + 2).coerceAtMost(safeEnd)
-                    styleConfig.bulletListStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
-                    styleConfig.bulletListStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                    val prefixEnd = (visualStart + 2).coerceAtMost(visualEnd)
+                    styleConfig.bulletListStyle.prefixStyle?.let { addStyle(it, visualStart, prefixEnd) }
+                    styleConfig.bulletListStyle.contentStyle?.let { addStyle(it, prefixEnd, visualEnd) }
                 }
 
                 is MarkupStyle.OrderedList -> {
-                    val lineText = asCharSequence().substring(safeStart, safeEnd)
+                    val lineText = currentTextSeq.substring(visualStart, visualEnd)
                     val dotIndex = lineText.indexOf('.')
                     val prefixLen = if (dotIndex != -1) (dotIndex + 2).coerceAtMost(lineText.length) else 3
-                    val prefixEnd = (safeStart + prefixLen).coerceAtMost(safeEnd)
-                    styleConfig.orderedListStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
-                    styleConfig.orderedListStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                    val prefixEnd = (visualStart + prefixLen).coerceAtMost(visualEnd)
+                    styleConfig.orderedListStyle.prefixStyle?.let { addStyle(it, visualStart, prefixEnd) }
+                    styleConfig.orderedListStyle.contentStyle?.let { addStyle(it, prefixEnd, visualEnd) }
                 }
 
                 is MarkupStyle.CheckboxUnchecked -> {
-                    val prefixEnd = (safeStart + 6).coerceAtMost(safeEnd)
-                    styleConfig.checkboxUncheckedStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
-                    styleConfig.checkboxUncheckedStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                    val slotEnd = (visualStart + 2).coerceAtMost(visualEnd)
+                    addStyle(SpanStyle(letterSpacing = 0.8.em), visualStart, slotEnd)
+                    styleConfig.checkboxUncheckedStyle?.let { addStyle(it, slotEnd, visualEnd) }
                 }
 
                 is MarkupStyle.CheckboxChecked -> {
-                    val prefixEnd = (safeStart + 6).coerceAtMost(safeEnd)
-                    styleConfig.checkboxCheckedStyle.prefixStyle?.let { addStyle(it, safeStart, prefixEnd) }
-                    styleConfig.checkboxCheckedStyle.contentStyle?.let { addStyle(it, prefixEnd, safeEnd) }
+                    val slotEnd = (visualStart + 2).coerceAtMost(visualEnd)
+                    addStyle(SpanStyle(letterSpacing = 0.8.em), visualStart, slotEnd)
+                    styleConfig.checkboxCheckedStyle?.let { addStyle(it, slotEnd, visualEnd) }
                 }
 
-                is MarkupStyle.H1 -> addStyle(styleConfig.h1Style, safeStart, safeEnd)
-                is MarkupStyle.H2 -> addStyle(styleConfig.h2Style, safeStart, safeEnd)
-                is MarkupStyle.H3 -> addStyle(styleConfig.h3Style, safeStart, safeEnd)
-                is MarkupStyle.H4 -> addStyle(styleConfig.h4Style, safeStart, safeEnd)
-                is MarkupStyle.H5 -> addStyle(styleConfig.h5Style, safeStart, safeEnd)
-                is MarkupStyle.H6 -> addStyle(styleConfig.h6Style, safeStart, safeEnd)
+                is MarkupStyle.H1 -> addStyle(styleConfig.h1Style, visualStart, visualEnd)
+                is MarkupStyle.H2 -> addStyle(styleConfig.h2Style, visualStart, visualEnd)
+                is MarkupStyle.H3 -> addStyle(styleConfig.h3Style, visualStart, visualEnd)
+                is MarkupStyle.H4 -> addStyle(styleConfig.h4Style, visualStart, visualEnd)
+                is MarkupStyle.H5 -> addStyle(styleConfig.h5Style, visualStart, visualEnd)
+                is MarkupStyle.H6 -> addStyle(styleConfig.h6Style, visualStart, visualEnd)
             }
         }
     }

@@ -43,6 +43,10 @@ android {
     }
 }
 
+compose.resources {
+    packageOfResClass = "com.denser.hyphen"
+}
+
 kotlin {
     androidTarget {
         publishLibraryVariants("release")
@@ -74,6 +78,7 @@ kotlin {
                 implementation(libs.foundation)
                 implementation(libs.material3)
                 implementation(libs.ui)
+                implementation(libs.components.resources)
             }
         }
 

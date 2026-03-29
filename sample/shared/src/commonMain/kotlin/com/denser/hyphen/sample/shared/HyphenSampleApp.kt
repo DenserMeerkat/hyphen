@@ -352,7 +352,7 @@ private val DEMO_TEXT = """
     ###### Heading 6
     
     This is a paragraph demonstrating formatting:
-    **Bold**, *Italic*, __Underline__, ~~Strikethrough~~, ==Highlight==, and `Inline Code`.
+    **Bold**, *Italic*, __Underline__, ~~Strikethrough~~, ==Highlight==, `Inline Code`, and [Links](https://github.com/densermeerkat/hyphen).
 
     > This is a blockquote. Nested text can also be **bold** inside quotes.
 

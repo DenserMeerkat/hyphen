@@ -22,6 +22,9 @@ internal object MarkdownConstants {
     // ==text==
     val HIGHLIGHT_REGEX = Regex("==(?!\\s)(.+?)==")
 
+    // [text](url)
+    val LINK_REGEX = Regex("\\[(.+?)\\]\\((.+?)\\)")
+
     // -, *, or • at line start
     val BULLET_LIST_REGEX = Regex(
         pattern = """^[\-*•] (.*?)$""",

@@ -2,6 +2,7 @@ package com.denser.hyphen.state
 
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
@@ -76,7 +77,7 @@ class HyphenTextState(
     /** The current cursor position or selected range within [text]. */
     val selection: TextRange get() = textFieldState.selection
 
-    private val _spans = mutableStateListOf<MarkupStyleRange>()
+    internal val _spans = mutableStateListOf<MarkupStyleRange>()
 
     /**
      * The active list of [MarkupStyleRange] entries describing all inline and block
@@ -106,6 +107,11 @@ class HyphenTextState(
     private val historyManager = HistoryManager()
     private val selectionManager = SelectionManager()
     private var isUndoingOrRedoing = false
+
+    /**
+     * The link span currently being edited in a dialog.
+     */
+    var activeLinkForEditing by mutableStateOf<MarkupStyleRange?>(null)
 
     /**
      * Whether the text field currently has input focus.
@@ -152,7 +158,7 @@ class HyphenTextState(
     }
 
     private fun resolvedSelection(): Pair<Int, Int> =
-        selectionManager.resolve(selection)
+        selectionManager.resolve(selection, text.length)
 
     // -------------------------------------------------------------------------
     // Input processing
@@ -209,8 +215,20 @@ class HyphenTextState(
             }
         }
 
-        val activeInlineStyles = StyleSets.allInline.filter { style ->
-            hasStyle(style) && (style !in StyleSets.allHeadings || pendingOverrides[style] == true)
+        val isNewlineInsertion = if (rawLengthDifference > 0) {
+            val start = (buffer.selection.start - rawLengthDifference).coerceAtLeast(0)
+            buffer.asCharSequence().substring(start, buffer.selection.start).contains('\n')
+        } else false
+
+        val availableInlineStyles = (StyleSets.allInline + _spans.map { it.style }.filterIsInstance<MarkupStyle.Link>()).distinct()
+        val activeInlineStyles = availableInlineStyles.filter { style ->
+            val hasStyleAtCursor = if (isNewlineInsertion) {
+                val (selStart, _) = resolvedSelection()
+                _spans.any { it.style == style && selStart > it.start && selStart < it.end }
+            } else {
+                hasStyle(style)
+            }
+            hasStyleAtCursor && (style !in StyleSets.allHeadings || pendingOverrides[style] == true)
         }
 
         val markdownResult = MarkdownProcessor.process(newText, cursorPosition)
@@ -271,11 +289,12 @@ class HyphenTextState(
                 if (span.start >= span.end) return@mapNotNull null
 
                 val bufferStr = buffer.asCharSequence()
+                val safeStart = span.start.coerceIn(0, bufferStr.length)
 
-                val lastNewline = bufferStr.lastIndexOf('\n', (span.start - 1).coerceAtLeast(0))
+                val lastNewline = bufferStr.lastIndexOf('\n', (safeStart - 1).coerceAtLeast(0))
                 val lineStart = if (lastNewline == -1) 0 else lastNewline + 1
 
-                if (deletedNewlines && span.start > lineStart) {
+                if (deletedNewlines && safeStart > lineStart) {
                     return@mapNotNull null
                 }
 
@@ -327,21 +346,42 @@ class HyphenTextState(
     }
 
     /**
-     * Toggles the checked/unchecked state of a checkbox on the current line.
-     * Does nothing if the current line does not contain a checkbox.
+     * Toggles the checked/unchecked state of checkboxes.
+     * 
+     * @param index If provided, toggles the checkbox on the line containing this index. 
+     * If null (default), toggles all checkboxes within the current selection.
      */
-    fun toggleCheckboxAtCursor() {
+    fun toggleCheckbox(index: Int? = null) {
         saveSnapshot(force = true)
 
-        val effectiveSel = selectionManager.effectiveSelection(selection)
-        var toggled = false
-
-        textFieldState.edit {
-            toggled = BlockStyleManager.toggleCheckbox(this, effectiveSel.start, strictPrefixCheck = false)
+        val (selStart, selEnd) = if (index != null) index to index else resolvedSelection()
+        val lineStarts = mutableListOf<Int>()
+        
+        var currentIdx = text.lastIndexOf('\n', (selStart - 1).coerceAtLeast(0)) + 1
+        if (currentIdx == -1) currentIdx = 0
+        
+        while (currentIdx <= selEnd) {
+            lineStarts.add(currentIdx)
+            val nextNewline = text.indexOf('\n', currentIdx)
+            if (nextNewline == -1 || nextNewline >= selEnd) break
+            currentIdx = nextNewline + 1
         }
 
-        if (toggled) {
-            val result = MarkdownProcessor.process(text, selection.start)
+        var anyToggled = false
+        textFieldState.edit {
+            lineStarts.reversed().forEach { start ->
+                val spansList = _spans.toList()
+                val (toggled, newSpans) = BlockStyleManager.toggleCheckbox(this, spansList, start, strictPrefixCheck = false)
+                if (toggled) {
+                    anyToggled = true
+                    _spans.clear()
+                    _spans.addAll(newSpans)
+                }
+            }
+        }
+
+        if (anyToggled) {
+            val result = MarkdownProcessor.process(text, selStart)
             val inlineSpans = _spans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
 
             _spans.clear()
@@ -374,6 +414,8 @@ class HyphenTextState(
         if (selStart == selEnd) {
             pendingOverrides = pendingOverrides.toMutableMap().apply {
                 StyleSets.allInline.filter { hasStyle(it) }.forEach { put(it, false) }
+                _spans.filter { it.style is MarkupStyle.Link && selStart > it.start && selStart <= it.end }
+                    .forEach { put(it.style, false) }
             }
             return
         }
@@ -400,6 +442,95 @@ class HyphenTextState(
     }
 
     /**
+     * Toggles a link on the current selection.
+     * If the cursor is inside an existing link, it opens it for editing.
+     * If there is a selection, it wraps it in a link and opens it for editing.
+     */
+    fun toggleLink() {
+        val (selStart, selEnd) = resolvedSelection()
+        
+        val existingLink = _spans.find { it.style is MarkupStyle.Link && selStart >= it.start && selStart <= it.end }
+        if (existingLink != null) {
+            if (selStart == selEnd && selStart == existingLink.end) {
+                val isOff = pendingOverrides[existingLink.style] == false
+                pendingOverrides = if (isOff) {
+                    pendingOverrides - existingLink.style
+                } else {
+                    pendingOverrides + (existingLink.style to false)
+                }
+                return
+            }
+            
+            activeLinkForEditing = existingLink
+            return
+        }
+        
+        if (selStart != selEnd) {
+            saveSnapshot(force = true)
+            val newLinkStyle = MarkupStyle.Link("")
+            val newSpan = MarkupStyleRange(newLinkStyle, selStart, selEnd)
+            
+            val updated = _spans.toMutableList()
+            updated.add(newSpan)
+            
+            _spans.clear()
+            _spans.addAll(SpanManager.consolidateSpans(updated))
+            
+            activeLinkForEditing = _spans.find { it.style == newLinkStyle && it.start == selStart } ?: newSpan
+        } else {
+            saveSnapshot(force = true)
+            val placeholder = "link"
+            
+            textFieldState.edit { insert(selStart, placeholder) }
+            
+            val shiftedSpans = SpanManager.shiftSpans(_spans, selStart, placeholder.length)
+            
+            val newLinkStyle = MarkupStyle.Link("")
+            val newSpan = MarkupStyleRange(newLinkStyle, selStart, selStart + placeholder.length)
+            
+            val updated = shiftedSpans.toMutableList()
+            updated.add(newSpan)
+            
+            _spans.clear()
+            _spans.addAll(SpanManager.consolidateSpans(updated))
+            
+            activeLinkForEditing = _spans.find { it.style == newLinkStyle && it.start == selStart } ?: newSpan
+        }
+    }
+
+    /**
+     * Updates an existing link's display text and URL.
+     *
+     * @param span The current link span to update.
+     * @param newText The new display text for the link.
+     * @param newUrl The new URL to associate with the link.
+     */
+    fun updateLink(span: MarkupStyleRange, newText: String, newUrl: String) {
+        val index = _spans.indexOf(span)
+        if (index == -1) return
+
+        saveSnapshot(force = true)
+        
+        val lengthDiff = newText.length - (span.end - span.start)
+
+        textFieldState.edit {
+            replace(span.start, span.end, newText)
+        }
+
+        val shiftedSpans = SpanManager.shiftSpans(_spans, span.start, lengthDiff)
+
+        val finalSpans = shiftedSpans.map { s ->
+            if (s.start == span.start && s.style is MarkupStyle.Link && s.style.url == (span.style as MarkupStyle.Link).url) {
+                s.copy(style = MarkupStyle.Link(newUrl))
+            } else s
+        }
+        
+        _spans.clear()
+        _spans.addAll(SpanManager.consolidateSpans(finalSpans))
+        selectionManager.clear()
+    }
+
+    /**
      * Returns `true` if the given [style] is active at the current selection or cursor.
      *
      * - **Block styles**: delegates to [BlockStyleManager.hasBlockStyle], which inspects
@@ -418,6 +549,16 @@ class HyphenTextState(
         if (BlockStyleManager.isBlockStyle(style)) {
             return BlockStyleManager.hasBlockStyle(text, selection, style)
         }
+        
+        if (style is MarkupStyle.Link && style.url.isEmpty()) {
+            val (selStart, selEnd) = resolvedSelection()
+            return if (selStart == selEnd) {
+                _spans.any { it.style is MarkupStyle.Link && selStart > it.start && selStart <= it.end }
+            } else {
+                _spans.any { it.style is MarkupStyle.Link && it.start <= selStart && it.end >= selEnd }
+            }
+        }
+
         if (pendingOverrides.containsKey(style)) return pendingOverrides[style] == true
 
         val (selStart, selEnd) = resolvedSelection()
@@ -545,7 +686,7 @@ class HyphenTextState(
     // -------------------------------------------------------------------------
 
     private fun applyBlockStyleInternal(style: MarkupStyle) {
-        val effectiveSel = selectionManager.effectiveSelection(selection)
+        val effectiveSel = selectionManager.effectiveSelection(selection, text.length)
         var shiftedSpans = _spans.toList()
         textFieldState.edit {
             shiftedSpans =

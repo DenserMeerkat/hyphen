@@ -9,14 +9,15 @@ internal object SpanManager {
     fun shiftSpans(
         currentSpans: List<MarkupStyleRange>,
         changeStart: Int,
-        lengthDifference: Int
+        lengthDifference: Int,
+        push: Boolean = false
     ): List<MarkupStyleRange> {
         if (lengthDifference == 0) return currentSpans
 
         return currentSpans.mapNotNull { span ->
             when {
-                changeStart >= span.end -> span
-                changeStart < span.start -> {
+                changeStart > span.end || (!push && changeStart == span.end) -> span
+                changeStart < span.start || (push && changeStart == span.start) -> {
                     val newStart = (span.start + lengthDifference).coerceAtLeast(0)
                     val newEnd = (span.end + lengthDifference).coerceAtLeast(newStart)
                     if (newStart == newEnd) null else span.copy(start = newStart, end = newEnd)

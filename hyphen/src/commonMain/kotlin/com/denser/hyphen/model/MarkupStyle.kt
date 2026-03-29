@@ -104,4 +104,7 @@ sealed interface MarkupStyle {
 
     /** Heading level 6. Spans the entire line. Serialized as `###### text`. */
     data object H6 : MarkupStyle
+
+    /** Link with an external URL. Serialized as `[text](url)`. */
+    data class Link(val url: String) : MarkupStyle
 }
