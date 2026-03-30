@@ -1,6 +1,7 @@
 package com.denser.hyphen.ui.link
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.geometry.Offset
 import com.denser.hyphen.model.MarkupStyleRange
 
 /**
@@ -36,7 +37,7 @@ import com.denser.hyphen.model.MarkupStyleRange
  * HyphenBasicTextEditor(
  *     state = state,
  *     linkConfig = HyphenLinkConfig(
- *         dropdownContent = { span, onDismiss, onEditRequest ->
+ *         dropdownContent = { span, menuOffset, onDismiss, onEditRequest ->
  *             // your own DropdownMenu / BottomSheet / etc.
  *             MyLinkMenu(
  *                 url = (span.style as MarkupStyle.Link).url,
@@ -63,6 +64,7 @@ import com.denser.hyphen.model.MarkupStyleRange
  *   When non-null it is invoked instead of the default [androidx.compose.material3.DropdownMenu].
  *   Parameters:
  *   - `span` — the [com.denser.hyphen.model.MarkupStyleRange] of the link that was interacted with.
+ *   - `menuOffset` — the [androidx.compose.ui.geometry.Offset] where the interaction occurred, used to position the dropdown.
  *   - `onDismiss` — call this to close the menu without any further action.
  *   - `onEditRequest` — call this to open the edit dialog (built-in or custom) for `span`.
  * @property dialogContent Composable slot that replaces the built-in link edit dialog.
@@ -77,6 +79,7 @@ data class HyphenLinkConfig(
     val onFollowLink: ((url: String) -> Unit)? = null,
     val dropdownContent: (@Composable (
         span: MarkupStyleRange,
+        menuOffset: Offset,
         onDismiss: () -> Unit,
         onEditRequest: (MarkupStyleRange) -> Unit,
     ) -> Unit)? = null,
