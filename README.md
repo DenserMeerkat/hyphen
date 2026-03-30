@@ -40,6 +40,7 @@ Type Markdown syntax directly and watch it convert as you write — no mode swit
 | `**text**`              | **Bold**             |
 | `*text*`                | _Italic_             |
 | `__text__`              | Underline            |
+| `[text](url)`           | [Link](url)          |
 | `` `text` ``            | `Inline code`        |
 | `~~text~~`              | ~~Strikethrough~~    |
 | `==text==`              | Highlight            |
@@ -105,7 +106,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.3.0-alpha01"
+hyphen = "0.4.0-alpha01"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -134,7 +135,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.3.0-alpha01")
+            implementation("io.github.densermeerkat:hyphen:0.4.0-alpha01")
         }
     }
 }

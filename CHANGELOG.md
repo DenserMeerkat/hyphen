@@ -1,3 +1,15 @@
+## [0.4.0-alpha01] - 2026-03-30
+
+### ✨ Added
+* **Links Support:** Integrated link formatting with full support for custom dropdowns and link-editing dialogs.
+* **Shortcut:** Added `Ctrl/Cmd + K` shortcut to toggle links.
+* **New Checkbox UI:** Modernized checkbox design with improved visual alignment and interactive feedback.
+
+### 🛠️ Fixed
+* **Text Consistency:** Eliminated manual Zero Width Space (ZWSP) insertion, resolving state synchronization issues and redundant characters that caused cursor "ghosting" behavior.
+
+---
+
 ## [0.3.0-alpha01] - 2026-03-18
 
 ### ✨ Added
