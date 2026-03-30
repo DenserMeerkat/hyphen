@@ -110,42 +110,56 @@ fun HyphenBasicTextEditor(
     CompositionLocalProvider(LocalClipboard provides customClipboard) {
         var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
-        InlineContentHost(
-            state = state,
-            textLayoutResult = { textLayoutResult },
-            scrollState = scrollState,
-            linkConfig = linkConfig,
-            textStyle = textStyle,
-            modifier = modifier,
-        ) {
-            BasicTextField(
-                state = state.textFieldState,
-                modifier = Modifier
-                    .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
-                    .onFocusChanged { focusState ->
-                        state.isFocused = focusState.isFocused
-                    },
-                enabled = enabled,
-                readOnly = readOnly,
-                textStyle = textStyle,
-                keyboardOptions = keyboardOptions,
-                lineLimits = lineLimits,
-                scrollState = scrollState,
-                interactionSource = interactionSource,
-                cursorBrush = cursorBrush,
-                decorator = decorator,
-                onTextLayout = { getResult ->
-                    textLayoutResult = getResult()
-                    onTextLayout?.invoke(this, getResult)
-                },
-                outputTransformation = {
-                    applyMarkdownStyles(state, styleConfig, textStyle, this)
-                },
-                inputTransformation = {
-                    processMarkdownInput(state, this)
-                },
-            )
+        val wrappedDecorator = TextFieldDecorator { innerTextField ->
+            val hostContent = @Composable {
+                InlineContentHost(
+                    state = state,
+                    textLayoutResult = { textLayoutResult },
+                    scrollState = scrollState,
+                    linkConfig = linkConfig,
+                    textStyle = textStyle,
+                    modifier = Modifier,
+                ) {
+                    innerTextField()
+                }
+            }
+
+            if (decorator != null) {
+                decorator.Decoration {
+                    hostContent()
+                }
+            } else {
+                hostContent()
+            }
         }
+
+        BasicTextField(
+            state = state.textFieldState,
+            modifier = modifier
+                .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
+                .onFocusChanged { focusState ->
+                    state.isFocused = focusState.isFocused
+                },
+            enabled = enabled,
+            readOnly = readOnly,
+            textStyle = textStyle,
+            keyboardOptions = keyboardOptions,
+            lineLimits = lineLimits,
+            scrollState = scrollState,
+            interactionSource = interactionSource,
+            cursorBrush = cursorBrush,
+            decorator = wrappedDecorator,
+            onTextLayout = { getResult ->
+                textLayoutResult = getResult()
+                onTextLayout?.invoke(this, getResult)
+            },
+            outputTransformation = {
+                applyMarkdownStyles(state, styleConfig, textStyle, this)
+            },
+            inputTransformation = {
+                processMarkdownInput(state, this)
+            },
+        )
     }
 
     val activeLink = state.activeLinkForEditing
