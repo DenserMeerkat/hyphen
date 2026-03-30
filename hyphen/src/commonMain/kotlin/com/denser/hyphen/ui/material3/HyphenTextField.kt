@@ -40,7 +40,7 @@ import com.denser.hyphen.ui.style.HyphenStyleConfig
  * ```kotlin
  * val state = rememberHyphenTextState()
  *
- * HyphenTextEditor(
+ * HyphenTextField(
  *     state = state,
  *     label = { Text("Notes") },
  *     placeholder = { Text("Start typing…") },
@@ -77,7 +77,7 @@ import com.denser.hyphen.ui.style.HyphenStyleConfig
  * @param interactionSource Optional hoisted [MutableInteractionSource].
  * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle].
  * @param linkConfig Interaction configuration for link spans — custom dropdown, custom dialog,
- *   and/or a custom URL-open handler. Defaults to built-in Material3 UI.
+ *   and/or a custom URL-open handler. Defaults to built-in UI.
  * @param onTextLayout Callback invoked on text layout recalculation.
  * @param clipboardLabel Label attached to clipboard entries on copy/cut.
  * @param onTextChange Callback invoked whenever the plain text changes.
@@ -86,7 +86,7 @@ import com.denser.hyphen.ui.style.HyphenStyleConfig
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HyphenTextEditor(
+fun HyphenTextField(
     state: HyphenTextState,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,

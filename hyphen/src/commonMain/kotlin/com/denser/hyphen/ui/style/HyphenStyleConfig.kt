@@ -27,13 +27,14 @@ data class ListItemStyle(
 /**
  * Visual configuration for the Hyphen editor's inline and block formatting styles.
  *
- * **Checkbox rendering**
+ * **Checkbox Rendering**
  *
- * Checkbox items are always rendered with a Material3 [androidx.compose.material3.Checkbox]
- * widget overlaid on the text field. The raw `- [ ] ` / `- [x] ` prefix is collapsed to
- * zero visual width via `fontSize = 0.sp` so it never appears. The widget appearance is
- * driven by your Material3 theme — the only text-level customization point is the label
- * of checked items via [checkboxCheckedStyle]:
+ * Checkboxes are rendered using a native Material3 [androidx.compose.material3.Checkbox]
+ * widget overlaid on the editor at the line start. The raw Markdown prefix (`- [ ] ` or `- [x] `)
+ * is internally collapsed so it does not interfere with text layout.
+ *
+ * Use [checkboxCheckedStyle] and [checkboxUncheckedStyle] to style the **label text** of the
+ * checkbox item (e.g., adding a strikethrough to checked items).
  *
  * ```kotlin
  * HyphenBasicTextEditor(
@@ -56,10 +57,10 @@ data class ListItemStyle(
  * @property blockquoteSpanStyle Applied to [com.denser.hyphen.model.MarkupStyle.Blockquote] spans.
  * @property bulletListStyle Controls bullet list item appearance (prefix + content).
  * @property orderedListStyle Controls ordered list item appearance (prefix + content).
- * @property checkboxCheckedStyle [SpanStyle] applied to the label text of checked
- *   items only. Defaults to [TextDecoration.LineThrough]. Set to `null` to use the base style.
- * @property checkboxUncheckedStyle [SpanStyle] applied to the label text of unchecked
- *   items only. Defaults to `null`.
+ * @property checkboxCheckedStyle [SpanStyle] applied to the **label text** of checked
+ *   items. Defaults to [TextDecoration.LineThrough]. Set to `null` to disable formatting.
+ * @property checkboxUncheckedStyle [SpanStyle] applied to the **label text** of unchecked
+ *   items. Defaults to `null`.
  * @property h1Style Applied to [com.denser.hyphen.model.MarkupStyle.H1] spans.
  * @property h2Style Applied to [com.denser.hyphen.model.MarkupStyle.H2] spans.
  * @property h3Style Applied to [com.denser.hyphen.model.MarkupStyle.H3] spans.

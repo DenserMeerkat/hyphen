@@ -36,7 +36,7 @@
 Type Markdown syntax directly and watch it convert as you write — no mode switching, no preview pane required.
 
 | Syntax                  | Style                |
-| ----------------------- | -------------------- |
+|-------------------------|----------------------|
 | `**text**`              | **Bold**             |
 | `*text*`                | _Italic_             |
 | `__text__`              | Underline            |
@@ -63,26 +63,27 @@ Cut, copy, and paste all work across Android, Desktop, and Web. Copying a select
 
 Full hardware keyboard support on Desktop and Web:
 
-| Shortcut                 | Action                            |
-| ------------------------ | --------------------------------- |
-| `Ctrl / Cmd + B`         | Toggle bold                       |
-| `Ctrl / Cmd + I`         | Toggle italic                     |
-| `Ctrl / Cmd + U`         | Toggle underline                  |
-| `Ctrl / Cmd + Shift + S` | Toggle strikethrough              |
-| `Ctrl / Cmd + Shift + X` | Toggle strikethrough              |
-| `Ctrl / Cmd + Alt + X`   | Toggle strikethrough              |
-| `Ctrl / Cmd + Shift + H` | Toggle highlight                  |
-| `Ctrl / Cmd + Space`     | Clear all styles on selection     |
-| `Ctrl / Cmd + 1`         | Toggle Heading 1                  |
-| `Ctrl / Cmd + 2`         | Toggle Heading 2                  |
-| `Ctrl / Cmd + 3`         | Toggle Heading 3                  |
-| `Ctrl / Cmd + 4`         | Toggle Heading 4                  |
-| `Ctrl / Cmd + 5`         | Toggle Heading 5                  |
-| `Ctrl / Cmd + 6`         | Toggle Heading 6                  |
-| `Ctrl / Cmd + Enter`     | Toggle checkbox checked/unchecked |
-| `Ctrl / Cmd + Z`         | Undo                              |
-| `Ctrl / Cmd + Y`         | Redo                              |
-| `Ctrl / Cmd + Shift + Z` | Redo                              |
+| Shortcut                 | Action                          |
+|--------------------------|---------------------------------|
+| `Ctrl / Cmd + B`         | Toggle bold                     |
+| `Ctrl / Cmd + I`         | Toggle italic                   |
+| `Ctrl / Cmd + U`         | Toggle underline                |
+| `Ctrl / Cmd + Shift + S` | Toggle strikethrough            |
+| `Ctrl / Cmd + Shift + X` | Toggle strikethrough            |
+| `Ctrl / Cmd + Alt + X`   | Toggle strikethrough            |
+| `Ctrl / Cmd + Shift + H` | Toggle highlight                |
+| `Ctrl / Cmd + Space`     | Clear all styles on selection   |
+| `Ctrl / Cmd + 1`         | Toggle Heading 1                |
+| `Ctrl / Cmd + 2`         | Toggle Heading 2                |
+| `Ctrl / Cmd + 3`         | Toggle Heading 3                |
+| `Ctrl / Cmd + 4`         | Toggle Heading 4                |
+| `Ctrl / Cmd + 5`         | Toggle Heading 5                |
+| `Ctrl / Cmd + 6`         | Toggle Heading 6                |
+| `Ctrl / Cmd + Enter`     | Toggle checkbox on current line |
+| `Ctrl / Cmd + K`         | Toggle link on selection        |
+| `Ctrl / Cmd + Z`         | Undo                            |
+| `Ctrl / Cmd + Y`         | Redo                            |
+| `Ctrl / Cmd + Shift + Z` | Redo                            |
 
 ### ↩️ Undo / Redo History
 
@@ -146,9 +147,9 @@ val state = rememberHyphenTextState(
     initialText = "**Hello**, *Hyphen*!"
 )
 
-HyphenBasicTextEditor(
+HyphenTextField(
     state = state,
-    modifier = Modifier.fillMaxSize(),
+    label = { Text("Notes") },
 )
 
 // Read the result at any time
@@ -180,12 +181,12 @@ HyphenBasicTextEditor(
 )
 ```
 
-### `HyphenTextEditor` _(Material 3)_
+### `HyphenTextField` _(Material 3)_
 
 Wraps `HyphenBasicTextEditor` inside a standard Material3 filled text field decorator — labels, placeholder, leading/trailing icons, supporting text, and error state all work out of the box.
 
 ```kotlin
-HyphenTextEditor(
+HyphenTextField(
     state = state,
     label = { Text("Notes") },
     placeholder = { Text("Start typing…") },
@@ -279,66 +280,73 @@ viewModelScope.launch {
 
 ### `HyphenBasicTextEditor`
 
-| Parameter           | Type                        | Default                   | Description                                                                                 |
-| ------------------- | --------------------------- | ------------------------- | ------------------------------------------------------------------------------------------- |
-| `state`             | `HyphenTextState`           | —                         | Required. Holds text, spans, selection, and history.                                        |
-| `modifier`          | `Modifier`                  | `Modifier`                | Applied to the underlying `BasicTextField`.                                                 |
-| `enabled`           | `Boolean`                   | `true`                    | When `false`, the field is neither editable nor focusable.                                  |
-| `readOnly`          | `Boolean`                   | `false`                   | When `true`, the field cannot be edited but can be focused and copied from.                 |
-| `textStyle`         | `TextStyle`                 | `16sp`                    | Typography applied to the visible text.                                                     |
-| `styleConfig`       | `HyphenStyleConfig`         | `HyphenStyleConfig()`     | Visual appearance of each `MarkupStyle` — colors, weights, decorations.                     |
-| `keyboardOptions`   | `KeyboardOptions`           | Sentences, no autocorrect | Software keyboard configuration.                                                            |
-| `lineLimits`        | `TextFieldLineLimits`       | `Default`                 | Single-line or multi-line behaviour.                                                        |
-| `scrollState`       | `ScrollState`               | `rememberScrollState()`   | Controls vertical or horizontal scroll of the field content.                                |
-| `interactionSource` | `MutableInteractionSource?` | `null`                    | Hoist to observe focus, hover, and press interactions externally.                           |
-| `cursorBrush`       | `Brush`                     | `SolidColor(Color.Black)` | Cursor color. Pass `SolidColor(Color.Unspecified)` to hide.                                 |
-| `decorator`         | `TextFieldDecorator?`       | `null`                    | Wraps the field with labels, icons, or borders (e.g. a Material3 decorator).                |
-| `onTextLayout`      | `(Density.(...) -> Unit)?`  | `null`                    | Invoked on every text layout recalculation. Useful for cursor drawing or hit testing.       |
-| `clipboardLabel`    | `String`                    | `"Markdown Text"`         | Label attached to the clipboard entry when text is copied.                                  |
-| `onTextChange`      | `((String) -> Unit)?`       | `null`                    | Invoked whenever the plain undecorated text changes.                                        |
-| `onMarkdownChange`  | `((String) -> Unit)?`       | `null`                    | Invoked whenever text or formatting changes, providing the full serialized Markdown string. |
+| Parameter           | Type                        | Default                       | Description                                                                                     |
+|:--------------------|:----------------------------|:------------------------------|:------------------------------------------------------------------------------------------------|
+| `state`             | `HyphenTextState`           | **Required**                  | Holds text content, spans, selection, and undo/redo history.                                    |
+| `modifier`          | `Modifier`                  | `Modifier`                    | Applied to the underlying `BasicTextField`.                                                     |
+| `enabled`           | `Boolean`                   | `true`                        | When `false`, the field is neither editable nor focusable.                                      |
+| `readOnly`          | `Boolean`                   | `false`                       | When `true`, the field cannot be modified but can be focused and copied.                        |
+| `textStyle`         | `TextStyle`                 | `TextStyle(fontSize = 16.sp)` | Typographic style applied to the visible text.                                                  |
+| `styleConfig`       | `HyphenStyleConfig`         | `HyphenStyleConfig()`         | Visual appearance of each `MarkupStyle`.                                                        |
+| `linkConfig`        | `HyphenLinkConfig`          | `HyphenLinkConfig()`          | Interaction configuration for link spans (menus, dialogs, opening URLs).                        |
+| `keyboardOptions`   | `KeyboardOptions`           | Sentences, no autocorrect     | Software keyboard options.                                                                      |
+| `lineLimits`        | `TextFieldLineLimits`       | `TextFieldLineLimits.Default` | Single-line or multi-line behaviour.                                                            |
+| `scrollState`       | `ScrollState`               | `rememberScrollState()`       | Controls vertical or horizontal scroll of the field content.                                    |
+| `interactionSource` | `MutableInteractionSource?` | `null`                        | Hoist to observe focus, hover, and press interactions externally.                               |
+| `cursorBrush`       | `Brush`                     | `SolidColor(Color.Black)`     | Brush used to paint the cursor.                                                                 |
+| `decorator`         | `TextFieldDecorator?`       | `null`                        | Optional decorator for external visual styling.                                                 |
+| `onTextLayout`      | `(Density.(...) -> Unit)?`  | `null`                        | Callback invoked on every text layout recalculation.                                            |
+| `clipboardLabel`    | `String`                    | `"Markdown Text"`             | Label attached to clipboard entries on copy/cut.                                                |
+| `onTextChange`      | `((String) -> Unit)?`       | `null`                        | Callback invoked whenever the plain text changes.                                               |
+| `onMarkdownChange`  | `((String) -> Unit)?`       | `null`                        | Callback invoked whenever text or formatting changes, providing the serialized Markdown string. |
 
 ### `HyphenTextState`
 
-| Member                     | Description                                                         |
-| -------------------------- | ------------------------------------------------------------------- |
-| `text`                     | Plain text with all Markdown syntax stripped                        |
-| `selection`                | Current cursor position or selected range (`TextRange`)             |
-| `spans`                    | Snapshot-observable list of active `MarkupStyleRange` entries       |
-| `pendingOverrides`         | Transient style intent applied to the next typed characters         |
-| `canUndo` / `canRedo`      | Undo / redo availability                                            |
-| `isFocused`                | Whether the field currently has input focus                         |
-| `toggleStyle(style)`       | Toggle an inline or block style on the current selection            |
-| `clearAllStyles()`         | Remove all inline formatting from the selection; suppress at cursor |
-| `hasStyle(style)`          | `true` if the style is active at the current selection or cursor    |
-| `isStyleAt(index, style)`  | Point query against the span list (ignores selection / overrides)   |
-| `clearPendingOverrides()`  | Reset transient typing intent                                       |
-| `undo()` / `redo()`        | Navigate undo / redo history                                        |
-| `toMarkdown(start?, end?)` | Serialize content (or a range) to a Markdown string                 |
-| `setMarkdown(markdown)`    | Replace all content programmatically and reset history              |
-| `markdownFlow`             | `Flow<String>` emitting on every text or formatting change          |
+| Property / Method             | Type / Return               | Description                                                                                |
+|:------------------------------|:----------------------------|:-------------------------------------------------------------------------------------------|
+| `textFieldState`              | `TextFieldState`            | The underlying Compose foundation state driving the editor.                                |
+| `text`                        | `String`                    | Plain text with all Markdown syntax stripped.                                              |
+| `selection`                   | `TextRange`                 | Current cursor position or selected range.                                                 |
+| `spans`                       | `List<MarkupStyleRange>`    | Snapshot-observable list of active formatting spans.                                       |
+| `pendingOverrides`            | `Map<MarkupStyle, Boolean>` | Transient style intent applied to the next typed characters.                               |
+| `canUndo` / `canRedo`         | `Boolean`                   | `true` if undo/redo actions are available in the history stack.                            |
+| `activeLinkForEditing`        | `MarkupStyleRange?`         | The link span currently being edited via the built-in dialog.                              |
+| `isFocused`                   | `Boolean`                   | Whether the text field currently has input focus.                                          |
+| `toggleStyle(style)`          | `Unit`                      | Toggles an inline or block style on the current selection.                                 |
+| `toggleCheckbox(index?)`      | `Unit`                      | Toggles the checked/unchecked state of checkboxes in the selection or at a specific index. |
+| `clearAllStyles()`            | `Unit`                      | Removes all inline formatting from the selection; suppresses at cursor.                    |
+| `toggleLink()`                | `Unit`                      | Wraps selection in a link, or opens an existing link at the cursor for editing.            |
+| `updateLink(span, text, url)` | `Unit`                      | Updates an existing link's display text and URL.                                           |
+| `hasStyle(style)`             | `Boolean`                   | `true` if the style is active at the current selection or cursor.                          |
+| `isStyleAt(index, style)`     | `Boolean`                   | Point query against the span list (ignores selection / overrides).                         |
+| `clearPendingOverrides()`     | `Unit`                      | Resets transient typing intent.                                                            |
+| `undo()` / `redo()`           | `Unit`                      | Navigates the undo / redo history stack.                                                   |
+| `toMarkdown(start?, end?)`    | `String`                    | Serializes content (or a substring range) to a Markdown formatted string.                  |
+| `setMarkdown(markdown)`       | `Unit`                      | Replaces all content programmatically, parses it, and resets history.                      |
+| `markdownFlow`                | `Flow<String>`              | Emits the serialized Markdown string on every text or formatting change.                   |
 
 ### `HyphenStyleConfig`
 
-| Property                 | Default                            |
-| ------------------------ | ---------------------------------- |
-| `boldStyle`              | `FontWeight.Bold`                  |
-| `italicStyle`            | `FontStyle.Italic`                 |
-| `underlineStyle`         | `TextDecoration.Underline`         |
-| `strikethroughStyle`     | `TextDecoration.LineThrough`       |
-| `highlightStyle`         | Semi-transparent yellow background |
-| `inlineCodeStyle`        | Monospace, light grey background   |
-| `blockquoteSpanStyle`    | Italic, grey, faint background     |
-| `bulletListStyle`        | `ListItemStyle()` — inherits base  |
-| `orderedListStyle`       | `ListItemStyle()` — inherits base  |
-| `checkboxUncheckedStyle` | `ListItemStyle()` — inherits base  |
-| `checkboxCheckedStyle`   | `ListItemStyle()` — inherits base  |
-| `h1Style`                | `24.sp`, `FontWeight.Bold`         |
-| `h2Style`                | `22.sp`, `FontWeight.Bold`         |
-| `h3Style`                | `20.sp`, `FontWeight.Bold`         |
-| `h4Style`                | `18.sp`, `FontWeight.Bold`         |
-| `h5Style`                | `17.sp`, `FontWeight.Bold`         |
-| `h6Style`                | `16.sp`, `FontWeight.Bold`         |
+| Property                 | Default Value                                                                                      |
+|--------------------------|----------------------------------------------------------------------------------------------------|
+| `boldStyle`              | `SpanStyle(fontWeight = FontWeight.Bold)`                                                          |
+| `italicStyle`            | `SpanStyle(fontStyle = FontStyle.Italic)`                                                          |
+| `underlineStyle`         | `SpanStyle(textDecoration = TextDecoration.Underline)`                                             |
+| `strikethroughStyle`     | `SpanStyle(textDecoration = TextDecoration.LineThrough)`                                           |
+| `highlightStyle`         | `SpanStyle(background = Color(0xFFFFEB3B).copy(alpha = 0.4f))`                                     |
+| `inlineCodeStyle`        | `SpanStyle(background = Color.Gray.copy(alpha = 0.15f), fontFamily = FontFamily.Monospace)`        |
+| `blockquoteSpanStyle`    | `SpanStyle(fontStyle = FontStyle.Italic, color = Color.Gray, background = Color.Gray.copy(0.05f))` |
+| `bulletListStyle`        | `ListItemStyle()`                                                                                  |
+| `orderedListStyle`       | `ListItemStyle()`                                                                                  |
+| `checkboxCheckedStyle`   | `SpanStyle(textDecoration = TextDecoration.LineThrough)`                                           |
+| `checkboxUncheckedStyle` | `null`                                                                                             |
+| `h1Style`                | `SpanStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold)`                                        |
+| `h2Style`                | `SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold)`                                        |
+| `h3Style`                | `SpanStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold)`                                        |
+| `h4Style`                | `SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold)`                                        |
+| `h5Style`                | `SpanStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold)`                                        |
+| `h6Style`                | `SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)`                                        |
+| `linkStyle`              | `SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)`                         |
 
 ### `MarkupStyle`
 
@@ -369,21 +377,33 @@ MarkupStyle.CheckboxChecked
 
 ### `ListItemStyle`
 
-Controls the prefix marker and content text of a list item independently. Used by `bulletListStyle`, `orderedListStyle`, `checkboxUncheckedStyle`, and `checkboxCheckedStyle` on `HyphenStyleConfig`.
+Controls the prefix marker and content text of a list item independently. Used by `bulletListStyle`
+and `orderedListStyle` on `HyphenStyleConfig`.
+
+> [!NOTE]
+> Checklist items (`- [ ]`, `- [x]`) do not use `ListItemStyle`. They use an overlay widget and can
+> be styled via `checkboxCheckedStyle` and `checkboxUncheckedStyle` (which take a `SpanStyle?`).
 
 | Property       | Type         | Default | Description                                          |
-| -------------- | ------------ | ------- |------------------------------------------------------|
+|----------------|--------------|---------|------------------------------------------------------|
 | `prefixStyle`  | `SpanStyle?` | `null`  | Applied to the marker (`-`, `1.`, `- [ ]`, `- [x]`). |
 | `contentStyle` | `SpanStyle?` | `null`  | Applied to the text after the marker.                |
 
-A common pattern for checked items:
+### Checklist Styling
+
+Checkboxes in Hyphen are rendered as native Material3 widgets overlaid on the editor. This ensures
+they always match your theme and remain perfectly aligned regardless of font size. Use
+`checkboxCheckedStyle` and `checkboxUncheckedStyle` to style the **label text** of the checklist
+items:
 
 ```kotlin
-checkboxCheckedStyle = ListItemStyle(
-    prefixStyle = SpanStyle(color = MaterialTheme.colorScheme.primary),
-    contentStyle = SpanStyle(
-        textDecoration = TextDecoration.LineThrough,
-        color = Color.Gray,
+HyphenBasicTextEditor(
+    state = state,
+    styleConfig = HyphenStyleConfig(
+        checkboxCheckedStyle = SpanStyle(
+            textDecoration = TextDecoration.LineThrough,
+            color = Color.Gray,
+        ),
     ),
 )
 ```
@@ -393,9 +413,9 @@ checkboxCheckedStyle = ListItemStyle(
 ## Supported Platforms
 
 | Platform      | Status     |
-| ------------- | ---------- |
-| Android       | ✅         |
-| Desktop (JVM) | ✅         |
-| Web (WasmJS)  | ✅         |
-| Web (JS / IR) | ✅         |
+|---------------|------------|
+| Android       | ✅          |
+| Desktop (JVM) | ✅          |
+| Web (WasmJS)  | ✅          |
+| Web (JS / IR) | ✅          |
 | iOS           | 🚧 Planned |

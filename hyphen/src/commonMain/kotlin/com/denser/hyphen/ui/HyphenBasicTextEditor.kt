@@ -46,7 +46,7 @@ import com.denser.hyphen.ui.internal.rememberMarkdownClipboard
  * **Link interactions**
  *
  * Pass a [HyphenLinkConfig] to customise how link taps, context menus, and the edit dialog
- * behave. Omit it (or pass `HyphenLinkConfig()`) to use the built-in Material3 UI.
+ * behave. Omit it (or pass `HyphenLinkConfig()`) to use the built-in UI.
  *
  * @param state The [HyphenTextState] that holds text content, spans, selection, and
  *   undo/redo history. Use [com.denser.hyphen.state.rememberHyphenTextState] to create
@@ -57,7 +57,7 @@ import com.denser.hyphen.ui.internal.rememberMarkdownClipboard
  * @param textStyle Typographic style applied to the visible text. Defaults to 16 sp.
  * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle].
  * @param linkConfig Interaction configuration for link spans — custom dropdown menu, custom
- *   edit dialog, and/or a custom URL-open handler. Defaults to built-in Material3 UI.
+ *   edit dialog, and/or a custom URL-open handler. Defaults to built-in UI.
  * @param keyboardOptions Software keyboard options. Defaults to sentence capitalisation with
  *   autocorrect disabled.
  * @param lineLimits Single-line or multi-line behaviour.
