@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.substring
 import androidx.compose.ui.unit.dp
 import com.denser.hyphen.sample.shared.VerticalScrollbarSlot
 import com.denser.hyphen.state.HyphenTextState
@@ -39,6 +40,19 @@ fun StateInspectorPanel(
                 if (sel.collapsed) "@ ${sel.start}" else "${sel.start}..${sel.end}",
             )
             InspectorRow("active", state.isFocused.toString(), accent = state.isFocused)
+            val selectedText = state.text.substring(sel)
+            if (selectedText.isNotEmpty()) {
+                val preview = if (selectedText.length > 20) {
+                    selectedText.take(20).replace("\n", " ") + "..."
+                } else {
+                    selectedText.replace("\n", " ")
+                }
+                InspectorRow("text", "\"$preview\"")
+                InspectorRow("length", selectedText.length.toString())
+            }
+            if (state.activeLinkForEditing != null) {
+                InspectorRow("editing", "Link", accent = true)
+            }
         }
     }
 
@@ -91,6 +105,7 @@ fun StateInspectorPanel(
                     historyGroup()
                     statsGroup()
                 }
+                StyleOverridesList(state)
                 ActiveSpansList(state)
                 Spacer(Modifier.height(4.dp))
             }

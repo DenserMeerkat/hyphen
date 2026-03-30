@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.state.HyphenTextState
 
 
@@ -63,11 +64,26 @@ fun ActiveSpansList(state: HyphenTextState) {
         if (state.spans.isEmpty()) InspectorEmptyHint("no formatting")
         else {
             state.spans.take(40).forEach { span ->
-                InspectorRow(span.style.toString().split(".").last(), "${span.start}..${span.end}")
+                InspectorRow(span.style.label(), "${span.start}..${span.end}")
             }
             if (state.spans.size > 40) InspectorEmptyHint("+ ${state.spans.size - 40} more")
         }
     }
+}
+
+@Composable
+fun StyleOverridesList(state: HyphenTextState) {
+    if (state.pendingOverrides.isEmpty()) return
+    InspectorGroup(title = "Style Overrides") {
+        state.pendingOverrides.forEach { (style, active) ->
+            InspectorRow(style.label(), active.toString(), accent = active)
+        }
+    }
+}
+
+private fun MarkupStyle.label(): String = when (this) {
+    is MarkupStyle.Link -> "Link"
+    else -> this.toString().split(".").last()
 }
 
 @Composable
