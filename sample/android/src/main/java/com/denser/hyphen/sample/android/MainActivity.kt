@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.denser.hyphen.sample.shared.HyphenSampleApp
 
 class MainActivity : ComponentActivity() {
@@ -20,7 +21,7 @@ class MainActivity : ComponentActivity() {
                     .fillMaxSize()
                     .statusBarsPadding()
             ) {
-                HyphenSampleApp()
+                HyphenSampleApp(context = LocalContext.current)
             }
         }
     }

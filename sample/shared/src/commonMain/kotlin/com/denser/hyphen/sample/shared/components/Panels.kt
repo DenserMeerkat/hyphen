@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -140,19 +141,21 @@ fun MarkdownPreviewPanel(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surfaceContainerLowest),
         ) {
-            Text(
-                text = markdown.ifEmpty { "// empty" },
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    color = if (markdown.isEmpty())
-                        MaterialTheme.colorScheme.outlineVariant
-                    else MaterialTheme.colorScheme.onSurfaceVariant,
-                ),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-            )
+            SelectionContainer(modifier = Modifier.fillMaxSize()) {
+                Text(
+                    text = markdown.ifEmpty { "// empty" },
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = FontFamily.Monospace,
+                        color = if (markdown.isEmpty())
+                            MaterialTheme.colorScheme.outlineVariant
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
             verticalScrollbar?.invoke(
                 scrollState,
                 Modifier

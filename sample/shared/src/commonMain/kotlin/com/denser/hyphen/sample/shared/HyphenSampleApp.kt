@@ -25,6 +25,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,10 +63,22 @@ import com.denser.hyphen.sample.shared.components.MarkdownPreviewPanel
 import com.denser.hyphen.sample.shared.components.StateInspectorPanel
 import hyphen.sample.shared.generated.resources.Res
 import hyphen.sample.shared.generated.resources.bug_report_24dp
-import hyphen.sample.shared.generated.resources.dark_mode_24dp
 import hyphen.sample.shared.generated.resources.github
-import hyphen.sample.shared.generated.resources.light_mode_24dp
 import hyphen.sample.shared.generated.resources.markdown_24dp
+import com.denser.hyphen.sample.shared.data.HyphenDatabase
+import com.denser.hyphen.sample.shared.data.HyphenDraft
+import com.denser.hyphen.sample.shared.data.getDatabaseBuilder
+import com.denser.hyphen.sample.shared.data.getRoomDatabase
+import com.denser.hyphen.sample.shared.data.initDatabase
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import hyphen.sample.shared.generated.resources.more_vert_24dp
+import hyphen.sample.shared.generated.resources.dark_mode_24dp
+import hyphen.sample.shared.generated.resources.light_mode_24dp
+import hyphen.sample.shared.generated.resources.save_24dp
+import hyphen.sample.shared.generated.resources.restart_alt_24dp
+import hyphen.sample.shared.generated.resources.restore_page_24dp
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 
 
@@ -75,9 +91,78 @@ typealias VerticalScrollbarSlot = @Composable (scrollState: ScrollState, modifie
 @Composable
 fun HyphenSampleApp(
     verticalScrollbar: VerticalScrollbarSlot? = null,
+    context: Any? = null,
 ) {
-    val editorState = rememberHyphenTextState(initialText = DEMO_TEXT)
+    val editorState = rememberHyphenTextState(initialText = "")
+    val snackbarHostState = remember { SnackbarHostState() }
     var isDarkTheme by remember { mutableStateOf(false) }
+    var database by remember { mutableStateOf<HyphenDatabase?>(null) }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        if (database == null) {
+            try {
+                context?.let { initDatabase(it) }
+                val db = getRoomDatabase(getDatabaseBuilder())
+                database = db
+
+                val draft = db.hyphenDao().getDraft()
+                if (draft != null) {
+                    editorState.setMarkdown(draft.text)
+                } else {
+                    editorState.setMarkdown(DEMO_TEXT)
+                }
+            } catch (e: Exception) {
+                snackbarHostState.showSnackbar("DB Error: ${e.message}")
+            }
+        }
+    }
+
+    val onSave: () -> Unit = remember(database) {
+        {
+            scope.launch {
+                val db = database
+                if (db != null) {
+                    db.hyphenDao().saveDraft(HyphenDraft(text = editorState.toMarkdown()))
+                    snackbarHostState.showSnackbar("Draft saved")
+                } else {
+                    snackbarHostState.showSnackbar("Database not ready")
+                }
+            }
+            Unit
+        }
+    }
+
+    val onReload: () -> Unit = remember(database) {
+        {
+            scope.launch {
+                val db = database
+                if (db != null) {
+                    val draft = db.hyphenDao().getDraft()
+                    if (draft != null) {
+                        editorState.setMarkdown(draft.text)
+                        snackbarHostState.showSnackbar("Draft reloaded")
+                    } else {
+                        snackbarHostState.showSnackbar("No draft found in Room")
+                    }
+                } else {
+                    snackbarHostState.showSnackbar("Database not ready")
+                }
+            }
+            Unit
+        }
+    }
+
+    val onReset: () -> Unit = remember(database) {
+        {
+            scope.launch {
+                database?.hyphenDao()?.clearDraft()
+                editorState.setMarkdown(DEMO_TEXT)
+                snackbarHostState.showSnackbar("Reset to demo text")
+            }
+            Unit
+        }
+    }
 
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isWide = maxWidth >= 800.dp
@@ -98,8 +183,12 @@ fun HyphenSampleApp(
                         onTogglePanel = { showPanel = !showPanel },
                         onToggleMarkdown = { showMarkdown = !showMarkdown },
                         onToggleTheme = { isDarkTheme = !isDarkTheme },
+                        onSave = onSave,
+                        onReload = onReload,
+                        onReset = onReset,
                     )
-                }
+                },
+                snackbarHost = { SnackbarHost(snackbarHostState) }
             ) { innerPadding ->
                 BoxWithConstraints(
                     modifier = Modifier
@@ -175,7 +264,12 @@ private fun SampleTopBar(
     onTogglePanel: () -> Unit,
     onToggleMarkdown: () -> Unit,
     onToggleTheme: () -> Unit,
+    onSave: () -> Unit,
+    onReload: () -> Unit,
+    onReset: () -> Unit,
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         tonalElevation = 0.dp,
@@ -220,19 +314,6 @@ private fun SampleTopBar(
                             modifier = Modifier.size(20.dp),
                         )
                     }
-                    IconButton(
-                        onClick = onToggleTheme,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .size(40.dp)
-                            .focusProperties { canFocus = false },
-                    ) {
-                        Icon(
-                            painterResource(if (isDarkTheme) Res.drawable.light_mode_24dp else Res.drawable.dark_mode_24dp),
-                            contentDescription = "Toggle Theme",
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
                     IconToggleButton(
                         checked = showMarkdown,
                         onCheckedChange = { onToggleMarkdown() },
@@ -270,6 +351,84 @@ private fun SampleTopBar(
                             painterResource(Res.drawable.bug_report_24dp),
                             contentDescription = "Toggle Debugger",
                         )
+                    }
+
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .size(40.dp)
+                                .focusProperties { canFocus = false },
+                        ) {
+                            Icon(
+                                painterResource(Res.drawable.more_vert_24dp),
+                                contentDescription = "More options",
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(if (isDarkTheme) "Light Mode" else "Dark Mode") },
+                                onClick = {
+                                    onToggleTheme()
+                                    showMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        painterResource(if (isDarkTheme) Res.drawable.light_mode_24dp else Res.drawable.dark_mode_24dp),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Save Draft") },
+                                onClick = {
+                                    onSave()
+                                    showMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        painterResource(Res.drawable.save_24dp),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Reload Editor") },
+                                onClick = {
+                                    onReload()
+                                    showMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        painterResource(Res.drawable.restore_page_24dp),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Reset to Demo") },
+                                onClick = {
+                                    onReset()
+                                    showMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        painterResource(Res.drawable.restart_alt_24dp),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }

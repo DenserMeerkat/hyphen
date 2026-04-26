@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.compose)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
 }
 
 android {
@@ -15,6 +17,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+}
+
+room3 {
+    schemaDirectory("$projectDir/schemas")
 }
 
 kotlin {
@@ -44,7 +50,40 @@ kotlin {
                 implementation(libs.material3)
                 implementation(libs.ui)
                 implementation(libs.components.resources)
+                implementation(libs.androidx.room3.runtime)
+            }
+        }
+
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.androidx.sqlite.bundled)
+            }
+        }
+
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.androidx.sqlite.bundled)
+            }
+        }
+
+        @OptIn(ExperimentalWasmDsl::class)
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.androidx.sqlite.web)
+            }
+        }
+
+        val jsMain by getting {
+            dependencies {
+                implementation(libs.androidx.sqlite.web)
             }
         }
     }
+}
+
+dependencies {
+    add("kspAndroid", libs.androidx.room3.compiler)
+    add("kspDesktop", libs.androidx.room3.compiler)
+    add("kspWasmJs", libs.androidx.room3.compiler)
+    add("kspJs", libs.androidx.room3.compiler)
 }
