@@ -177,4 +177,60 @@ class HyphenTextStateTest {
         // 2. Serialize exact substring (preserves span formatting)
         assertEquals("**Hello**", state.toMarkdown(0, 5))
     }
+
+    @Test
+    fun `link style should not expand after space at the end`() {
+        val state = HyphenTextState("google")
+        state.isFocused = true
+        state.select(0, 6)
+        state.toggleStyle(MarkupStyle.Link("https://google.com"))
+
+        // Ensure link is created
+        assertEquals(1, state.spans.size)
+        assertTrue(state.spans[0].style is MarkupStyle.Link)
+        assertEquals(0, state.spans[0].start)
+        assertEquals(6, state.spans[0].end)
+
+        // Move cursor to end
+        state.select(6)
+
+        // Type a space
+        state.textFieldState.edit {
+            replace(6, 6, " ")
+            selection = TextRange(7)
+            state.processInput(this)
+        }
+
+        // Verify link has NOT expanded
+        val linkSpan = state.spans.find { it.style is MarkupStyle.Link }
+        assertEquals(0, linkSpan?.start)
+        assertEquals(6, linkSpan?.end) // Should still be 6
+    }
+
+    @Test
+    fun `link style should not expand when replacing suffix with space`() {
+        // Test case for the fix: rawLengthDifference <= 0 but whitespace inserted
+        val state = HyphenTextState("googleX")
+        state.isFocused = true
+        state.select(0, 6) // Link is "google"
+        state.toggleStyle(MarkupStyle.Link("https://google.com"))
+
+        // Select the "X" (index 6 to 7)
+        state.select(6, 7)
+
+        // Replace "X" with a space " "
+        // previousText: "googleX" (len 7)
+        // newText:      "google " (len 7)
+        // rawLengthDifference = 0
+        state.textFieldState.edit {
+            replace(6, 7, " ")
+            selection = TextRange(7)
+            state.processInput(this)
+        }
+
+        // Verify link has NOT expanded to include the space
+        val linkSpan = state.spans.find { it.style is MarkupStyle.Link }
+        assertEquals(0, linkSpan?.start)
+        assertEquals(6, linkSpan?.end) // Should still be 6
+    }
 }
