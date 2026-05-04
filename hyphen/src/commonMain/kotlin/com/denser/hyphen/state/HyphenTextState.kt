@@ -1,5 +1,6 @@
 package com.denser.hyphen.state
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.insert
@@ -180,6 +181,7 @@ class HyphenTextState(
      * @param buffer The mutable buffer provided by the input transformation, representing
      *   the text state after the user's latest edit.
      */
+    @OptIn(ExperimentalFoundationApi::class)
     fun processInput(buffer: TextFieldBuffer) {
         if (isUndoingOrRedoing) return
 
@@ -220,13 +222,23 @@ class HyphenTextState(
             buffer.asCharSequence().substring(start, buffer.selection.start).contains('\n')
         } else false
 
+        val isWhitespaceInsertion = (0 until buffer.changes.changeCount).any { i ->
+            val range = buffer.changes.getRange(i)
+            (range.start until range.end).any { buffer.asCharSequence()[it].isWhitespace() }
+        }
+
         val availableInlineStyles = (StyleSets.allInline + _spans.map { it.style }.filterIsInstance<MarkupStyle.Link>()).distinct()
         val activeInlineStyles = availableInlineStyles.filter { style ->
-            val hasStyleAtCursor = if (isNewlineInsertion) {
-                val (selStart, _) = resolvedSelection()
-                _spans.any { it.style == style && selStart > it.start && selStart < it.end }
-            } else {
-                hasStyle(style)
+            val hasStyleAtCursor = when {
+                isNewlineInsertion -> {
+                    val (selStart, _) = resolvedSelection()
+                    _spans.any { it.style == style && selStart > it.start && selStart < it.end }
+                }
+                style is MarkupStyle.Link && isWhitespaceInsertion -> {
+                    val (selStart, _) = resolvedSelection()
+                    _spans.any { it.style == style && selStart > it.start && selStart < it.end }
+                }
+                else -> hasStyle(style)
             }
             hasStyleAtCursor && (style !in StyleSets.allHeadings || pendingOverrides[style] == true)
         }
