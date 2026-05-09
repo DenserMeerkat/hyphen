@@ -2,25 +2,25 @@ package com.denser.hyphen.markdown
 
 internal object MarkdownConstants {
     // **text**
-    val BOLD_REGEX = Regex("\\*\\*(?!\\s)(.+?)\\*\\*")
+    val BOLD_REGEX = Regex("""\*\*(.+?)\*\*""")
 
     // *text*
-    val ITALIC_ASTERISK_REGEX = Regex("(?<!\\*)\\*(?!\\*|\\s)(.+?)(?<!\\*)\\*(?!\\*)")
+    val ITALIC_ASTERISK_REGEX = Regex("""(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)""")
 
     // _text_
-    val ITALIC_UNDERSCORE_REGEX = Regex("(?<!_)_(?!_|\\s)(.+?)(?<!_)_(?!_)")
+    val ITALIC_UNDERSCORE_REGEX = Regex("""(?<!_)_(?!_)(.+?)(?<!_)_(?!_)""")
 
     // ~~text~~
-    val STRIKETHROUGH_REGEX = Regex("~~(?!\\s)(.+?)~~")
+    val STRIKETHROUGH_REGEX = Regex("""~~(.+?)~~""")
 
     // __text__
-    val UNDERLINE_REGEX = Regex("__(?!\\s)(.+?)__")
+    val UNDERLINE_REGEX = Regex("""__(.+?)__""")
 
     // `text`
-    val INLINE_CODE_REGEX = Regex("`(?!\\s)(.+?)`")
+    val INLINE_CODE_REGEX = Regex("""`(.+?)`""")
 
     // ==text==
-    val HIGHLIGHT_REGEX = Regex("==(?!\\s)(.+?)==")
+    val HIGHLIGHT_REGEX = Regex("""==(.+?)==""")
 
     // [text](url)
     val LINK_REGEX = Regex("\\[(.+?)\\]\\((.+?)\\)")
