@@ -68,6 +68,8 @@ data class ListItemStyle(
  * @property h5Style Applied to [com.denser.hyphen.model.MarkupStyle.H5] spans.
  * @property h6Style Applied to [com.denser.hyphen.model.MarkupStyle.H6] spans.
  * @property linkStyle Applied to [com.denser.hyphen.model.MarkupStyle.Link] spans.
+ * @property mentionStyle Default [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Mention] spans.
+ * @property mentionStyles Map of specific [SpanStyle] overrides for different mention schemes (e.g., "user", "tag").
  */
 data class HyphenStyleConfig(
     val boldStyle: SpanStyle = SpanStyle(fontWeight = FontWeight.Bold),
@@ -100,9 +102,18 @@ data class HyphenStyleConfig(
         color = Color.Blue,
         textDecoration = TextDecoration.Underline,
     ),
+    /**
+     * Applied to [com.denser.hyphen.model.MarkupStyle.Mention] spans. Defaults to a blue,
+     * medium-weight style. Use [mentionStyles] to override this for specific schemes.
+     */
     val mentionStyle: SpanStyle = SpanStyle(
         color = Color(0xFF1976D2),
         fontWeight = FontWeight.Medium,
     ),
+
+    /**
+     * Map of mention schemes (e.g., "user", "tag") to their specific [SpanStyle].
+     * If a scheme is not present in this map, it falls back to [mentionStyle].
+     */
     val mentionStyles: Map<String, SpanStyle> = emptyMap(),
 )

@@ -24,6 +24,8 @@ import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.ui.HyphenBasicTextEditor
 import com.denser.hyphen.ui.link.HyphenLinkConfig
 import com.denser.hyphen.ui.style.HyphenStyleConfig
+import com.denser.hyphen.ui.mention.HyphenMentionConfig
+import com.denser.hyphen.model.TriggerState
 
 /**
  * [Material Design filled text field](https://m3.material.io/components/text-fields/overview)
@@ -76,8 +78,10 @@ import com.denser.hyphen.ui.style.HyphenStyleConfig
  * @param contentPadding Padding between the inner field and decoration elements.
  * @param interactionSource Optional hoisted [MutableInteractionSource].
  * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle].
- * @param linkConfig Interaction configuration for link spans — custom dropdown, custom dialog,
- *   and/or a custom URL-open handler. Defaults to built-in UI.
+ * @param mentionConfig Interaction configuration for mention spans — provides click handlers,
+ *   personalized dropdown menus, and hover card content.
+ * @param triggerPopup Composable content shown in a popup when a trigger (like @ or #)
+ *   is active. Provides the current [TriggerState] for rendering autocomplete suggestions.
  * @param onTextLayout Callback invoked on text layout recalculation.
  * @param clipboardLabel Label attached to clipboard entries on copy/cut.
  * @param onTextChange Callback invoked whenever the plain text changes.
@@ -114,6 +118,8 @@ fun HyphenTextField(
     interactionSource: MutableInteractionSource? = null,
     styleConfig: HyphenStyleConfig = HyphenStyleConfig(),
     linkConfig: HyphenLinkConfig = HyphenLinkConfig(),
+    mentionConfig: HyphenMentionConfig = HyphenMentionConfig(),
+    triggerPopup: @Composable (TriggerState) -> Unit = {},
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
     onTextChange: ((String) -> Unit)? = null,
@@ -147,6 +153,8 @@ fun HyphenTextField(
             textStyle = mergedTextStyle,
             styleConfig = styleConfig,
             linkConfig = linkConfig,
+            mentionConfig = mentionConfig,
+            triggerPopup = triggerPopup,
             keyboardOptions = keyboardOptions,
             lineLimits = lineLimits,
             scrollState = scrollState,

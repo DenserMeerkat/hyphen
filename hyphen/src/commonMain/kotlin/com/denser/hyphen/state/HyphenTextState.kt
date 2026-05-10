@@ -189,6 +189,23 @@ class HyphenTextState(
     }
 
     /**
+     * Programmatically inserts a formatted mention at the current cursor position.
+     *
+     * @param display The text to display in the editor (e.g. "@John Doe").
+     * @param scheme The mention scheme (e.g. "user").
+     * @param id The unique identifier for the mention (e.g. "123").
+     */
+    fun insertMention(display: String, scheme: String, id: String) {
+        val (selStart, selEnd) = resolvedSelection()
+        val markdown = "[$display]($scheme:$id)"
+        
+        textFieldState.edit {
+            replace(selStart, selEnd, markdown)
+            this.selection = androidx.compose.ui.text.TextRange(selStart + markdown.length)
+        }
+    }
+
+    /**
      * Whether the text field currently has input focus.
      *
      * Kept in sync by [com.denser.hyphen.ui.HyphenBasicTextEditor] via `onFocusChanged`. Used by [SelectionManager]
