@@ -100,4 +100,9 @@ data class HyphenStyleConfig(
         color = Color.Blue,
         textDecoration = TextDecoration.Underline,
     ),
+    val mentionStyle: SpanStyle = SpanStyle(
+        color = Color(0xFF1976D2),
+        fontWeight = FontWeight.Medium,
+    ),
+    val mentionStyles: Map<String, SpanStyle> = emptyMap(),
 )

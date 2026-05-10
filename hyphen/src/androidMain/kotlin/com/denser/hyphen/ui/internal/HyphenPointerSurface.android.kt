@@ -1,4 +1,4 @@
-package com.denser.hyphen.ui.link
+package com.denser.hyphen.ui.internal
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -19,56 +19,47 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-internal actual fun LinkPointerSurface(
+actual fun HyphenPointerSurface(
     span: MarkupStyleRange,
-    onOpenUrl: () -> Unit,
-    onShowMenu: (pressOffset: Offset) -> Unit,
+    onHoverChanged: (Boolean) -> Unit,
+    onClick: (isCtrlPressed: Boolean, isRightClick: Boolean, offset: Offset) -> Boolean,
+    pointerIcon: PointerIcon?,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
-        modifier = Modifier.androidLongPressShared(
+        modifier = Modifier.hyphenPointerInput(
             key = span,
-            onLongPress = onShowMenu,
+            onClick = onClick
         ),
         content = content,
     )
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
-private fun Modifier.androidLongPressShared(
+private fun Modifier.hyphenPointerInput(
     key: Any?,
-    longPressTimeoutMs: Long = 500L,
-    touchSlopPx: Float = 18f,
-    onLongPress: (offset: Offset) -> Unit,
-): Modifier = this then AndroidLongPressElement(key, longPressTimeoutMs, touchSlopPx, onLongPress)
+    onClick: (isCtrl: Boolean, isRight: Boolean, offset: Offset) -> Boolean,
+): Modifier = this then HyphenPointerElement(key, onClick)
 
 @OptIn(ExperimentalComposeUiApi::class)
-private data class AndroidLongPressElement(
+private data class HyphenPointerElement(
     val key: Any?,
-    val longPressTimeoutMs: Long,
-    val touchSlopPx: Float,
-    val onLongPress: (Offset) -> Unit,
-) : ModifierNodeElement<AndroidLongPressNode>() {
-    override fun create() = AndroidLongPressNode(longPressTimeoutMs, touchSlopPx, onLongPress)
-    override fun update(node: AndroidLongPressNode) {
-        node.longPressTimeoutMs = longPressTimeoutMs
-        node.touchSlopPx = touchSlopPx
-        node.onLongPress = onLongPress
+    val onClick: (Boolean, Boolean, Offset) -> Boolean,
+) : ModifierNodeElement<HyphenPointerNode>() {
+    override fun create() = HyphenPointerNode(onClick)
+    override fun update(node: HyphenPointerNode) {
+        node.onClick = onClick
     }
 
     override fun InspectorInfo.inspectableProperties() {
-        name = "androidLongPressShared"
+        name = "hyphenPointerInput"
         properties["key"] = key
-        properties["longPressTimeoutMs"] = longPressTimeoutMs
-        properties["touchSlopPx"] = touchSlopPx
     }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
-private class AndroidLongPressNode(
-    var longPressTimeoutMs: Long,
-    var touchSlopPx: Float,
-    var onLongPress: (Offset) -> Unit,
+private class HyphenPointerNode(
+    var onClick: (Boolean, Boolean, Offset) -> Boolean,
 ) : Modifier.Node(), PointerInputModifierNode {
 
     override fun sharePointerInputWithSiblings(): Boolean = true
@@ -76,7 +67,10 @@ private class AndroidLongPressNode(
     private val scope = CoroutineScope(Dispatchers.Main)
     private var longPressJob: Job? = null
     private var pressPosition = Offset.Zero
-    private var lastEvent: PointerEvent? = null
+    private var isLongPress = false
+    
+    private val longPressTimeoutMs = 500L
+    private val touchSlopPx = 18f
 
     override fun onPointerEvent(
         pointerEvent: PointerEvent,
@@ -89,13 +83,16 @@ private class AndroidLongPressNode(
             PointerEventType.Press -> {
                 val change = pointerEvent.changes.firstOrNull() ?: return
                 pressPosition = change.position
-                lastEvent = pointerEvent
+                isLongPress = false
 
                 longPressJob?.cancel()
                 longPressJob = scope.launch {
                     delay(longPressTimeoutMs)
-                    lastEvent?.changes?.forEach { it.consume() }
-                    onLongPress(pressPosition)
+                    isLongPress = true
+                    val handled = onClick(false, true, pressPosition)
+                    if (handled) {
+                        pointerEvent.changes.forEach { it.consume() }
+                    }
                     longPressJob = null
                 }
             }
@@ -108,7 +105,19 @@ private class AndroidLongPressNode(
                 }
             }
 
-            PointerEventType.Release,
+            PointerEventType.Release -> {
+                longPressJob?.cancel()
+                longPressJob = null
+                
+                if (!isLongPress) {
+                    val change = pointerEvent.changes.firstOrNull() ?: return
+                    val handled = onClick(false, false, change.position)
+                    if (handled) {
+                        pointerEvent.changes.forEach { it.consume() }
+                    }
+                }
+            }
+
             PointerEventType.Exit -> {
                 longPressJob?.cancel()
                 longPressJob = null

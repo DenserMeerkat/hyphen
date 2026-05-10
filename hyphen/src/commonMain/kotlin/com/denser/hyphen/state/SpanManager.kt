@@ -56,6 +56,14 @@ internal object SpanManager {
             val sorted = styleSpans.filter { it.start < it.end }.sortedBy { it.start }
             if (sorted.isEmpty()) return@forEach
 
+            val isAtomic = style is MarkupStyle.Mention || style is MarkupStyle.Link || 
+                          style is MarkupStyle.CheckboxChecked || style is MarkupStyle.CheckboxUnchecked
+            
+            if (isAtomic) {
+                consolidated.addAll(sorted)
+                return@forEach
+            }
+
             var currentStart = sorted[0].start
             var currentEnd = sorted[0].end
 

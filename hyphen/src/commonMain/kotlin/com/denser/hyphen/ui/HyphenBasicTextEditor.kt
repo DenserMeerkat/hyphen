@@ -28,6 +28,8 @@ import com.denser.hyphen.ui.link.HyphenLinkConfig
 import com.denser.hyphen.ui.style.HyphenStyleConfig
 import com.denser.hyphen.ui.link.LinkEditDialog
 import com.denser.hyphen.ui.internal.InlineContentHost
+import com.denser.hyphen.ui.mention.HyphenMentionConfig
+import com.denser.hyphen.model.TriggerState
 import com.denser.hyphen.ui.internal.applyMarkdownStyles
 import com.denser.hyphen.ui.internal.handleHardwareKeyEvent
 import com.denser.hyphen.ui.internal.processMarkdownInput
@@ -58,6 +60,10 @@ import com.denser.hyphen.ui.internal.rememberMarkdownClipboard
  * @param styleConfig Visual configuration for each [com.denser.hyphen.model.MarkupStyle].
  * @param linkConfig Interaction configuration for link spans — custom dropdown menu, custom
  *   edit dialog, and/or a custom URL-open handler. Defaults to built-in UI.
+ * @param mentionConfig Interaction configuration for mention spans — click handlers
+ *   and hover card content.
+ * @param triggerPopup Composable content shown in a popup when a trigger (like @ or #)
+ *   is active. Provides the current [TriggerState] for filtering.
  * @param keyboardOptions Software keyboard options. Defaults to sentence capitalisation with
  *   autocorrect disabled.
  * @param lineLimits Single-line or multi-line behaviour.
@@ -80,6 +86,8 @@ fun HyphenBasicTextEditor(
     textStyle: TextStyle = TextStyle(fontSize = 16.sp),
     styleConfig: HyphenStyleConfig = HyphenStyleConfig(),
     linkConfig: HyphenLinkConfig = HyphenLinkConfig(),
+    mentionConfig: HyphenMentionConfig = HyphenMentionConfig(),
+    triggerPopup: @Composable (TriggerState) -> Unit = {},
     keyboardOptions: KeyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.Sentences,
         autoCorrectEnabled = false,
@@ -117,6 +125,8 @@ fun HyphenBasicTextEditor(
                     textLayoutResult = { textLayoutResult },
                     scrollState = scrollState,
                     linkConfig = linkConfig,
+                    mentionConfig = mentionConfig,
+                    triggerPopup = triggerPopup,
                     textStyle = textStyle,
                     modifier = Modifier,
                 ) {

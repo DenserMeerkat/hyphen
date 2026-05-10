@@ -8,13 +8,13 @@ internal object MarkdownConstants {
     val ITALIC_ASTERISK_REGEX = Regex("""(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)""")
 
     // _text_
-    val ITALIC_UNDERSCORE_REGEX = Regex("""(?<!_)_(?!_)(.+?)(?<!_)_(?!_)""")
+    val ITALIC_UNDERSCORE_REGEX = Regex("""(?<![\w_])_(?!_)(.+?)(?<!_)_(?![\w_])""")
 
     // ~~text~~
     val STRIKETHROUGH_REGEX = Regex("""~~(.+?)~~""")
 
     // __text__
-    val UNDERLINE_REGEX = Regex("""__(.+?)__""")
+    val UNDERLINE_REGEX = Regex("""(?<![\w_])__(?!_)(.+?)(?<!_)__(?![\w_])""")
 
     // `text`
     val INLINE_CODE_REGEX = Regex("""`(.+?)`""")
@@ -24,6 +24,9 @@ internal object MarkdownConstants {
 
     // [text](url)
     val LINK_REGEX = Regex("\\[(.+?)\\]\\((.+?)\\)")
+
+    // [display](scheme:id)
+    const val MENTION_REGEX_TEMPLATE = """\[(.+?)\]\((%s):(.+?)\)"""
 
     // -, *, or • at line start
     val BULLET_LIST_REGEX = Regex(

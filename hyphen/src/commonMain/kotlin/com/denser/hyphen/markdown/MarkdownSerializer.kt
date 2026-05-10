@@ -13,15 +13,14 @@ object MarkdownSerializer {
     )
 
     private fun getStylePriority(style: MarkupStyle): Int = when (style) {
-        is MarkupStyle.InlineCode -> 1
-        is MarkupStyle.Bold -> 2
-        is MarkupStyle.Italic -> 3
-        is MarkupStyle.Strikethrough -> 4
-        is MarkupStyle.Underline -> 5
-        is MarkupStyle.Highlight -> 6
         is MarkupStyle.H1, is MarkupStyle.H2, is MarkupStyle.H3,
         is MarkupStyle.H4, is MarkupStyle.H5, is MarkupStyle.H6 -> 10
-        else -> 100
+        is MarkupStyle.Bold -> 20
+        is MarkupStyle.Italic -> 30
+        is MarkupStyle.Strikethrough, is MarkupStyle.Underline, is MarkupStyle.Highlight -> 40
+        is MarkupStyle.Link, is MarkupStyle.Mention -> 50
+        is MarkupStyle.InlineCode -> 100
+        else -> 200
     }
 
     fun serialize(text: String, spans: List<MarkupStyleRange>, start: Int, end: Int): String {
@@ -66,12 +65,14 @@ object MarkdownSerializer {
                 is MarkupStyle.H5 -> "##### "
                 is MarkupStyle.H6 -> "###### "
                 is MarkupStyle.Link -> "["
+                is MarkupStyle.Mention -> "["
                 else -> null
             }
 
             val endSymbol = when (val style = span.style) {
                 in StyleSets.allHeadings -> ""
                 is MarkupStyle.Link -> "](${style.url})"
+                is MarkupStyle.Mention -> "](${style.scheme}:${style.id})"
                 else -> startSymbol
             }
 
@@ -86,14 +87,22 @@ object MarkdownSerializer {
 
         insertions.sortWith(Comparator { a, b ->
             if (a.index != b.index) {
+                // Primary sort: index DESCENDING (insert from end to start)
                 b.index.compareTo(a.index)
             } else if (a.isClosing != b.isClosing) {
+                // Secondary sort: Openings before Closings in the list
+                // (Closing inserted last -> ends up on the left: "] [")
                 a.isClosing.compareTo(b.isClosing)
             } else {
+                // Tertiary sort: Priority
                 if (a.isClosing) {
-                    b.priority.compareTo(a.priority)
-                } else {
+                    // For Closings: Outer (lower priority) before Inner (higher priority) in list
+                    // (Inner inserted last -> ends up on the left: "Inner Outer")
                     a.priority.compareTo(b.priority)
+                } else {
+                    // For Openings: Inner (higher priority) before Outer (lower priority) in list
+                    // (Outer inserted last -> ends up on the left: "Outer Inner")
+                    b.priority.compareTo(a.priority)
                 }
             }
         })

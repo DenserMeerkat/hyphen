@@ -18,6 +18,7 @@ import com.denser.hyphen.open_in_new_24dp
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.state.HyphenTextState
+import com.denser.hyphen.ui.internal.HyphenPointerSurface
 
 
 @Composable
@@ -49,17 +50,26 @@ internal fun InlineLink(
         }
     }
 
-    LinkPointerSurface(
+    HyphenPointerSurface(
         span = span,
-        onOpenUrl = openUrl,
-        onShowMenu = { pressOffset ->
-            val currentStart = state.selection.start
-            state.textFieldState.edit {
-                selection = TextRange(currentStart)
+        onHoverChanged = { },
+        onClick = { isCtrl, isRight, offset ->
+            when {
+                isRight -> {
+                    val currentStart = state.selection.start
+                    state.textFieldState.edit {
+                        selection = TextRange(currentStart)
+                    }
+                    menuOffset = offset
+                    showMenu = true
+                    true
+                }
+                isCtrl -> {
+                    openUrl()
+                    true
+                }
+                else -> false
             }
-
-            menuOffset = pressOffset
-            showMenu = true
         },
     ) {
         if (showMenu) {
