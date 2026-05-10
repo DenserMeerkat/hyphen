@@ -38,6 +38,27 @@ internal fun handleHardwareKeyEvent(
             state.toggleCheckbox(state.selection.start)
             true
         }
+        state.activeTrigger != null && !isPrimaryModifier && !isShift && !isAlt -> {
+            when (event.key) {
+                Key.DirectionDown -> {
+                    if (state.suggestionCount > 0) {
+                        state.suggestionSelectedIndex = (state.suggestionSelectedIndex + 1) % state.suggestionCount
+                        true
+                    } else false
+                }
+                Key.DirectionUp -> {
+                    if (state.suggestionCount > 0) {
+                        state.suggestionSelectedIndex = (state.suggestionSelectedIndex - 1 + state.suggestionCount) % state.suggestionCount
+                        true
+                    } else false
+                }
+                Key.Enter -> {
+                    state.suggestionSelectionRequested = true
+                    true
+                }
+                else -> false
+            }
+        }
         event.key == Key.Enter && !isPrimaryModifier && !isShift && !isAlt -> {
             var consumed = false
             state.textFieldState.edit {
@@ -134,6 +155,10 @@ internal fun applyMarkdownStyles(
                 is MarkupStyle.Highlight -> addStyle(styleConfig.highlightStyle, visualStart, visualEnd)
                 is MarkupStyle.InlineCode -> addStyle(styleConfig.inlineCodeStyle, visualStart, visualEnd)
                 is MarkupStyle.Link -> addStyle(styleConfig.linkStyle, visualStart, visualEnd)
+                is MarkupStyle.Mention -> {
+                    val customStyle = styleConfig.mentionStyles[span.style.scheme]
+                    addStyle(customStyle ?: styleConfig.mentionStyle, visualStart, visualEnd)
+                }
                 is MarkupStyle.Blockquote -> addStyle(styleConfig.blockquoteSpanStyle, visualStart, visualEnd)
 
                 is MarkupStyle.BulletList -> {

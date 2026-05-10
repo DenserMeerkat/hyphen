@@ -18,6 +18,8 @@ import com.denser.hyphen.markdown.MarkdownSerializer
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.model.StyleSets
+import com.denser.hyphen.model.TriggerConfig
+import com.denser.hyphen.model.TriggerState
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -115,6 +117,78 @@ class HyphenTextState(
     var activeLinkForEditing by mutableStateOf<MarkupStyleRange?>(null)
 
     /**
+     * Configuration for triggers like @, #, etc.
+     */
+    var triggerConfigs by mutableStateOf<List<TriggerConfig>>(emptyList())
+
+    /**
+     * Current active trigger state (e.g., if user is currently typing after an '@').
+     */
+    var activeTrigger by mutableStateOf<TriggerState?>(null)
+        private set
+
+    /**
+     * The index of the currently selected suggestion in the autocomplete menu.
+     * Custom suggestion menus should read this to highlight the active item.
+     */
+    var suggestionSelectedIndex by mutableStateOf(0)
+
+    /**
+     * The total number of suggestions currently available in the autocomplete menu.
+     * Custom suggestion menus MUST set this value so the editor can clamp keyboard
+     * navigation (Up/Down arrows) to the available range.
+     */
+    var suggestionCount by mutableStateOf(0)
+
+    /**
+     * Set to `true` by the editor when the user presses Enter while a trigger popup is active.
+     * Custom suggestion menus should watch this property and call [completeMention] or
+     * perform their own completion logic when it becomes `true`.
+     */
+    var suggestionSelectionRequested by mutableStateOf(false)
+
+    internal fun updateActiveTrigger(trigger: TriggerState?) {
+        activeTrigger = trigger
+        suggestionSelectedIndex = 0
+    }
+
+    /**
+     * Completes the current mention by replacing the trigger and query with the given [display] text.
+     *
+     * @param id The unique identifier for the mention.
+     * @param display The text to display in the editor (including the trigger prefix).
+     * @param triggerEnd Optional closing marker to append if it's not already present in [display].
+     */
+    fun completeMention(id: String, display: String, triggerEnd: String? = null) {
+        val trigger = activeTrigger ?: return
+        val startIndex = trigger.startIndex
+        val currentEnd = startIndex + trigger.config.trigger.length + trigger.query.length
+        
+        val prefix = trigger.config.trigger
+        val endMarker = triggerEnd ?: trigger.config.endTrigger ?: ""
+        
+        // Ensure prefix is present
+        var finalDisplay = if (!display.startsWith(prefix)) "$prefix$display" else display
+        
+        // Ensure suffix is present
+        if (endMarker.isNotEmpty() && !finalDisplay.endsWith(endMarker)) {
+            finalDisplay = "$finalDisplay$endMarker"
+        }
+
+        // Add trailing space if configured
+        if (trigger.config.addSpaceOnCompletion) {
+            finalDisplay = "$finalDisplay "
+        }
+
+        textFieldState.edit {
+            replace(startIndex, currentEnd, finalDisplay)
+            this.selection = androidx.compose.ui.text.TextRange(startIndex + finalDisplay.length)
+        }
+        
+        updateActiveTrigger(null)
+    }
+
+    /**
      * Whether the text field currently has input focus.
      *
      * Kept in sync by [com.denser.hyphen.ui.HyphenBasicTextEditor] via `onFocusChanged`. Used by [SelectionManager]
@@ -129,7 +203,7 @@ class HyphenTextState(
         }
 
     init {
-        val markdownResult = MarkdownProcessor.process(initialText, 0)
+        val markdownResult = MarkdownProcessor.process(initialText, 0, triggerConfigs)
         if (markdownResult != null) {
             textFieldState.edit {
                 replace(0, length, markdownResult.cleanText)
@@ -189,7 +263,10 @@ class HyphenTextState(
         val newText = buffer.asCharSequence().toString()
 
         if (previousText == newText) {
-            if (selection != buffer.selection) clearPendingOverrides()
+            if (selection != buffer.selection) {
+                clearPendingOverrides()
+                activeTrigger = null
+            }
             return
         }
 
@@ -208,6 +285,8 @@ class HyphenTextState(
             rawLengthDifference,
             previousText.length
         )
+
+        updateActiveTrigger(buffer, changeOrigin, rawLengthDifference)
 
         var safeSpans = _spans.toList()
         if (rawLengthDifference < 0) {
@@ -243,7 +322,7 @@ class HyphenTextState(
             hasStyleAtCursor && (style !in StyleSets.allHeadings || pendingOverrides[style] == true)
         }
 
-        val markdownResult = MarkdownProcessor.process(newText, cursorPosition)
+        val markdownResult = MarkdownProcessor.process(newText, cursorPosition, triggerConfigs)
         var updatedSpans: List<MarkupStyleRange>
 
         if (markdownResult != null) {
@@ -262,7 +341,45 @@ class HyphenTextState(
             }
 
             val inlineBaseSpans = baseSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
-            updatedSpans = SpanManager.mergeSpans(inlineBaseSpans, markdownResult.newSpans)
+            var finalSpans: List<MarkupStyleRange>
+            // Inject trigger styling while typing
+            activeTrigger?.let { trigger ->
+                val cleanLengthDifference = markdownResult.cleanText.length - newText.length
+                val shiftedStart = if (trigger.startIndex >= changeOrigin) {
+                    trigger.startIndex + cleanLengthDifference
+                } else trigger.startIndex
+
+                val safeStart = shiftedStart.coerceIn(0, markdownResult.cleanText.length)
+                val safeEnd = markdownResult.newCursorPosition.coerceIn(safeStart, markdownResult.cleanText.length)
+
+                // Remove ALL existing mentions from base spans. The MarkdownProcessor is the source of truth for mentions.
+                val cleanedBaseSpans = inlineBaseSpans.filterNot { it.style is MarkupStyle.Mention }
+                
+                val triggerSpan = MarkupStyleRange(
+                    style = MarkupStyle.Mention(
+                        display = markdownResult.cleanText.substring(safeStart, safeEnd),
+                        scheme = trigger.config.scheme,
+                        id = ""
+                    ),
+                    start = safeStart,
+                    end = safeEnd
+                )
+                
+                finalSpans = SpanManager.mergeSpans(cleanedBaseSpans, markdownResult.newSpans + triggerSpan).distinct()
+            } ?: run {
+                // Remove ALL existing mentions from base spans. The MarkdownProcessor is the source of truth for mentions.
+                val cleanedBaseSpans = inlineBaseSpans.filterNot { it.style is MarkupStyle.Mention }
+                finalSpans = SpanManager.mergeSpans(cleanedBaseSpans, markdownResult.newSpans)
+            }
+            
+            // Clear active trigger if it's been "consumed" by a detected mention
+            activeTrigger?.let { trigger ->
+                if (markdownResult.newSpans.any { it.style is MarkupStyle.Mention && it.start == trigger.startIndex }) {
+                    activeTrigger = null
+                }
+            }
+
+            updatedSpans = finalSpans
 
             buffer.replace(0, buffer.length, markdownResult.cleanText)
             buffer.selection =
@@ -291,6 +408,32 @@ class HyphenTextState(
                 )
             } else {
                 updatedSpans = shifted
+            }
+
+            val inlineShifted = updatedSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
+            
+            // Inject trigger styling while typing
+            activeTrigger?.let { trigger ->
+                val triggerSpan = MarkupStyleRange(
+                    style = MarkupStyle.Mention(
+                        display = newText.substring(trigger.startIndex, cursorPosition),
+                        scheme = trigger.config.scheme,
+                        id = ""
+                    ),
+                    start = trigger.startIndex,
+                    end = cursorPosition
+                )
+                
+                // Clear any mentions at this position (finished or pending)
+                val cleanedShifted = inlineShifted.filterNot { 
+                    it.style is MarkupStyle.Mention && (it.start == trigger.startIndex || (it.style as MarkupStyle.Mention).id.isEmpty())
+                }
+                updatedSpans = (cleanedShifted + triggerSpan).distinct()
+            } ?: run {
+                // Clear any orphaned pending mentions
+                updatedSpans = inlineShifted.filterNot { 
+                    it.style is MarkupStyle.Mention && (it.style as MarkupStyle.Mention).id.isEmpty() 
+                }
             }
         }
 
@@ -541,7 +684,7 @@ class HyphenTextState(
         _spans.addAll(SpanManager.consolidateSpans(finalSpans))
         selectionManager.clear()
     }
-
+ 
     /**
      * Returns `true` if the given [style] is active at the current selection or cursor.
      *
@@ -664,7 +807,13 @@ class HyphenTextState(
     fun toMarkdown(start: Int = 0, end: Int = text.length): String {
         val safeStart = start.coerceIn(0, text.length)
         val safeEnd = end.coerceIn(safeStart, text.length)
-        return MarkdownSerializer.serialize(text, spans, safeStart, safeEnd)
+
+        val exportSpans = spans.filter { span ->
+            val style = span.style
+            if (style is MarkupStyle.Mention) style.id.isNotEmpty() else true
+        }
+        
+        return MarkdownSerializer.serialize(text, exportSpans, safeStart, safeEnd)
     }
 
     /**
@@ -673,7 +822,7 @@ class HyphenTextState(
      * * @param markdown The Markdown string to parse and display.
      */
     fun setMarkdown(markdown: String) {
-        val markdownResult = MarkdownProcessor.process(markdown, 0)
+        val markdownResult = MarkdownProcessor.process(markdown, 0, triggerConfigs)
 
         textFieldState.edit {
             if (markdownResult != null) {
@@ -691,6 +840,115 @@ class HyphenTextState(
         clearPendingOverrides()
         selectionManager.clear()
         historyManager.clear()
+    }
+
+    /**
+     * Completes an active trigger by replacing the trigger text with a mention.
+     *
+     * @param id The identifier for the mentioned entity.
+     * @param display The text to show in the editor.
+     */
+    fun completeMention(id: String, display: String) {
+        val trigger = activeTrigger ?: return
+        val scheme = trigger.config.scheme
+        val start = trigger.startIndex
+        val end = selection.end
+        
+        val actualDisplay = if (trigger.config.addSpaceOnCompletion) "$display " else display
+        
+        saveSnapshot(force = true)
+        
+        textFieldState.edit {
+            replace(start, end, actualDisplay)
+            selection = TextRange(start + actualDisplay.length)
+        }
+        
+        val lengthDiff = actualDisplay.length - (end - start)
+        val shiftedSpans = SpanManager.shiftSpans(_spans, start, lengthDiff)
+        
+        val newMentionStyle = MarkupStyle.Mention(id, display, scheme)
+        val newSpan = MarkupStyleRange(newMentionStyle, start, start + display.length)
+        
+        val updated = shiftedSpans.toMutableList()
+        updated.removeAll { 
+            it.style is MarkupStyle.Mention && (it.style as MarkupStyle.Mention).id.isEmpty() &&
+            it.start == start
+        }
+        updated.add(newSpan)
+        
+        _spans.clear()
+        _spans.addAll(SpanManager.consolidateSpans(updated))
+        
+        activeTrigger = null
+    }
+
+    private fun updateActiveTrigger(buffer: TextFieldBuffer, changeOrigin: Int, rawLengthDifference: Int) {
+        val cursor = buffer.selection.start
+        val currentText = buffer.asCharSequence()
+
+        val sortedConfigs = triggerConfigs.sortedByDescending { it.trigger.length }
+
+        activeTrigger?.let { trigger ->
+            if (cursor < trigger.startIndex) {
+                updateActiveTrigger(null)
+                return@let
+            }
+            
+            val currentText = buffer.asCharSequence()
+            val textFromStart = currentText.substring(trigger.startIndex, cursor)
+
+            if (!textFromStart.startsWith(trigger.config.trigger)) {
+                updateActiveTrigger(null)
+                return@let
+            }
+
+            val betterConfig = sortedConfigs.find { it.trigger.length > trigger.config.trigger.length && textFromStart.startsWith(it.trigger) }
+            if (betterConfig != null) {
+                val newQuery = textFromStart.removePrefix(betterConfig.trigger)
+                updateActiveTrigger(TriggerState(betterConfig, trigger.startIndex, newQuery))
+                return@let
+            }
+
+            val query = textFromStart.removePrefix(trigger.config.trigger)
+
+            if (trigger.config.endTrigger == null) {
+                if (query.any { it.isWhitespace() }) {
+                    updateActiveTrigger(null)
+                    return@let
+                }
+            } else {
+                if (query.contains(trigger.config.endTrigger)) {
+                    updateActiveTrigger(null)
+                    return@let
+                }
+            }
+
+            updateActiveTrigger(trigger.copy(query = query))
+        }
+
+        if (activeTrigger == null) {
+            sortedConfigs.forEach { config ->
+                var searchStart = cursor - 1
+                while (searchStart >= 0) {
+                    val char = currentText[searchStart]
+                    if (char.isWhitespace() || char == '\n') break
+                    
+                    val candidateStart = currentText.substring(searchStart, (searchStart + config.trigger.length).coerceAtMost(currentText.length))
+                    if (candidateStart == config.trigger) {
+                        val textSinceTrigger = currentText.substring(searchStart + config.trigger.length, cursor)
+
+                        val isAlreadyClosed = config.endTrigger?.let { textSinceTrigger.contains(it) } ?: false
+                        
+                        if (!isAlreadyClosed) {
+                            val query = textSinceTrigger
+                            updateActiveTrigger(TriggerState(config, searchStart, query))
+                            return@forEach
+                        }
+                    }
+                    searchStart--
+                }
+            }
+        }
     }
 
     // -------------------------------------------------------------------------

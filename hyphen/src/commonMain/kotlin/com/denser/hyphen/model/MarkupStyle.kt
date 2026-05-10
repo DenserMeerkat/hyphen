@@ -107,4 +107,14 @@ sealed interface MarkupStyle {
 
     /** Link with an external URL. Serialized as `[text](url)`. */
     data class Link(val url: String) : MarkupStyle
+
+    /**
+     * Mention of an entity (user, tag, etc.).
+     * Serialized as `[display](scheme:id)`.
+     *
+     * @property id The unique identifier for the entity.
+     * @property display The text shown in the editor.
+     * @property scheme The URI scheme identifying the entity type (e.g., "mention", "tag").
+     */
+    data class Mention(val id: String, val display: String, val scheme: String = "mention") : MarkupStyle
 }

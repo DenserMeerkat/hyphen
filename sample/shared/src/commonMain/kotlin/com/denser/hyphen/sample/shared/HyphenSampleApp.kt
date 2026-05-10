@@ -25,8 +25,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.HorizontalDivider
@@ -39,8 +39,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -78,8 +82,23 @@ import hyphen.sample.shared.generated.resources.light_mode_24dp
 import hyphen.sample.shared.generated.resources.save_24dp
 import hyphen.sample.shared.generated.resources.restart_alt_24dp
 import hyphen.sample.shared.generated.resources.restore_page_24dp
+import hyphen.sample.shared.generated.resources.person_24dp
+import hyphen.sample.shared.generated.resources.mail_24dp
+import hyphen.sample.shared.generated.resources.search_24dp
+import hyphen.sample.shared.generated.resources.notifications_24dp
+import hyphen.sample.shared.generated.resources.content_copy_24dp
+import hyphen.sample.shared.generated.resources.label_24dp
+import hyphen.sample.shared.generated.resources.bolt_24dp
+import hyphen.sample.shared.generated.resources.refresh_24dp
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
+import com.denser.hyphen.model.TriggerConfig
+import com.denser.hyphen.model.TriggerState
+import com.denser.hyphen.ui.mention.HyphenMentionConfig
+import com.denser.hyphen.ui.mention.TriggerSuggestions
+import com.denser.hyphen.ui.mention.SuggestionItem
+import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.ui.style.HyphenStyleConfig
 
 
 typealias VerticalScrollbarSlot = @Composable (scrollState: ScrollState, modifier: Modifier) -> Unit
@@ -94,6 +113,16 @@ fun HyphenSampleApp(
     context: Any? = null,
 ) {
     val editorState = rememberHyphenTextState(initialText = "")
+    
+    LaunchedEffect(Unit) {
+        editorState.triggerConfigs = listOf(
+            TriggerConfig(trigger = "@", scheme = "user"),
+            TriggerConfig(trigger = "#", scheme = "tag"),
+            TriggerConfig(trigger = "{", scheme = "var", endTrigger = "}", addSpaceOnCompletion = false),
+            TriggerConfig(trigger = "{{", scheme = "var", endTrigger = "}}", addSpaceOnCompletion = false)
+        )
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
     var isDarkTheme by remember { mutableStateOf(false) }
     var database by remember { mutableStateOf<HyphenDatabase?>(null) }
@@ -204,6 +233,7 @@ fun HyphenSampleApp(
                                 state = editorState,
                                 showMarkdown = showMarkdown,
                                 verticalScrollbar = verticalScrollbar,
+                                snackbarHostState = snackbarHostState,
                             )
                             AnimatedVisibility(
                                 visible = showPanel,
@@ -227,6 +257,7 @@ fun HyphenSampleApp(
                                 state = editorState,
                                 showMarkdown = showMarkdown,
                                 verticalScrollbar = verticalScrollbar,
+                                snackbarHostState = snackbarHostState,
                             )
                             AnimatedVisibility(
                                 visible = showPanel,
@@ -455,8 +486,10 @@ private fun EditorPane(
     state: HyphenTextState,
     showMarkdown: Boolean,
     verticalScrollbar: VerticalScrollbarSlot?,
+    snackbarHostState: SnackbarHostState,
 ) {
     val editorScrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
     Column(modifier = modifier) {
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -471,6 +504,177 @@ private fun EditorPane(
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+                styleConfig = HyphenStyleConfig(
+                    mentionStyles = mapOf(
+                        "user" to SpanStyle(
+                            color = Color(0xFF1976D2),
+                            fontWeight = FontWeight.Bold
+                        ),
+                        "tag" to SpanStyle(
+                            color = Color(0xFF388E3C),
+                            fontWeight = FontWeight.Bold
+                        ),
+                        "var" to SpanStyle(
+                            color = Color(0xFF7B1FA2),
+                            background = Color(0xFF7B1FA2).copy(alpha = 0.1f),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                ),
+                triggerPopup = { trigger ->
+                    SampleTriggerPopup(trigger, state)
+                },
+                mentionConfig = HyphenMentionConfig(
+                    onMentionClick = { mention ->
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Clicked mention: ${mention.display}")
+                        }
+                    },
+                    dropdownContent = dropdownContent@ { span, offset, onDismiss ->
+                        val mention = span.style as? MarkupStyle.Mention ?: return@dropdownContent
+                        val density = LocalDensity.current
+                        val dpOffset = with(density) { DpOffset(offset.x.toDp(), offset.y.toDp() + 8.dp) }
+
+                        DropdownMenu(
+                            expanded = true,
+                            onDismissRequest = onDismiss,
+                            offset = dpOffset,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = MaterialTheme.shapes.medium,
+                            shadowElevation = 4.dp,
+                        ) {
+                            Box(modifier = Modifier.padding(12.dp).widthIn(max = 240.dp)) {
+                                Text(
+                                    text = "${mention.scheme.replaceFirstChar { it.uppercase() }}: ${mention.display}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                            when (mention.scheme) {
+                                "user" -> {
+                                    DropdownMenuItem(
+                                        text = { Text("View Profile") },
+                                        onClick = { onDismiss() },
+                                        leadingIcon = {
+                                            Icon(
+                                                painterResource(Res.drawable.person_24dp),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Send Message") },
+                                        onClick = { onDismiss() },
+                                        leadingIcon = {
+                                            Icon(
+                                                painterResource(Res.drawable.mail_24dp),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    )
+                                }
+                                "tag" -> {
+                                    DropdownMenuItem(
+                                        text = { Text("Search ${mention.display}") },
+                                        onClick = { onDismiss() },
+                                        leadingIcon = {
+                                            Icon(
+                                                painterResource(Res.drawable.search_24dp),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Follow Tag") },
+                                        onClick = { onDismiss() },
+                                        leadingIcon = {
+                                            Icon(
+                                                painterResource(Res.drawable.notifications_24dp),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    )
+                                }
+                                "var" -> {
+                                    DropdownMenuItem(
+                                        text = { Text("Refresh Value") },
+                                        onClick = { onDismiss() },
+                                        leadingIcon = {
+                                            Icon(
+                                                painterResource(Res.drawable.refresh_24dp),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+
+                            DropdownMenuItem(
+                                text = { Text("Copy ID") },
+                                onClick = { onDismiss() },
+                                leadingIcon = {
+                                    Icon(
+                                        painterResource(Res.drawable.content_copy_24dp),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            )
+                        }
+                    },
+                    hoverCardContent = { mention ->
+                        Surface(
+                            shape = MaterialTheme.shapes.medium,
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            tonalElevation = 8.dp,
+                            shadowElevation = 6.dp,
+                            modifier = Modifier.widthIn(min = 180.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        painterResource(
+                                            when (mention.scheme) {
+                                                "user" -> Res.drawable.person_24dp
+                                                "tag" -> Res.drawable.label_24dp
+                                                "var" -> Res.drawable.bolt_24dp
+                                                else -> Res.drawable.restore_page_24dp
+                                            }
+                                        ),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        text = mention.display,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "Scheme: ${mention.scheme}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "ID: ${mention.id}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                )
             )
             verticalScrollbar?.invoke(
                 editorScrollState,
@@ -523,4 +727,70 @@ private val DEMO_TEXT = """
     
     - [ ] Checklist task 1
     - [x] Checklist task 2
+
+    @Alice @Bob
+    #bug #feature
+    {project_name} {{user_count}}
+    
 """.trimIndent()
+
+@Composable
+private fun SampleTriggerPopup(
+    trigger: TriggerState,
+    state: HyphenTextState
+) {
+    val options = remember(trigger.config.trigger, trigger.query) {
+        val list = when (trigger.config.trigger) {
+            "@" -> listOf("Alice", "Bob", "Charlie", "David", "Eve", "Frank", "Grace")
+            "#" -> listOf("bug", "feature", "enhancement", "question", "wontfix", "duplicate")
+            "{" -> listOf("project_name", "user_count", "today_date", "current_time", "version")
+            "{{" -> listOf("project_name", "user_count", "today_date", "current_time", "version")
+            else -> emptyList()
+        }
+        list.filter { it.contains(trigger.query, ignoreCase = true) }
+    }
+
+    val suggestions = options.map { option ->
+        SuggestionItem(
+            id = option,
+            display = option,
+            subtitle = when(trigger.config.trigger) {
+                "@" -> "Team Member"
+                "#" -> "Label"
+                "{" -> "Variable"
+                "{{" -> "Dynamic Var"
+                else -> "Suggestion"
+            },
+            icon = {
+                Icon(
+                    painterResource(
+                        when(trigger.config.trigger) {
+                            "@" -> Res.drawable.person_24dp
+                            "#" -> Res.drawable.label_24dp
+                            "{" -> Res.drawable.bolt_24dp
+                            "{{" -> Res.drawable.bolt_24dp
+                            else -> Res.drawable.restore_page_24dp
+                        }
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        )
+    }
+
+    TriggerSuggestions(
+        state = state,
+        trigger = trigger,
+        items = suggestions,
+        onSelect = { item ->
+            val triggerPrefix = trigger.config.trigger
+            val triggerEnd = trigger.config.endTrigger ?: ""
+            state.completeMention(
+                id = item.id,
+                display = "$triggerPrefix${item.display}$triggerEnd"
+            )
+        }
+    )
+}
