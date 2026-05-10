@@ -55,6 +55,7 @@ Type Markdown syntax directly and watch it convert as you write — no mode swit
 | `> ` at line start      | Blockquote           |
 | `- [ ] ` at line start  | Checkbox (unchecked) |
 | `- [x] ` at line start  | Checkbox (checked)   |
+| `[text](scheme:id)`    | Mention              |
 
 ### 📋 Markdown Clipboard
 
@@ -93,6 +94,10 @@ Granular history with snapshots saved at word boundaries, pastes, and Markdown c
 ### 🌍 Compose Multiplatform
 
 Single shared implementation targeting Android, Desktop (JVM), and Web (WasmJS / JS).
+
+### 🏷️ Mentions & Autocomplete
+
+Powerful trigger-based autocomplete and interaction system. Define triggers like `@` or `#`, show custom suggestion menus, and handle mention-specific hover cards or context menus.
 
 ---
 
@@ -197,7 +202,7 @@ HyphenTextField(
 )
 ```
 
-Both composables accept the same `styleConfig`, `onTextChange`, `onMarkdownChange`, and `clipboardLabel` parameters. The Material3 variant additionally accepts `colors`, `shape`, `labelPosition`, `contentPadding`, and all standard decoration slots.
+Both composables accept the same `styleConfig`, `mentionConfig`, `triggerPopup`, `onTextChange`, `onMarkdownChange`, and `clipboardLabel` parameters. The Material3 variant additionally accepts `colors`, `shape`, `labelPosition`, `contentPadding`, and all standard decoration slots.
 
 ---
 
@@ -258,6 +263,51 @@ state.undo()
 state.redo()
 ```
 
+### Mentions & Autocomplete
+
+Hyphen provides a flexible API for implementing mentions (like @users) and other trigger-based interactions.
+
+#### 1. Define Triggers
+
+Configure the triggers and the Markdown schemes they map to:
+
+```kotlin
+val triggers = listOf(
+    TriggerConfig(trigger = "@", scheme = "user"),
+    TriggerConfig(trigger = "#", scheme = "tag")
+)
+
+val state = rememberHyphenTextState(triggerConfigs = triggers)
+```
+
+#### 2. Configure Interactions
+
+Use `mentionConfig` to handle clicks and customize the hover/context menus:
+
+```kotlin
+HyphenTextField(
+    state = state,
+    mentionConfig = HyphenMentionConfig(
+        onMentionClick = { mention -> println("Clicked: ${mention.display}") },
+        hoverCardContent = { mention ->
+            Surface(tonalElevation = 8.dp, shape = MaterialTheme.shapes.medium) {
+                Text("Viewing ${mention.display}", Modifier.padding(8.dp))
+            }
+        }
+    ),
+    triggerPopup = { triggerState ->
+        // Show your own suggestion menu here
+        MySuggestionMenu(
+            query = triggerState.query,
+            onSelected = { user -> state.completeMention(id = user.id, display = user.name) }
+        )
+    }
+)
+```
+
+> [!TIP]
+> Hyphen includes a built-in `TriggerSuggestions` composable that handles standard Material3 list styling and keyboard navigation for you. Check the sample project for a full implementation.
+
 ### Reactive observation
 
 ```kotlin
@@ -290,6 +340,8 @@ viewModelScope.launch {
 | `textStyle`         | `TextStyle`                 | `TextStyle(fontSize = 16.sp)` | Typographic style applied to the visible text.                                                  |
 | `styleConfig`       | `HyphenStyleConfig`         | `HyphenStyleConfig()`         | Visual appearance of each `MarkupStyle`.                                                        |
 | `linkConfig`        | `HyphenLinkConfig`          | `HyphenLinkConfig()`          | Interaction configuration for link spans (menus, dialogs, opening URLs).                        |
+| `mentionConfig`     | `HyphenMentionConfig`       | `HyphenMentionConfig()`       | Interaction configuration for mention spans (hover cards, dropdowns, click handlers).          |
+| `triggerPopup`      | `@Composable (TriggerState) -> Unit` | `{}`                 | Composable content shown in a popup when a trigger is active.                                   |
 | `keyboardOptions`   | `KeyboardOptions`           | Sentences, no autocorrect     | Software keyboard options.                                                                      |
 | `lineLimits`        | `TextFieldLineLimits`       | `TextFieldLineLimits.Default` | Single-line or multi-line behaviour.                                                            |
 | `scrollState`       | `ScrollState`               | `rememberScrollState()`       | Controls vertical or horizontal scroll of the field content.                                    |
@@ -325,6 +377,7 @@ viewModelScope.launch {
 | `toMarkdown(start?, end?)`    | `String`                    | Serializes content (or a substring range) to a Markdown formatted string.                  |
 | `setMarkdown(markdown)`       | `Unit`                      | Replaces all content programmatically, parses it, and resets history.                      |
 | `markdownFlow`                | `Flow<String>`              | Emits the serialized Markdown string on every text or formatting change.                   |
+| `insertMention(display, scheme, id)` | `Unit`                      | Programmatically inserts a formatted mention at the current cursor position.               |
 
 ### `HyphenStyleConfig`
 
@@ -348,6 +401,8 @@ viewModelScope.launch {
 | `h5Style`                | `SpanStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold)`                                        |
 | `h6Style`                | `SpanStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)`                                        |
 | `linkStyle`              | `SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)`                         |
+| `mentionStyle`           | `SpanStyle(color = Color(0xFF1976D2), fontWeight = FontWeight.Medium)`                             |
+| `mentionStyles`          | `emptyMap<String, SpanStyle>()`                                                                    |
 
 ### `MarkupStyle`
 
@@ -374,6 +429,9 @@ MarkupStyle.OrderedList
 MarkupStyle.Blockquote
 MarkupStyle.CheckboxUnchecked
 MarkupStyle.CheckboxChecked
+
+// Mention style
+MarkupStyle.Mention(display, scheme, id)
 ```
 
 ### `ListItemStyle`
