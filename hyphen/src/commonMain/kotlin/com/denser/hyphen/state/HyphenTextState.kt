@@ -153,39 +153,93 @@ class HyphenTextState(
     }
 
     /**
-     * Completes the current mention by replacing the trigger and query with the given [display] text.
+     * Completes an active trigger by replacing the trigger text with a formatted mention span.
      *
-     * @param id The unique identifier for the mention.
-     * @param display The text to display in the editor (including the trigger prefix).
+     * @param id The unique identifier for the mentioned entity.
+     * @param display The text to show in the editor.
      * @param triggerEnd Optional closing marker to append if it's not already present in [display].
      */
     fun completeMention(id: String, display: String, triggerEnd: String? = null) {
         val trigger = activeTrigger ?: return
-        val startIndex = trigger.startIndex
-        val currentEnd = startIndex + trigger.config.trigger.length + trigger.query.length
+        val scheme = trigger.config.scheme
+        val start = trigger.startIndex
+        val end = selection.end
         
         val prefix = trigger.config.trigger
         val endMarker = triggerEnd ?: trigger.config.endTrigger ?: ""
         
-        // Ensure prefix is present
+        // Ensure prefix is present in display if configured
         var finalDisplay = if (!display.startsWith(prefix)) "$prefix$display" else display
         
-        // Ensure suffix is present
+        // Ensure suffix is present in display if configured
         if (endMarker.isNotEmpty() && !finalDisplay.endsWith(endMarker)) {
             finalDisplay = "$finalDisplay$endMarker"
         }
 
         // Add trailing space if configured
-        if (trigger.config.addSpaceOnCompletion) {
-            finalDisplay = "$finalDisplay "
-        }
-
+        val actualDisplay = if (trigger.config.addSpaceOnCompletion) "$finalDisplay " else finalDisplay
+        
+        saveSnapshot(force = true)
+        
         textFieldState.edit {
-            replace(startIndex, currentEnd, finalDisplay)
-            this.selection = androidx.compose.ui.text.TextRange(startIndex + finalDisplay.length)
+            replace(start, end, actualDisplay)
+            selection = TextRange(start + actualDisplay.length)
         }
         
+        val lengthDiff = actualDisplay.length - (end - start)
+        val shiftedSpans = SpanManager.shiftSpans(_spans, start, lengthDiff)
+        
+        val newMentionStyle = MarkupStyle.Mention(id, finalDisplay, scheme)
+        val newSpan = MarkupStyleRange(newMentionStyle, start, start + finalDisplay.length)
+        
+        val updated = shiftedSpans.toMutableList()
+        updated.removeAll { 
+            it.style is MarkupStyle.Mention && (it.style as MarkupStyle.Mention).id.isEmpty() &&
+            it.start == start
+        }
+        updated.add(newSpan)
+        
+        _spans.clear()
+        _spans.addAll(SpanManager.consolidateSpans(updated))
+        
         updateActiveTrigger(null)
+    }
+
+    /**
+     * Clears the currently active trigger state, dismissing any suggestions or popups.
+     */
+    fun dismissActiveTrigger() {
+        updateActiveTrigger(null)
+    }
+
+    /**
+     * Programmatically activates a trigger at the current cursor position.
+     * 
+     * @param config The [TriggerConfig] to activate.
+     * @param query The initial query string.
+     */
+    fun activateTrigger(config: TriggerConfig, query: String = "") {
+        val cursor = selection.start
+        updateActiveTrigger(TriggerState(config, cursor, query))
+    }
+
+    /**
+     * Programmatically inserts text at the current cursor position, shifting spans and
+     * triggering markdown processing / active triggers as if the text was typed by the user.
+     *
+     * @param value The text to insert.
+     */
+    fun insertText(value: String) {
+        saveSnapshot(force = true)
+        val (selStart, selEnd) = resolvedSelection()
+        
+        textFieldState.edit {
+            replace(selStart, selEnd, value)
+            this.selection = TextRange(selStart + value.length)
+            
+            // Re-run input processing to detect triggers, syntax, etc.
+            processInput(this)
+        }
     }
 
     /**
@@ -859,45 +913,7 @@ class HyphenTextState(
         historyManager.clear()
     }
 
-    /**
-     * Completes an active trigger by replacing the trigger text with a mention.
-     *
-     * @param id The identifier for the mentioned entity.
-     * @param display The text to show in the editor.
-     */
-    fun completeMention(id: String, display: String) {
-        val trigger = activeTrigger ?: return
-        val scheme = trigger.config.scheme
-        val start = trigger.startIndex
-        val end = selection.end
-        
-        val actualDisplay = if (trigger.config.addSpaceOnCompletion) "$display " else display
-        
-        saveSnapshot(force = true)
-        
-        textFieldState.edit {
-            replace(start, end, actualDisplay)
-            selection = TextRange(start + actualDisplay.length)
-        }
-        
-        val lengthDiff = actualDisplay.length - (end - start)
-        val shiftedSpans = SpanManager.shiftSpans(_spans, start, lengthDiff)
-        
-        val newMentionStyle = MarkupStyle.Mention(id, display, scheme)
-        val newSpan = MarkupStyleRange(newMentionStyle, start, start + display.length)
-        
-        val updated = shiftedSpans.toMutableList()
-        updated.removeAll { 
-            it.style is MarkupStyle.Mention && (it.style as MarkupStyle.Mention).id.isEmpty() &&
-            it.start == start
-        }
-        updated.add(newSpan)
-        
-        _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(updated))
-        
-        activeTrigger = null
-    }
+
 
     private fun updateActiveTrigger(buffer: TextFieldBuffer, changeOrigin: Int, rawLengthDifference: Int) {
         val cursor = buffer.selection.start
