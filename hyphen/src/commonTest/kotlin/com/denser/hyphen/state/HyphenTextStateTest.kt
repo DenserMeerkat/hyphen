@@ -108,13 +108,13 @@ class HyphenTextStateTest {
         state.select(10)
 
         // 1. Toggle to Checked
-        state.toggleCheckboxAtCursor()
+        state.toggleCheckbox()
         assertEquals("- [x] Write tests", state.text)
         assertTrue(state.hasStyle(MarkupStyle.CheckboxChecked))
         assertFalse(state.hasStyle(MarkupStyle.CheckboxUnchecked))
 
         // 2. Toggle back to Unchecked
-        state.toggleCheckboxAtCursor()
+        state.toggleCheckbox()
         assertEquals("- [ ] Write tests", state.text)
         assertTrue(state.hasStyle(MarkupStyle.CheckboxUnchecked))
         assertFalse(state.hasStyle(MarkupStyle.CheckboxChecked))
@@ -127,7 +127,7 @@ class HyphenTextStateTest {
         state.isFocused = true
         state.select(5)
 
-        state.toggleCheckboxAtCursor()
+        state.toggleCheckbox()
 
         // Assert text hasn't changed
         assertEquals(text, state.text)

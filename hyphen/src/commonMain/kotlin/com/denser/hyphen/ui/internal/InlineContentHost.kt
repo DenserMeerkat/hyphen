@@ -79,19 +79,24 @@ internal fun InlineContentHost(
                 }
             }.map { measurable ->
                 val finalConstraints = if ((span.style is MarkupStyle.Link || span.style is MarkupStyle.Mention) && layoutResult != null) {
-                    val transformedStart = HyphenOffsetMapper.toVisual(span.start, state)
-                        .coerceIn(0, layoutResult.layoutInput.text.length)
-                    val transformedEnd = HyphenOffsetMapper.toVisual(span.end, state)
-                        .coerceIn(0, layoutResult.layoutInput.text.length)
-                        .let { if (it > transformedStart) it else transformedStart }
+                    val textLen = layoutResult.layoutInput.text.length
+                    if (textLen == 0) {
+                        Constraints.fixed(0, 0)
+                    } else {
+                        val transformedStart = HyphenOffsetMapper.toVisual(span.start, state)
+                            .coerceIn(0, textLen - 1)
+                        val transformedEnd = HyphenOffsetMapper.toVisual(span.end, state)
+                            .coerceIn(0, textLen - 1)
+                            .let { if (it > transformedStart) it else transformedStart }
 
-                    val startBox = layoutResult.getBoundingBox(transformedStart)
-                    val lastCharIndex = (transformedEnd - 1).coerceAtLeast(transformedStart)
-                    val endBox = layoutResult.getBoundingBox(lastCharIndex)
+                        val startBox = layoutResult.getBoundingBox(transformedStart)
+                        val lastCharIndex = (transformedEnd - 1).coerceAtLeast(transformedStart)
+                        val endBox = layoutResult.getBoundingBox(lastCharIndex)
 
-                    val width = (endBox.right - startBox.left).coerceAtLeast(0f).roundToInt()
-                    val height = (endBox.bottom - startBox.top).coerceAtLeast(0f).roundToInt()
-                    Constraints.fixed(width, height)
+                        val width = (endBox.right - startBox.left).coerceAtLeast(0f).roundToInt()
+                        val height = (endBox.bottom - startBox.top).coerceAtLeast(0f).roundToInt()
+                        Constraints.fixed(width, height)
+                    }
                 } else {
                     standardConstraints
                 }
@@ -124,9 +129,11 @@ internal fun InlineContentHost(
             
             if (layoutResult != null) {
                 val scrollY = scrollState.value
+                val textLen = layoutResult.layoutInput.text.length
                 inlinePlaceables.forEach { (span, placeable) ->
+                    if (textLen == 0) return@forEach
                     val transformedIndex = HyphenOffsetMapper.toVisual(span.start, state)
-                        .coerceIn(0, layoutResult.layoutInput.text.length)
+                        .coerceIn(0, textLen - 1)
                     val boundingBox = layoutResult.getBoundingBox(transformedIndex)
 
                     val lineTop = boundingBox.top.roundToInt()
@@ -143,17 +150,20 @@ internal fun InlineContentHost(
                 }
 
                 if (triggerState != null && triggerPopupContent != null) {
-                    val transformedIndex = HyphenOffsetMapper.toVisual(triggerState.startIndex, state)
-                        .coerceIn(0, layoutResult.layoutInput.text.length)
-                    val boundingBox = layoutResult.getBoundingBox(transformedIndex)
-                    
-                    val x = boundingBox.left.roundToInt()
-                    val y = (boundingBox.top - scrollY).roundToInt()
-                    val lineHeight = (boundingBox.bottom - boundingBox.top).roundToInt()
+                    val textLen = layoutResult.layoutInput.text.length
+                    if (textLen > 0) {
+                        val transformedIndex = HyphenOffsetMapper.toVisual(triggerState.startIndex, state)
+                            .coerceIn(0, textLen - 1)
+                        val boundingBox = layoutResult.getBoundingBox(transformedIndex)
+                        
+                        val x = boundingBox.left.roundToInt()
+                        val y = (boundingBox.top - scrollY).roundToInt()
+                        val lineHeight = (boundingBox.bottom - boundingBox.top).roundToInt()
 
-                    triggerPopupContent.forEach { measurable ->
-                        val placeable = measurable.measure(Constraints.fixed(0, lineHeight))
-                        placeable.placeRelative(x, y)
+                        triggerPopupContent.forEach { measurable ->
+                            val placeable = measurable.measure(Constraints.fixed(0, lineHeight))
+                            placeable.placeRelative(x, y)
+                        }
                     }
                 }
             }
