@@ -256,10 +256,6 @@ internal object BlockStyleManager {
                 buffer.replace(lineStart, lineStart + 6, "- [ ] ")
                 return true to spans
             }
-            
-            buffer.insert(lineStart, "- [ ] ")
-            val newSpans = SpanManager.shiftSpans(spans, lineStart, 6, push = true)
-            return true to newSpans
         }
         return false to spans
     }

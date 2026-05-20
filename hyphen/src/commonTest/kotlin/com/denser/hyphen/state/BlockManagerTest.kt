@@ -233,13 +233,13 @@ class BlockStyleManagerTest {
         val state = TextFieldState("- [ ] Task")
 
         state.edit {
-            val toggled = BlockStyleManager.toggleCheckbox(this, 0, strictPrefixCheck = false)
+            val (toggled, _) = BlockStyleManager.toggleCheckbox(this, emptyList(), 0, strictPrefixCheck = false)
             assertTrue(toggled)
         }
         assertEquals("- [x] Task", state.text.toString())
 
         state.edit {
-            val toggled = BlockStyleManager.toggleCheckbox(this, 0, strictPrefixCheck = false)
+            val (toggled, _) = BlockStyleManager.toggleCheckbox(this, emptyList(), 0, strictPrefixCheck = false)
             assertTrue(toggled)
         }
         assertEquals("- [ ] Task", state.text.toString())
@@ -251,14 +251,14 @@ class BlockStyleManagerTest {
 
         state.edit {
             // Offset 8 is inside the word "Task". strictPrefixCheck = true should ignore it.
-            val toggled = BlockStyleManager.toggleCheckbox(this, 8, strictPrefixCheck = true)
+            val (toggled, _) = BlockStyleManager.toggleCheckbox(this, emptyList(), 8, strictPrefixCheck = true)
             assertFalse(toggled)
         }
         assertEquals("- [ ] Task", state.text.toString())
 
         state.edit {
             // strictPrefixCheck = false allows toggling from anywhere on the line
-            val toggled = BlockStyleManager.toggleCheckbox(this, 8, strictPrefixCheck = false)
+            val (toggled, _) = BlockStyleManager.toggleCheckbox(this, emptyList(), 8, strictPrefixCheck = false)
             assertTrue(toggled)
         }
         assertEquals("- [x] Task", state.text.toString())
@@ -270,7 +270,7 @@ class BlockStyleManagerTest {
 
         state.edit {
             // Offset 3 is inside the "- [ ] " prefix
-            val toggled = BlockStyleManager.toggleCheckbox(this, 3, strictPrefixCheck = true)
+            val (toggled, _) = BlockStyleManager.toggleCheckbox(this, emptyList(), 3, strictPrefixCheck = true)
             assertTrue(toggled)
         }
         assertEquals("- [x] Task", state.text.toString())
