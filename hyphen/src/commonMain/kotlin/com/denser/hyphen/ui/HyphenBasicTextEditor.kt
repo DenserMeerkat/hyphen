@@ -88,6 +88,7 @@ fun HyphenBasicTextEditor(
     linkConfig: HyphenLinkConfig = HyphenLinkConfig(),
     mentionConfig: HyphenMentionConfig = HyphenMentionConfig(),
     triggerPopup: @Composable (TriggerState) -> Unit = {},
+    showDefaultSuggestionsPopup: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions(
         capitalization = KeyboardCapitalization.Sentences,
         autoCorrectEnabled = false,
@@ -127,6 +128,7 @@ fun HyphenBasicTextEditor(
                     linkConfig = linkConfig,
                     mentionConfig = mentionConfig,
                     triggerPopup = triggerPopup,
+                    showDefaultSuggestionsPopup = showDefaultSuggestionsPopup,
                     textStyle = textStyle,
                     modifier = Modifier,
                 ) {

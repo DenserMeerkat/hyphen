@@ -34,6 +34,7 @@ internal fun InlineContentHost(
     linkConfig: HyphenLinkConfig,
     mentionConfig: HyphenMentionConfig,
     triggerPopup: @Composable (TriggerState) -> Unit,
+    showDefaultSuggestionsPopup: Boolean,
     textStyle: TextStyle,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
@@ -105,7 +106,7 @@ internal fun InlineContentHost(
         }
 
         val triggerState = state.activeTrigger
-        val triggerPopupContent = if (triggerState != null && layoutResult != null) {
+        val triggerPopupContent = if (showDefaultSuggestionsPopup && triggerState != null && layoutResult != null) {
             subcompose("trigger_popup") {
                 val scrollY = scrollState.value
                 val density = LocalDensity.current

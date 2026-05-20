@@ -49,6 +49,9 @@ import hyphen.sample.shared.generated.resources.format_h4_24dp
 import hyphen.sample.shared.generated.resources.format_h5_24dp
 import hyphen.sample.shared.generated.resources.format_h6_24dp
 import hyphen.sample.shared.generated.resources.link_24dp
+import hyphen.sample.shared.generated.resources.person_24dp
+import hyphen.sample.shared.generated.resources.label_24dp
+import hyphen.sample.shared.generated.resources.bolt_24dp
 
 @Composable
 fun HyphenToolbar(
@@ -117,6 +120,29 @@ fun HyphenToolbar(
                     contentDescription = "Link",
                     isActive = state.hasStyle(MarkupStyle.Link("")),
                     onClick = { state.toggleLink() }
+                )
+
+                VerticalDivider(modifier = Modifier.height(16.dp).padding(horizontal = 2.dp), color = MaterialTheme.colorScheme.outlineVariant)
+
+                FormatToggleButton(
+                    icon = Res.drawable.person_24dp,
+                    contentDescription = "Mention User",
+                    isActive = state.activeTrigger?.config?.trigger == "@",
+                    onClick = { state.insertText("@") }
+                )
+
+                FormatToggleButton(
+                    icon = Res.drawable.label_24dp,
+                    contentDescription = "Mention Tag",
+                    isActive = state.activeTrigger?.config?.trigger == "#",
+                    onClick = { state.insertText("#") }
+                )
+
+                FormatToggleButton(
+                    icon = Res.drawable.bolt_24dp,
+                    contentDescription = "Insert Variable",
+                    isActive = state.activeTrigger?.config?.trigger == "{",
+                    onClick = { state.insertText("{") }
                 )
 
                 VerticalDivider(modifier = Modifier.height(16.dp).padding(horizontal = 2.dp), color = MaterialTheme.colorScheme.outlineVariant)
