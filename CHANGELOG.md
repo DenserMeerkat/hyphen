@@ -1,3 +1,12 @@
+## [0.5.0-alpha01] - 2026-05-25
+
+### ✨ Added
+* **Mentions & Autocomplete:** Added robust trigger-based autocomplete and interactive mention handling support.
+* **Built-in Autocomplete UI:** Introduced the Material 3 `TriggerSuggestions` popup helper for managing option rendering and key events automatically.
+* **Flexible State Initialization:** Added optional `triggerConfigs` constructor support to `HyphenTextState` and `rememberHyphenTextState()` to parse mention formatting inside initial texts seamlessly.
+
+---
+
 ## [0.4.0-alpha01] - 2026-03-30
 
 ### ✨ Added
