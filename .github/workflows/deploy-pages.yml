@@ -1,0 +1,57 @@
+name: GitHub Pages
+
+on:
+  push:
+    tags:
+      - '*'
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build Web Compatibility Distribution
+        run: ./gradlew :sample:web:composeCompatibilityBrowserDistribution --no-daemon
+
+      - name: Prepare Pages Directory
+        run: |
+          cd sample/web/build/dist/composeWebCompatibility/productionExecutable
+          # Create .nojekyll to prevent Jekyll from running (critical for Compose Multiplatform Skiko resources)
+          touch .nojekyll
+          # Create 404.html as a copy of index.html for SPA fallback routing
+          cp index.html 404.html
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: sample/web/build/dist/composeWebCompatibility/productionExecutable
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

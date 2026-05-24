@@ -9,10 +9,14 @@ plugins {
     id("maven-publish")
     id("org.jetbrains.dokka") version "2.1.0"
     signing
+    id("com.vanniktech.maven.publish") version "0.30.0"
 }
 
 group = "io.github.densermeerkat"
-version = "0.4.0-alpha01"
+val overrideVersion = project.findProperty("version")?.toString()
+version = System.getenv("LIBRARY_VERSION")
+    ?: if (!overrideVersion.isNullOrEmpty() && overrideVersion != "unspecified") overrideVersion else null
+    ?: "0.4.0-alpha01"
 
 android {
     namespace = "com.denser.hyphen"
@@ -99,51 +103,54 @@ kotlin {
     }
 }
 
-publishing {
-    publications.withType<MavenPublication> {
-        val pubName = name
-        val javadocJarTask = project.tasks.register("javadocJar${pubName.replaceFirstChar { it.uppercaseChar() }}", Jar::class) {
-            dependsOn(project.tasks.named("dokkaGenerate"))
-            archiveClassifier.set("javadoc")
-            from(project.layout.buildDirectory.dir("dokka/html"))
-            destinationDirectory.set(project.layout.buildDirectory.dir("libs/javadoc/$pubName"))
-        }
-
-        artifact(javadocJarTask)
-
-        pom {
-            name.set("Hyphen")
-            description.set("A lightweight WYSIWYG Markdown editor for Compose Multiplatform (KMP).")
-            url.set("https://github.com/DenserMeerkat/hyphen")
-
-            licenses {
-                license {
-                    name.set("The Apache License, Version 2.0")
-                    url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                }
-            }
-            developers {
-                developer {
-                    id.set("DenserMeerkat")
-                    name.set("DenserMeerkat")
-                }
-            }
-            scm {
-                connection.set("scm:git:git://github.com/DenserMeerkat/hyphen.git")
-                developerConnection.set("scm:git:ssh://github.com/DenserMeerkat/hyphen.git")
-                url.set("https://github.com/DenserMeerkat/hyphen")
-            }
-        }
-    }
-
-    repositories {
-        maven {
-            name = "LocalTest"
-            url = uri(layout.buildDirectory.dir("repo"))
-        }
+if (!project.hasProperty("mavenCentralUsername")) {
+    val localUsername = project.findProperty("sonatypeUsername")?.toString()
+        ?: project.findProperty("ossrhUsername")?.toString()
+    if (!localUsername.isNullOrEmpty()) {
+        extra.set("mavenCentralUsername", localUsername)
     }
 }
 
-signing {
-    sign(publishing.publications)
+if (!project.hasProperty("mavenCentralPassword")) {
+    val localPassword = project.findProperty("sonatypePassword")?.toString()
+        ?: project.findProperty("ossrhPassword")?.toString()
+    if (!localPassword.isNullOrEmpty()) {
+        extra.set("mavenCentralPassword", localPassword)
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+
+    coordinates(
+        groupId = group.toString(),
+        artifactId = "hyphen",
+        version = version.toString()
+    )
+
+    pom {
+        name.set("Hyphen")
+        description.set("A lightweight WYSIWYG Markdown editor for Compose Multiplatform (KMP).")
+        url.set("https://github.com/DenserMeerkat/hyphen")
+
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+            }
+        }
+        developers {
+            developer {
+                id.set("DenserMeerkat")
+                name.set("DenserMeerkat")
+            }
+        }
+        scm {
+            connection.set("scm:git:git://github.com/DenserMeerkat/hyphen.git")
+            developerConnection.set("scm:git:ssh://github.com/DenserMeerkat/hyphen.git")
+            url.set("https://github.com/DenserMeerkat/hyphen")
+        }
+    }
 }
