@@ -1,6 +1,7 @@
 package com.denser.hyphen.ui.mention
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.MarkupStyleRange
@@ -13,6 +14,7 @@ import com.denser.hyphen.model.MarkupStyleRange
  *   is over the mention.
  * @property dropdownContent Optional composable for a context menu (right-click/long-press).
  */
+@Immutable
 data class HyphenMentionConfig(
     val onMentionClick: (MarkupStyle.Mention) -> Unit = {},
     val hoverCardContent: @Composable (MarkupStyle.Mention) -> Unit = {},

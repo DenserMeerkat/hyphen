@@ -1,5 +1,6 @@
 package com.denser.hyphen.ui.style
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -19,6 +20,7 @@ import androidx.compose.ui.unit.sp
  * @property contentStyle [SpanStyle] applied to the text after the marker.
  *   Defaults to `null` (inherits base [androidx.compose.ui.text.TextStyle]).
  */
+@Immutable
 data class ListItemStyle(
     val prefixStyle: SpanStyle? = null,
     val contentStyle: SpanStyle? = null,
@@ -71,6 +73,7 @@ data class ListItemStyle(
  * @property mentionStyle Default [SpanStyle] applied to [com.denser.hyphen.model.MarkupStyle.Mention] spans.
  * @property mentionStyles Map of specific [SpanStyle] overrides for different mention schemes (e.g., "user", "tag").
  */
+@Immutable
 data class HyphenStyleConfig(
     val boldStyle: SpanStyle = SpanStyle(fontWeight = FontWeight.Bold),
     val italicStyle: SpanStyle = SpanStyle(fontStyle = FontStyle.Italic),

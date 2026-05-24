@@ -1,6 +1,7 @@
 package com.denser.hyphen.ui.link
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
 import com.denser.hyphen.model.MarkupStyleRange
 
@@ -58,6 +59,7 @@ import com.denser.hyphen.model.MarkupStyleRange
  * @param dialogContent Composable slot that replaces the built-in link edit dialog.
  *   Receives the [MarkupStyleRange] being edited and callbacks for dismissal and confirmation.
  */
+@Immutable
 data class HyphenLinkConfig(
     val onFollowLink: ((url: String) -> Unit)? = null,
     val dropdownContent: (@Composable (

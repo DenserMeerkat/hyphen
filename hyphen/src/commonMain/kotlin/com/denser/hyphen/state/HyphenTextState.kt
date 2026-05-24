@@ -197,7 +197,7 @@ class HyphenTextState(
         
         val updated = shiftedSpans.toMutableList()
         updated.removeAll { 
-            it.style is MarkupStyle.Mention && (it.style as MarkupStyle.Mention).id.isEmpty() &&
+            it.style is MarkupStyle.Mention && it.style.id.isEmpty() &&
             it.start == start
         }
         updated.add(newSpan)
@@ -500,13 +500,13 @@ class HyphenTextState(
                 
                 // Clear any mentions at this position (finished or pending)
                 val cleanedShifted = inlineShifted.filterNot { 
-                    it.style is MarkupStyle.Mention && (it.start == trigger.startIndex || (it.style as MarkupStyle.Mention).id.isEmpty())
+                    it.style is MarkupStyle.Mention && (it.start == trigger.startIndex || it.style.id.isEmpty())
                 }
                 updatedSpans = (cleanedShifted + triggerSpan).distinct()
             } ?: run {
                 // Clear any orphaned pending mentions
                 updatedSpans = inlineShifted.filterNot { 
-                    it.style is MarkupStyle.Mention && (it.style as MarkupStyle.Mention).id.isEmpty() 
+                    it.style is MarkupStyle.Mention && it.style.id.isEmpty()
                 }
             }
         }
