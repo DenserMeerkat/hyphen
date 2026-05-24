@@ -17,6 +17,21 @@ import androidx.compose.ui.unit.dp
 import com.denser.hyphen.model.TriggerState
 import com.denser.hyphen.state.HyphenTextState
 
+/**
+ * A standard Material 3 autocomplete suggestions popup list.
+ *
+ * This composable connects with the editor's trigger state to handle mouse and keyboard navigation
+ * (such as arrow keys to move highlights and Enter to select). It manages active selection state
+ * on the hoisted [HyphenTextState] automatically.
+ *
+ * @param state The active [HyphenTextState] of the editor. Used to coordinate indices, count,
+ *   and handle Enter-key autocomplete requests.
+ * @param trigger The active [TriggerState] that represents the matched trigger (e.g. '@' or '#')
+ *   and contains the user's typed search query.
+ * @param items The list of filtering items ([SuggestionItem]) to display in the dropdown.
+ * @param onSelect Callback invoked when a suggestion item is selected (either by mouse click or Enter key).
+ * @param modifier Optional [Modifier] applied to the suggestion popup container.
+ */
 @Composable
 fun TriggerSuggestions(
     state: HyphenTextState,
@@ -100,6 +115,14 @@ fun TriggerSuggestions(
     }
 }
 
+/**
+ * Represents a single choice inside the autocomplete suggestion list.
+ *
+ * @property id The unique identifier of the entity (e.g. "user-123").
+ * @property display The primary text displayed in the option list and inserted into the editor.
+ * @property subtitle Optional description or detail shown below the main display text.
+ * @property icon Optional composable icon displayed to the left of the text content.
+ */
 data class SuggestionItem(
     val id: String,
     val display: String,

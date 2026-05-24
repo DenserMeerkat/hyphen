@@ -60,10 +60,13 @@ import kotlinx.coroutines.flow.Flow
  * ```
  *
  * @param initialText Plain text or Markdown string used to seed the editor on creation.
- * Markdown syntax is parsed immediately — [text] will contain the clean result.
+ *   Markdown syntax is parsed immediately — [text] will contain the clean result.
+ * @param initialTriggerConfigs Optional list of [TriggerConfig] triggers (like `@` or `#`) to configure
+ *   and parse mentions in the [initialText] on creation. Defaults to an empty list.
  */
 class HyphenTextState(
     initialText: String = "",
+    initialTriggerConfigs: List<TriggerConfig> = emptyList(),
 ) {
     /**
      * The underlying [TextFieldState] driving the Compose text field.
@@ -119,7 +122,7 @@ class HyphenTextState(
     /**
      * Configuration for triggers like @, #, etc.
      */
-    var triggerConfigs by mutableStateOf<List<TriggerConfig>>(emptyList())
+    var triggerConfigs by mutableStateOf<List<TriggerConfig>>(initialTriggerConfigs)
 
     /**
      * Current active trigger state (e.g., if user is currently typing after an '@').
@@ -1101,12 +1104,15 @@ class HyphenTextState(
  *
  * @param initialText Plain text or Markdown string used to seed the editor on creation.
  *   See [HyphenTextState] for details on how Markdown is parsed at initialization.
+ * @param triggerConfigs Optional list of [TriggerConfig] triggers (like `@` or `#`) to configure
+ *   autocompletion and parse mentions in [initialText] on creation. Defaults to an empty list.
  */
 @Composable
 fun rememberHyphenTextState(
-    initialText: String = ""
+    initialText: String = "",
+    triggerConfigs: List<TriggerConfig> = emptyList()
 ): HyphenTextState = remember {
-    HyphenTextState(initialText)
+    HyphenTextState(initialText, triggerConfigs)
 }
 
 /**

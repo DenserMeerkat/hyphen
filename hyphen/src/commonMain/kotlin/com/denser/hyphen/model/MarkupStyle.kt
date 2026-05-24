@@ -19,6 +19,8 @@ package com.denser.hyphen.model
  * | [InlineCode] | `` `text` `` | Monospace, highlighted background |
  * | [Highlight] | `==text==` | Coloured background highlight |
  * | [H1]..[H6] | `# text` to `###### text` | Scaled, bold headings (line-spanning) |
+ * | [Link] | `[text](url)` | Interactive hyperlink with custom URL |
+ * | [Mention] | `[display](scheme:id)` | Interactive mention of an entity (e.g., user, tag) |
  *
  * **Block styles** apply to entire lines and are represented as line-prefix characters
  * inserted directly into [com.denser.hyphen.state.HyphenTextState.text] by [com.denser.hyphen.state.BlockStyleManager]. Smart Enter

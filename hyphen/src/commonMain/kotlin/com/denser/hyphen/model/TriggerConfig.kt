@@ -9,7 +9,7 @@ import androidx.compose.runtime.Immutable
  * @property scheme The URI scheme used for serialization in Markdown (e.g., "mention", "tag", "var").
  *   Serialized as `[Display](scheme:ID)`.
  * @property endTrigger Optional character sequence that manually terminates the trigger (e.g., "}}").
- * @property endOnSpace Whether a space character automatically terminates the trigger query.
+ * @property addSpaceOnCompletion Whether a trailing space should be appended when completing a mention.
  *   Defaults to `true`.
  */
 @Immutable
