@@ -265,11 +265,11 @@ state.redo()
 
 ### Mentions & Autocomplete
 
-Hyphen provides a flexible API for implementing mentions (like @users) and other trigger-based interactions.
+Hyphen provides a powerful trigger-based autocomplete and interaction framework for mentions (such as @users), hashtags (such as #features), or custom template variables.
 
 #### 1. Define Triggers
 
-Configure the triggers and the Markdown schemes they map to:
+Configure the triggers and the Markdown schemes they map to. Triggers are completely optional and can be defined at initialization:
 
 ```kotlin
 val triggers = listOf(
@@ -277,36 +277,63 @@ val triggers = listOf(
     TriggerConfig(trigger = "#", scheme = "tag")
 )
 
+// Triggers can be optionally passed directly to rememberHyphenTextState
 val state = rememberHyphenTextState(triggerConfigs = triggers)
 ```
 
 #### 2. Configure Interactions
 
-Use `mentionConfig` to handle clicks and customize the hover/context menus:
+Use `mentionConfig` (`HyphenMentionConfig`) to manage interactions with completed mentions, such as handling taps, presenting hover cards, or showing custom context Dropdown menus:
 
 ```kotlin
 HyphenTextField(
     state = state,
     mentionConfig = HyphenMentionConfig(
-        onMentionClick = { mention -> println("Clicked: ${mention.display}") },
+        onMentionClick = { mention -> 
+            println("Clicked mention: ${mention.display} with ID: ${mention.id}") 
+        },
         hoverCardContent = { mention ->
             Surface(tonalElevation = 8.dp, shape = MaterialTheme.shapes.medium) {
-                Text("Viewing ${mention.display}", Modifier.padding(8.dp))
+                Text("Viewing details for ${mention.display}", Modifier.padding(8.dp))
+            }
+        },
+        dropdownContent = { span, offset, onDismiss ->
+            // Display a custom context menu on right-click / long-press
+            val mention = span.style as? MarkupStyle.Mention
+            if (mention != null) {
+                DropdownMenu(expanded = true, onDismissRequest = onDismiss, offset = offset) {
+                    DropdownMenuItem(
+                        text = { Text("Profile") },
+                        onClick = {
+                            println("Opening profile for ${mention.id}")
+                            onDismiss()
+                        }
+                    )
+                }
             }
         }
     ),
     triggerPopup = { triggerState ->
-        // Show your own suggestion menu here
+        // Show your autocomplete suggestions menu when a trigger is active
         MySuggestionMenu(
             query = triggerState.query,
-            onSelected = { user -> state.completeMention(id = user.id, display = user.name) }
+            onSelected = { item -> 
+                state.completeMention(id = item.id, display = item.display) 
+            }
         )
     }
 )
 ```
 
+#### 3. Keyboard Navigation & Auto-Completion
+
+When an autocomplete trigger is active, the editor automatically intercepts and routes arrow keys (`Up`/`Down`) and the `Enter` key to coordinate suggestion selection.
+* Watch `state.suggestionSelectedIndex`, `state.suggestionCount`, and `state.suggestionSelectionRequested` to control your suggestions popup.
+* Call `state.completeMention(id, display)` to insert a completed mention, which replaces the active query and registers a `MarkupStyle.Mention` style range.
+* Use `state.insertMention(display, scheme, id)` to programmatically insert a formatted mention at the current cursor index.
+
 > [!TIP]
-> Hyphen includes a built-in `TriggerSuggestions` composable that handles standard Material3 list styling and keyboard navigation for you. Check the sample project for a full implementation.
+> Hyphen includes a built-in `TriggerSuggestions` composable that handles standard Material3 list styling and keyboard selection synchronization for you out-of-the-box. Check the sample project for a full demonstration.
 
 ### Reactive observation
 
@@ -365,11 +392,21 @@ viewModelScope.launch {
 | `canUndo` / `canRedo`         | `Boolean`                   | `true` if undo/redo actions are available in the history stack.                            |
 | `activeLinkForEditing`        | `MarkupStyleRange?`         | The link span currently being edited via the built-in dialog.                              |
 | `isFocused`                   | `Boolean`                   | Whether the text field currently has input focus.                                          |
+| `triggerConfigs`              | `List<TriggerConfig>`       | Active autocomplete trigger configurations (e.g. `@` or `#`).                              |
+| `activeTrigger`               | `TriggerState?`             | The current active trigger being typed by the user, if any.                                |
+| `suggestionSelectedIndex`     | `Int`                       | The index of the currently highlighted suggestion in the autocomplete menu.                |
+| `suggestionCount`             | `Int`                       | Total number of suggestions currently available (must be set by the custom menu).          |
+| `suggestionSelectionRequested`| `Boolean`                   | Set to `true` when Enter is pressed on an active trigger to request selection completion.  |
 | `toggleStyle(style)`          | `Unit`                      | Toggles an inline or block style on the current selection.                                 |
 | `toggleCheckbox(index?)`      | `Unit`                      | Toggles the checked/unchecked state of checkboxes in the selection or at a specific index. |
 | `clearAllStyles()`            | `Unit`                      | Removes all inline formatting from the selection; suppresses at cursor.                    |
 | `toggleLink()`                | `Unit`                      | Wraps selection in a link, or opens an existing link at the cursor for editing.            |
 | `updateLink(span, text, url)` | `Unit`                      | Updates an existing link's display text and URL.                                           |
+| `completeMention(id, display, triggerEnd?)` | `Unit`       | Completes the active trigger, replacing the query with a formatted mention span.           |
+| `dismissActiveTrigger()`      | `Unit`                      | Clears the currently active trigger state, dismissing suggestions popups.                  |
+| `activateTrigger(config, query)` | `Unit`                   | Programmatically activates an autocomplete trigger at the current cursor position.          |
+| `insertText(value)`           | `Unit`                      | Programmatically inserts text at the current cursor, running full Markdown/trigger checks.  |
+| `insertMention(display, scheme, id)` | `Unit`              | Programmatically inserts a formatted mention at the current cursor position.               |
 | `hasStyle(style)`             | `Boolean`                   | `true` if the style is active at the current selection or cursor.                          |
 | `isStyleAt(index, style)`     | `Boolean`                   | Point query against the span list (ignores selection / overrides).                         |
 | `clearPendingOverrides()`     | `Unit`                      | Resets transient typing intent.                                                            |
@@ -377,7 +414,6 @@ viewModelScope.launch {
 | `toMarkdown(start?, end?)`    | `String`                    | Serializes content (or a substring range) to a Markdown formatted string.                  |
 | `setMarkdown(markdown)`       | `Unit`                      | Replaces all content programmatically, parses it, and resets history.                      |
 | `markdownFlow`                | `Flow<String>`              | Emits the serialized Markdown string on every text or formatting change.                   |
-| `insertMention(display, scheme, id)` | `Unit`                      | Programmatically inserts a formatted mention at the current cursor position.               |
 
 ### `HyphenStyleConfig`
 
@@ -403,6 +439,43 @@ viewModelScope.launch {
 | `linkStyle`              | `SpanStyle(color = Color.Blue, textDecoration = TextDecoration.Underline)`                         |
 | `mentionStyle`           | `SpanStyle(color = Color(0xFF1976D2), fontWeight = FontWeight.Medium)`                             |
 | `mentionStyles`          | `emptyMap<String, SpanStyle>()`                                                                    |
+
+### `HyphenMentionConfig`
+
+Interaction configuration for mention spans, controlling what happens when they are clicked, hovered, or right-clicked/long-pressed.
+
+| Property | Type | Default | Description |
+|:---|:---|:---|:---|
+| `onMentionClick` | `(MarkupStyle.Mention) -> Unit` | `{}` | Callback invoked when a mention span is clicked or tapped. |
+| `hoverCardContent` | `@Composable (MarkupStyle.Mention) -> Unit` | `{}` | Composable content displayed in a popup hover card when hovered. |
+| `dropdownContent` | `@Composable (span: MarkupStyleRange, menuOffset: Offset, onDismiss: () -> Unit) -> Unit` | `null` | Optional context DropdownMenu composable displayed on right-click or long-press. |
+
+### `TriggerSuggestions`
+
+Built-in Material 3 helper popup for displaying autocomplete items and managing selection index synchronization.
+
+```kotlin
+TriggerSuggestions(
+    state = state,
+    trigger = triggerState,
+    items = listOf(
+        SuggestionItem(id = "alice", display = "Alice"),
+        SuggestionItem(id = "bob", display = "Bob")
+    ),
+    onSelect = { item ->
+        state.completeMention(id = item.id, display = item.display)
+    }
+)
+```
+
+#### `SuggestionItem`
+
+| Property | Type | Default | Description |
+|:---|:---|:---|:---|
+| `id` | `String` | **Required** | The unique identifier of the target entity. |
+| `display` | `String` | **Required** | The text displayed in the suggestion list and inserted into the editor. |
+| `subtitle` | `String?` | `null` | Optional descriptive label displayed below the main text. |
+| `icon` | `@Composable (() -> Unit)?` | `null` | Optional leading composable slot (e.g. user avatar or icon). |
 
 ### `MarkupStyle`
 
