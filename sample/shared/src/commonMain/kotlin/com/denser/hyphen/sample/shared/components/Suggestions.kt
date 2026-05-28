@@ -90,7 +90,8 @@ fun SampleTriggerPopup(
             val triggerEnd = trigger.config.endTrigger ?: ""
             state.completeMention(
                 id = item.id,
-                display = "$triggerPrefix${item.display}$triggerEnd"
+                display = "$triggerPrefix${item.display}$triggerEnd",
+                trigger = trigger
             )
         }
     )
@@ -129,7 +130,8 @@ fun SuggestionsBottomBar(
                         val triggerEnd = trigger.config.endTrigger ?: ""
                         state.completeMention(
                             id = option,
-                            display = "$triggerPrefix$option$triggerEnd"
+                            display = "$triggerPrefix$option$triggerEnd",
+                            trigger = trigger
                         )
                     },
                     shape = RoundedCornerShape(8.dp),

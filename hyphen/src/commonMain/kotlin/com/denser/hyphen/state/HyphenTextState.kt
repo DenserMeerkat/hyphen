@@ -161,26 +161,24 @@ class HyphenTextState(
      * @param id The unique identifier for the mentioned entity.
      * @param display The text to show in the editor.
      * @param triggerEnd Optional closing marker to append if it's not already present in [display].
+     * @param trigger The specific [TriggerState] to complete. If null, falls back to [activeTrigger].
      */
-    fun completeMention(id: String, display: String, triggerEnd: String? = null) {
-        val trigger = activeTrigger ?: return
-        val scheme = trigger.config.scheme
-        val start = trigger.startIndex
-        val end = selection.end
+    fun completeMention(id: String, display: String, triggerEnd: String? = null, trigger: TriggerState? = null) {
+        val active = trigger ?: activeTrigger ?: return
+        val scheme = active.config.scheme
+        val start = active.startIndex
+        val end = (active.startIndex + active.config.trigger.length + active.query.length).coerceAtMost(text.length)
         
-        val prefix = trigger.config.trigger
-        val endMarker = triggerEnd ?: trigger.config.endTrigger ?: ""
-        
-        // Ensure prefix is present in display if configured
+        val prefix = active.config.trigger
+        val endMarker = triggerEnd ?: active.config.endTrigger ?: ""
+
         var finalDisplay = if (!display.startsWith(prefix)) "$prefix$display" else display
-        
-        // Ensure suffix is present in display if configured
+
         if (endMarker.isNotEmpty() && !finalDisplay.endsWith(endMarker)) {
             finalDisplay = "$finalDisplay$endMarker"
         }
 
-        // Add trailing space if configured
-        val actualDisplay = if (trigger.config.addSpaceOnCompletion) "$finalDisplay " else finalDisplay
+        val actualDisplay = if (active.config.addSpaceOnCompletion) "$finalDisplay " else finalDisplay
         
         saveSnapshot(force = true)
         
@@ -304,6 +302,15 @@ class HyphenTextState(
      */
     fun updateSelection(newSelection: TextRange) {
         selectionManager.onSelectionChanged(newSelection)
+        
+        val trigger = activeTrigger
+        if (trigger != null && isFocused) {
+            val cursor = newSelection.start
+            val maxQueryLength = trigger.config.trigger.length + trigger.query.length + 1
+            if (cursor < trigger.startIndex || cursor > trigger.startIndex + maxQueryLength) {
+                updateActiveTrigger(null)
+            }
+        }
     }
 
     private fun resolvedSelection(): Pair<Int, Int> =
@@ -337,9 +344,8 @@ class HyphenTextState(
         val newText = buffer.asCharSequence().toString()
 
         if (previousText == newText) {
-            if (selection != buffer.selection) {
+            if (selection != buffer.selection && isFocused) {
                 clearPendingOverrides()
-                activeTrigger = null
             }
             return
         }

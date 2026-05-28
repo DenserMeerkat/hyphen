@@ -57,6 +57,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.SpanStyle
@@ -209,6 +210,17 @@ fun HyphenSampleApp(
                         onReset = onReset,
                     )
                 },
+                bottomBar = {
+                    val showBottomBar = isAndroid && editorState.activeTrigger != null
+                    if (showBottomBar) {
+                        SuggestionsBottomBar(
+                            state = editorState,
+                            modifier = Modifier
+                                .navigationBarsPadding()
+                                .imePadding()
+                        )
+                    }
+                },
                 snackbarHost = { SnackbarHost(snackbarHostState) }
             ) { innerPadding ->
                 BoxWithConstraints(
@@ -337,10 +349,6 @@ private fun EditorPane(
                     .fillMaxHeight()
                     .padding(vertical = 4.dp, horizontal = 2.dp),
             )
-        }
-
-        if (isAndroid) {
-            SuggestionsBottomBar(state = state)
         }
 
         AnimatedVisibility(
