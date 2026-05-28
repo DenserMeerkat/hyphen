@@ -44,19 +44,7 @@ internal actual fun rememberMarkdownClipboard(
                 val start = lastKnownSelection.start.coerceAtMost(lastKnownSelection.end)
                 val end = lastKnownSelection.start.coerceAtLeast(lastKnownSelection.end)
 
-                val clipText = try {
-                    clipEntry.clipData.getItemAt(0)?.text?.toString() ?: ""
-                } catch (e: Exception) {
-                    ""
-                }
-                
-                val selectedText = if (start < end && end <= lastKnownText.length) {
-                    lastKnownText.substring(start, end)
-                } else {
-                    ""
-                }
-
-                if (selectedText.isNotEmpty() && clipText == selectedText) {
+                if (start < end && end <= lastKnownText.length) {
                     val markdown = MarkdownSerializer.serialize(lastKnownText, lastKnownSpans, start, end)
                     val clipData = ClipData.newPlainText(clipboardLabel, markdown)
 
