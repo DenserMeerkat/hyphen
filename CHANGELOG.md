@@ -1,3 +1,10 @@
+## [0.5.0-alpha03] - 2026-05-28
+
+### 🛠️ Fixed
+* **Clipboard Serialization Regression:** Reverted the clipboard-overriding guard introduced in `alpha02` which caused serialization to silently break for all text copies containing headings or checkboxes, due to a mismatch between the visual buffer text and the raw state text used in the equality check.
+
+---
+
 ## [0.5.0-alpha02] - 2026-05-28
 
 ### 🛠️ Fixed

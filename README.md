@@ -111,7 +111,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.5.0-alpha02"
+hyphen = "0.5.0-alpha03"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -140,7 +140,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.5.0-alpha02")
+            implementation("io.github.densermeerkat:hyphen:0.5.0-alpha03")
         }
     }
 }
