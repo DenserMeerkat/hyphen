@@ -1,3 +1,11 @@
+## [0.5.0-alpha02] - 2026-05-28
+
+### 🛠️ Fixed
+* **Autocomplete & Mention Robustness:** Added the optional `trigger` parameter to `completeMention()` to allow passing explicit trigger context, and prevented active trigger resetting on unfocused selection changes to avoid unintended suggestion popup dismissals.
+* **Clipboard Selection Overriding:** Fixed an issue where programmatic or platform-specific copy operations (e.g. copying just the URL of a link) were incorrectly intercepted and overridden by the editor's active text selection checks.
+
+---
+
 ## [0.5.0-alpha01] - 2026-05-25
 
 ### ✨ Added

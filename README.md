@@ -111,7 +111,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.5.0-alpha01"
+hyphen = "0.5.0-alpha02"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -140,7 +140,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.5.0-alpha01")
+            implementation("io.github.densermeerkat:hyphen:0.5.0-alpha02")
         }
     }
 }
@@ -314,11 +314,11 @@ HyphenTextField(
         }
     ),
     triggerPopup = { triggerState ->
-        // Show your autocomplete suggestions menu when a trigger is active
+        // Render your custom autocomplete suggestions menu
         MySuggestionMenu(
             query = triggerState.query,
             onSelected = { item -> 
-                state.completeMention(id = item.id, display = item.display) 
+                state.completeMention(id = item.id, display = item.display, trigger = triggerState) 
             }
         )
     }
@@ -402,7 +402,7 @@ viewModelScope.launch {
 | `clearAllStyles()`            | `Unit`                      | Removes all inline formatting from the selection; suppresses at cursor.                    |
 | `toggleLink()`                | `Unit`                      | Wraps selection in a link, or opens an existing link at the cursor for editing.            |
 | `updateLink(span, text, url)` | `Unit`                      | Updates an existing link's display text and URL.                                           |
-| `completeMention(id, display, triggerEnd?)` | `Unit`       | Completes the active trigger, replacing the query with a formatted mention span.           |
+| `completeMention(id, display, triggerEnd?, trigger?)` | `Unit`       | Completes the active trigger, replacing the query with a formatted mention span.           |
 | `dismissActiveTrigger()`      | `Unit`                      | Clears the currently active trigger state, dismissing suggestions popups.                  |
 | `activateTrigger(config, query)` | `Unit`                   | Programmatically activates an autocomplete trigger at the current cursor position.          |
 | `insertText(value)`           | `Unit`                      | Programmatically inserts text at the current cursor, running full Markdown/trigger checks.  |
@@ -463,7 +463,7 @@ TriggerSuggestions(
         SuggestionItem(id = "bob", display = "Bob")
     ),
     onSelect = { item ->
-        state.completeMention(id = item.id, display = item.display)
+        state.completeMention(id = item.id, display = item.display, trigger = triggerState)
     }
 )
 ```
