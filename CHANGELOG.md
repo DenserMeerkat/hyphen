@@ -1,3 +1,14 @@
+## [0.5.0-alpha04] - 2026-05-30
+
+### ✨ Added
+* **Raw Clipboard Bypass (`LocalHyphenRawClipboard`):** Exposes the raw, unintercepted system clipboard so custom editor UI (like link context menus) can write clean values directly without being overridden by Markdown serialization of active editor selections. Essential for Android.
+
+### 🛠️ Fixed
+* **Mention Entity Integrity:** Mentions are now treated as single, atomic entities during navigation and backspace/deletions, preventing orphaned syntax.
+* **Editor Deletion & State Stability:** Fixed edge-case boundary overlaps on inter-span deletions and visual cursor consistency.
+
+---
+
 ## [0.5.0-alpha03] - 2026-05-28
 
 ### 🛠️ Fixed
