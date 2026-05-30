@@ -237,7 +237,7 @@ internal object MarkdownProcessor {
                     )
                 },
                 getPrefixRemoved = { 1 },
-                getSuffixRemoved = { match -> match.groupValues[2].length + match.groupValues[3].length + 3 }
+                getSuffixRemoved = { match -> match.groupValues[2].length + match.groupValues[3].length + 4 }
             )
         }
 

@@ -78,7 +78,7 @@ class HyphenTextState(
     val textFieldState = TextFieldState()
 
     /** The current plain text content of the editor, with all Markdown syntax stripped. */
-    val text: String get() = textFieldState.text.toString()
+    val text: String get() = textFieldState.text.toString().replace('\u00A0', ' ')
 
     /** The current cursor position or selected range within [text]. */
     val selection: TextRange get() = textFieldState.selection
@@ -113,6 +113,7 @@ class HyphenTextState(
     private val historyManager = HistoryManager()
     private val selectionManager = SelectionManager()
     private var isUndoingOrRedoing = false
+    private var lastCursorPosition = 0
 
     /**
      * The link span currently being edited in a dialog.
@@ -178,7 +179,7 @@ class HyphenTextState(
             finalDisplay = "$finalDisplay$endMarker"
         }
 
-        val actualDisplay = if (active.config.addSpaceOnCompletion) "$finalDisplay " else finalDisplay
+        val actualDisplay = if (active.config.addSpaceOnCompletion) "$finalDisplay\u00A0" else finalDisplay
         
         saveSnapshot(force = true)
         
@@ -196,7 +197,7 @@ class HyphenTextState(
         val updated = shiftedSpans.toMutableList()
         updated.removeAll { 
             it.style is MarkupStyle.Mention && it.style.id.isEmpty() &&
-            it.start == start
+            (it.start == start || it.start == start + lengthDiff)
         }
         updated.add(newSpan)
         
@@ -204,6 +205,10 @@ class HyphenTextState(
         _spans.addAll(SpanManager.consolidateSpans(updated))
         
         updateActiveTrigger(null)
+
+        textFieldState.edit {
+            selection = TextRange(start + actualDisplay.length)
+        }
     }
 
     /**
@@ -237,8 +242,7 @@ class HyphenTextState(
         textFieldState.edit {
             replace(selStart, selEnd, value)
             this.selection = TextRange(selStart + value.length)
-            
-            // Re-run input processing to detect triggers, syntax, etc.
+
             processInput(this)
         }
     }
@@ -311,6 +315,28 @@ class HyphenTextState(
                 updateActiveTrigger(null)
             }
         }
+
+        if (newSelection.collapsed) {
+            val cursor = newSelection.start
+            val mention = _spans.find { it.style is MarkupStyle.Mention && it.style.id.isNotEmpty() && cursor > it.start && cursor < it.end }
+            if (mention != null) {
+                val snapTarget = if (lastCursorPosition >= mention.end) {
+                    mention.start
+                } else if (lastCursorPosition <= mention.start) {
+                    mention.end
+                } else {
+                    if (cursor - mention.start < mention.end - cursor) mention.start else mention.end
+                }
+
+                textFieldState.edit {
+                    selection = TextRange(snapTarget)
+                }
+                lastCursorPosition = snapTarget
+                return
+            }
+        }
+
+        lastCursorPosition = newSelection.start
     }
 
     private fun resolvedSelection(): Pair<Int, Int> =
@@ -340,8 +366,70 @@ class HyphenTextState(
     fun processInput(buffer: TextFieldBuffer) {
         if (isUndoingOrRedoing) return
 
-        val previousText = text
-        val newText = buffer.asCharSequence().toString()
+        val previousText = textFieldState.text.toString()
+        var newText = buffer.asCharSequence().toString()
+        var rawLengthDifference = newText.length - previousText.length
+        var cursorPosition = buffer.selection.start
+        var changeOrigin = SpanManager.resolveChangeOrigin(
+            cursorPosition,
+            rawLengthDifference,
+            previousText.length
+        )
+
+        if (rawLengthDifference == 1 && previousText != newText) {
+            val typedChar = newText.getOrNull(changeOrigin)
+            if (typedChar == ' ') {
+                val isAtLineEndInMiddle = changeOrigin + 1 < newText.length && newText[changeOrigin + 1] == '\n'
+                if (isAtLineEndInMiddle) {
+                    buffer.replace(changeOrigin, changeOrigin + 1, "\u00A0")
+                    newText = buffer.asCharSequence().toString()
+                }
+            }
+        }
+
+        val mentionSpans = _spans.filter { it.style is MarkupStyle.Mention && it.style.id.isNotEmpty() }
+        if (mentionSpans.isNotEmpty() && previousText != newText) {
+            val editStart = changeOrigin
+            val editEnd = changeOrigin + maxOf(0, -rawLengthDifference)
+
+            val modifiedMention = mentionSpans.find { mention ->
+                val display = (mention.style as MarkupStyle.Mention).display
+
+                if (editStart <= mention.start && editEnd >= mention.end) {
+                    return@find false
+                }
+
+                when {
+                    editStart >= mention.end -> {
+                        val actual = if (mention.end <= newText.length) newText.substring(mention.start, mention.end) else ""
+                        actual != display
+                    }
+                    editEnd <= mention.start -> {
+                        val newStart = mention.start + rawLengthDifference
+                        val newEnd = mention.end + rawLengthDifference
+                        val actual = if (newStart >= 0 && newEnd <= newText.length) newText.substring(newStart, newEnd) else ""
+                        actual != display
+                    }
+                    else -> true
+                }
+            }
+            if (modifiedMention != null) {
+                val effectiveStart = minOf(editStart, modifiedMention.start)
+                val effectiveEnd   = maxOf(editEnd,   modifiedMention.end)
+                buffer.revertAllChanges()
+                buffer.replace(effectiveStart, effectiveEnd, "")
+                buffer.selection = TextRange(effectiveStart)
+
+                newText = buffer.asCharSequence().toString()
+                rawLengthDifference = newText.length - previousText.length
+                cursorPosition = buffer.selection.start
+                changeOrigin = SpanManager.resolveChangeOrigin(
+                    cursorPosition,
+                    rawLengthDifference,
+                    previousText.length
+                )
+            }
+        }
 
         if (previousText == newText) {
             if (selection != buffer.selection && isFocused) {
@@ -350,21 +438,13 @@ class HyphenTextState(
             return
         }
 
-        val rawLengthDifference = newText.length - previousText.length
         val isPasting = rawLengthDifference > 1 || rawLengthDifference < -1
         val isWordBoundary =
-            newText.lastOrNull()?.isWhitespace() == true || newText.lastOrNull() == '\n'
+            newText.lastOrNull()?.let { it.isWhitespace() || it == '\u00A0' } == true || newText.lastOrNull() == '\n'
 
         saveSnapshot(force = !canUndo || isPasting || isWordBoundary)
 
         val deletedNewlines = previousText.count { it == '\n' } > newText.count { it == '\n' }
-
-        val cursorPosition = buffer.selection.start
-        val changeOrigin = SpanManager.resolveChangeOrigin(
-            cursorPosition,
-            rawLengthDifference,
-            previousText.length
-        )
 
         updateActiveTrigger(buffer, changeOrigin, rawLengthDifference)
 
@@ -381,19 +461,10 @@ class HyphenTextState(
             buffer.asCharSequence().substring(start, buffer.selection.start).contains('\n')
         } else false
 
-        val isWhitespaceInsertion = (0 until buffer.changes.changeCount).any { i ->
-            val range = buffer.changes.getRange(i)
-            (range.start until range.end).any { buffer.asCharSequence()[it].isWhitespace() }
-        }
-
-        val availableInlineStyles = (StyleSets.allInline + _spans.map { it.style }.filterIsInstance<MarkupStyle.Link>()).distinct()
+        val availableInlineStyles = StyleSets.allInline
         val activeInlineStyles = availableInlineStyles.filter { style ->
             val hasStyleAtCursor = when {
                 isNewlineInsertion -> {
-                    val (selStart, _) = resolvedSelection()
-                    _spans.any { it.style == style && selStart > it.start && selStart < it.end }
-                }
-                style is MarkupStyle.Link && isWhitespaceInsertion -> {
                     val (selStart, _) = resolvedSelection()
                     _spans.any { it.style == style && selStart > it.start && selStart < it.end }
                 }
@@ -421,8 +492,16 @@ class HyphenTextState(
             }
 
             val inlineBaseSpans = baseSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
+
+            val completedMentions = inlineBaseSpans.filter { it.style is MarkupStyle.Mention && it.style.id.isNotEmpty() }
+
+            val filteredNewSpans = markdownResult.newSpans.filterNot { parsedSpan ->
+                parsedSpan.style is MarkupStyle.Mention && completedMentions.any { completed ->
+                    parsedSpan.start < completed.end && completed.start < parsedSpan.end
+                }
+            }
+
             var finalSpans: List<MarkupStyleRange>
-            // Inject trigger styling while typing
             activeTrigger?.let { trigger ->
                 val cleanLengthDifference = markdownResult.cleanText.length - newText.length
                 val shiftedStart = if (trigger.startIndex >= changeOrigin) {
@@ -432,8 +511,7 @@ class HyphenTextState(
                 val safeStart = shiftedStart.coerceIn(0, markdownResult.cleanText.length)
                 val safeEnd = markdownResult.newCursorPosition.coerceIn(safeStart, markdownResult.cleanText.length)
 
-                // Remove ALL existing mentions from base spans. The MarkdownProcessor is the source of truth for mentions.
-                val cleanedBaseSpans = inlineBaseSpans.filterNot { it.style is MarkupStyle.Mention }
+                val cleanedBaseSpans = inlineBaseSpans.filterNot { it.style is MarkupStyle.Mention && it.style.id.isEmpty() }
                 
                 val triggerSpan = MarkupStyleRange(
                     style = MarkupStyle.Mention(
@@ -445,14 +523,12 @@ class HyphenTextState(
                     end = safeEnd
                 )
                 
-                finalSpans = SpanManager.mergeSpans(cleanedBaseSpans, markdownResult.newSpans + triggerSpan).distinct()
+                finalSpans = SpanManager.mergeSpans(cleanedBaseSpans, filteredNewSpans + triggerSpan).distinct()
             } ?: run {
-                // Remove ALL existing mentions from base spans. The MarkdownProcessor is the source of truth for mentions.
-                val cleanedBaseSpans = inlineBaseSpans.filterNot { it.style is MarkupStyle.Mention }
-                finalSpans = SpanManager.mergeSpans(cleanedBaseSpans, markdownResult.newSpans)
+                val cleanedBaseSpans = inlineBaseSpans.filterNot { it.style is MarkupStyle.Mention && it.style.id.isEmpty() }
+                finalSpans = SpanManager.mergeSpans(cleanedBaseSpans, filteredNewSpans)
             }
-            
-            // Clear active trigger if it's been "consumed" by a detected mention
+
             activeTrigger?.let { trigger ->
                 if (markdownResult.newSpans.any { it.style is MarkupStyle.Mention && it.start == trigger.startIndex }) {
                     activeTrigger = null
@@ -491,8 +567,7 @@ class HyphenTextState(
             }
 
             val inlineShifted = updatedSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
-            
-            // Inject trigger styling while typing
+
             activeTrigger?.let { trigger ->
                 val triggerSpan = MarkupStyleRange(
                     style = MarkupStyle.Mention(
@@ -503,14 +578,12 @@ class HyphenTextState(
                     start = trigger.startIndex,
                     end = cursorPosition
                 )
-                
-                // Clear any mentions at this position (finished or pending)
+
                 val cleanedShifted = inlineShifted.filterNot { 
                     it.style is MarkupStyle.Mention && (it.start == trigger.startIndex || it.style.id.isEmpty())
                 }
                 updatedSpans = (cleanedShifted + triggerSpan).distinct()
             } ?: run {
-                // Clear any orphaned pending mentions
                 updatedSpans = inlineShifted.filterNot { 
                     it.style is MarkupStyle.Mention && it.style.id.isEmpty()
                 }
@@ -893,7 +966,8 @@ class HyphenTextState(
             if (style is MarkupStyle.Mention) style.id.isNotEmpty() else true
         }
         
-        return MarkdownSerializer.serialize(text, exportSpans, safeStart, safeEnd)
+        val serialized = MarkdownSerializer.serialize(textFieldState.text.toString(), exportSpans, safeStart, safeEnd)
+        return serialized.replace('\u00A0', ' ')
     }
 
     /**
@@ -954,7 +1028,7 @@ class HyphenTextState(
             val query = textFromStart.removePrefix(trigger.config.trigger)
 
             if (trigger.config.endTrigger == null) {
-                if (query.any { it.isWhitespace() }) {
+                if (query.any { it.isWhitespace() || it == '\u00A0' }) {
                     updateActiveTrigger(null)
                     return@let
                 }
@@ -973,7 +1047,12 @@ class HyphenTextState(
                 var searchStart = cursor - 1
                 while (searchStart >= 0) {
                     val char = currentText[searchStart]
-                    if (char.isWhitespace() || char == '\n') break
+                    if (char.isWhitespace() || char == '\n' || char == '\u00A0') break
+
+                    val isInsideCompletedMention = _spans.any { 
+                        it.style is MarkupStyle.Mention && it.style.id.isNotEmpty() && searchStart >= it.start && searchStart < it.end 
+                    }
+                    if (isInsideCompletedMention) break
                     
                     val candidateStart = currentText.substring(searchStart, (searchStart + config.trigger.length).coerceAtMost(currentText.length))
                     if (candidateStart == config.trigger) {

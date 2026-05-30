@@ -397,5 +397,4 @@ private val DEMO_TEXT = """
     @Alice @Bob
     #bug #feature
     {project_name} {{user_count}}
-    
 """.trimIndent()

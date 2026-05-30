@@ -15,9 +15,11 @@ internal object SpanManager {
         if (lengthDifference == 0) return currentSpans
 
         return currentSpans.mapNotNull { span ->
+            val isAtomic = span.style is MarkupStyle.Mention || span.style is MarkupStyle.Link
+            
             when {
-                changeStart > span.end || (!push && changeStart == span.end) -> span
-                changeStart < span.start || (push && changeStart == span.start) -> {
+                changeStart > span.end || (changeStart == span.end && (isAtomic || !push)) -> span
+                changeStart < span.start || (changeStart == span.start && ((isAtomic && lengthDifference > 0) || push)) -> {
                     val newStart = (span.start + lengthDifference).coerceAtLeast(0)
                     val newEnd = (span.end + lengthDifference).coerceAtLeast(newStart)
                     if (newStart == newEnd) null else span.copy(start = newStart, end = newEnd)

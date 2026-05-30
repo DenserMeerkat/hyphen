@@ -1,6 +1,7 @@
 package com.denser.hyphen.markdown
 
 import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.model.TriggerConfig
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -143,5 +144,65 @@ class MarkdownProcessorTest {
         assertNotNull(result)
         // Cursor should snap safely to the end of the inner text
         assertEquals(3, result?.newCursorPosition)
+    }
+
+    @Test
+    fun `process parses dynamic mention and resolves correct span and clean text`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val text = "[John Doe](mention:123)"
+        val result = MarkdownProcessor.process(text, cursorPosition = 0, triggerConfigs = triggerConfigs)
+
+        assertNotNull(result)
+        assertEquals("John Doe", result?.cleanText)
+        assertEquals(1, result?.newSpans?.size)
+
+        val span = result?.newSpans?.first()
+        assertEquals(MarkupStyle.Mention(display = "John Doe", scheme = "mention", id = "123"), span?.style)
+        assertEquals(0, span?.start)
+        assertEquals(8, span?.end)
+    }
+
+    @Test
+    fun `process parses dynamic mention and shifts downstream spans correctly`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val text = "[John Doe](mention:123) and **Bold**"
+        val result = MarkdownProcessor.process(text, cursorPosition = 0, triggerConfigs = triggerConfigs)
+
+        assertNotNull(result)
+        assertEquals("John Doe and Bold", result?.cleanText)
+        assertEquals(2, result?.newSpans?.size)
+
+        val mentionSpan = result?.newSpans?.find { it.style is MarkupStyle.Mention }
+        val boldSpan = result?.newSpans?.find { it.style == MarkupStyle.Bold }
+
+        assertNotNull(mentionSpan)
+        assertEquals(0, mentionSpan?.start)
+        assertEquals(8, mentionSpan?.end)
+
+        assertNotNull(boldSpan)
+        assertEquals(13, boldSpan?.start)
+        assertEquals(17, boldSpan?.end)
+    }
+
+    @Test
+    fun `process parses multiple dynamic mentions in a single line`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val text = "[Alice](mention:1) and [Bob](mention:2)"
+        val result = MarkdownProcessor.process(text, cursorPosition = 0, triggerConfigs = triggerConfigs)
+
+        assertNotNull(result)
+        assertEquals("Alice and Bob", result?.cleanText)
+        assertEquals(2, result?.newSpans?.size)
+
+        val aliceSpan = result?.newSpans?.find { (it.style as? MarkupStyle.Mention)?.id == "1" }
+        val bobSpan = result?.newSpans?.find { (it.style as? MarkupStyle.Mention)?.id == "2" }
+
+        assertNotNull(aliceSpan)
+        assertEquals(0, aliceSpan?.start)
+        assertEquals(5, aliceSpan?.end)
+
+        assertNotNull(bobSpan)
+        assertEquals(10, bobSpan?.start)
+        assertEquals(13, bobSpan?.end)
     }
 }

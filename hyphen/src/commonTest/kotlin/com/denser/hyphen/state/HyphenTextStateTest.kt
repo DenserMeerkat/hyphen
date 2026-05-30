@@ -2,6 +2,7 @@ package com.denser.hyphen.state
 
 import androidx.compose.ui.text.TextRange
 import com.denser.hyphen.model.MarkupStyle
+import com.denser.hyphen.model.TriggerConfig
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -232,5 +233,198 @@ class HyphenTextStateTest {
         val linkSpan = state.spans.find { it.style is MarkupStyle.Link }
         assertEquals(0, linkSpan?.start)
         assertEquals(6, linkSpan?.end) // Should still be 6
+    }
+
+    @Test
+    fun `cursor snaps outside mention span when placed inside`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("Hello [@JohnDoe](mention:123)!", triggerConfigs)
+        state.isFocused = true
+
+        // The mention span is at 6..14 (length 8, "@JohnDoe")
+        // Snapping from the left -> should snap to end of mention (14)
+        state.select(10)
+        assertEquals(14, state.selection.start)
+
+        // Snapping from the right -> should snap to start of mention (6)
+        state.textFieldState.edit { selection = TextRange(15) }
+        state.updateSelection(TextRange(15)) // set lastCursorPosition to 15
+        
+        state.select(10)
+        assertEquals(6, state.selection.start)
+    }
+
+    @Test
+    fun `deleting a character inside mention deletes the entire mention`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("Hello [@JohnDoe](mention:123)!", triggerConfigs)
+        state.isFocused = true
+
+        // Mention is at 6..14. Backspace at the end deletes 'e' at index 13
+        state.textFieldState.edit {
+            replace(13, 14, "")
+            selection = TextRange(13)
+            state.processInput(this)
+        }
+
+        // Verify the entire mention is deleted
+        assertEquals("Hello !", state.text)
+        assertTrue(state.spans.none { it.style is MarkupStyle.Mention })
+    }
+
+    @Test
+    fun `inserting text before mention shifts it without clearing it`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("[@JohnDoe](mention:123)", triggerConfigs)
+        state.isFocused = true
+
+        // Insert "@" at the start (index 0)
+        state.textFieldState.edit {
+            replace(0, 0, "@")
+            selection = TextRange(1)
+            state.processInput(this)
+        }
+
+        // Verify that the mention span shifted right to 1..9 and text is "@@JohnDoe"
+        assertEquals("@@JohnDoe", state.text)
+        val mentionSpan = state.spans.find { it.style is MarkupStyle.Mention }
+        assertEquals(1, mentionSpan?.start)
+        assertEquals(9, mentionSpan?.end)
+    }
+
+    @Test
+    fun `inserting text after mention preserves it without clearing it`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("[@JohnDoe](mention:123)", triggerConfigs)
+        state.isFocused = true
+
+        // Insert "!" at the end (index 8)
+        state.textFieldState.edit {
+            replace(8, 8, "!")
+            selection = TextRange(9)
+            state.processInput(this)
+        }
+
+        // Verify that the mention span is preserved at 0..8 and text is "@JohnDoe!"
+        assertEquals("@JohnDoe!", state.text)
+        val mentionSpan = state.spans.find { it.style is MarkupStyle.Mention }
+        assertEquals(0, mentionSpan?.start)
+        assertEquals(8, mentionSpan?.end)
+    }
+
+    @Test
+    fun `typing another trigger after a completed mention does not overwrite or destroy it`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("[@Alice](mention:123)", triggerConfigs)
+        state.isFocused = true
+
+        // Ensure the completed mention is correct initially
+        assertEquals(1, state.spans.size)
+        val mention = state.spans[0]
+        assertEquals("123", (mention.style as MarkupStyle.Mention).id)
+        assertEquals("@Alice", (mention.style as MarkupStyle.Mention).display)
+        assertEquals(0, mention.start)
+        assertEquals(6, mention.end)
+
+        // Type a space (so text is "@Alice ")
+        state.textFieldState.edit {
+            replace(6, 6, " ")
+            selection = TextRange(7)
+            state.processInput(this)
+        }
+
+        // Type "@" (so text is "@Alice @", creating activeTrigger)
+        state.textFieldState.edit {
+            replace(7, 7, "@")
+            selection = TextRange(8)
+            state.processInput(this)
+        }
+
+        // Verify the completed mention is preserved perfectly with its original ID "123"
+        val mentionSpan = state.spans.find { it.style is MarkupStyle.Mention && it.style.id == "123" }
+        assertEquals(0, mentionSpan?.start)
+        assertEquals(6, mentionSpan?.end)
+
+        // Verify that the new trigger span also exists with empty ID
+        val triggerSpan = state.spans.find { it.style is MarkupStyle.Mention && it.style.id.isEmpty() }
+        assertEquals(7, triggerSpan?.start)
+        assertEquals(8, triggerSpan?.end)
+    }
+
+    @Test
+    fun `typing characters inside a link does not create duplicate nested link spans`() {
+        val state = HyphenTextState("[Links](https://github.com/densermeerkat/hyphen)")
+        state.isFocused = true
+
+        // Initial link check: span is at 0..5 ("Links")
+        assertEquals(1, state.spans.size)
+        assertTrue(state.spans[0].style is MarkupStyle.Link)
+        assertEquals(0, state.spans[0].start)
+        assertEquals(5, state.spans[0].end)
+
+        // Place cursor at index 2 ("Li|nks") and type "a"
+        state.textFieldState.edit {
+            replace(2, 2, "a")
+            selection = TextRange(3)
+            state.processInput(this)
+        }
+
+        // Verify the text is "Lianks" and we still have exactly ONE link span spanning 0..6
+        assertEquals("Lianks", state.text)
+        val linkSpans = state.spans.filter { it.style is MarkupStyle.Link }
+        assertEquals(1, linkSpans.size)
+        assertEquals(0, linkSpans[0].start)
+        assertEquals(6, linkSpans[0].end)
+        assertEquals("https://github.com/densermeerkat/hyphen", (linkSpans[0].style as MarkupStyle.Link).url)
+    }
+
+    @Test
+    fun `dragging selection over a completed mention does not delete it when non-breaking spaces are present`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("", triggerConfigs)
+        state.isFocused = true
+
+        // Complete a mention with a trailing non-breaking space (so text is "@Alice\u00A0")
+        state.textFieldState.edit {
+            replace(0, 0, "@Al")
+            selection = TextRange(3)
+            state.processInput(this)
+        }
+        state.completeMention("123", "@Alice") // Replaces "@Al" with "@Alice\u00A0"
+
+        assertEquals("@Alice\u00A0", state.textFieldState.text.toString())
+        assertEquals(1, state.spans.size)
+
+        // Simulate dragging selection: change selection to select the mention (0..5) without text changes
+        state.textFieldState.edit {
+            selection = TextRange(0, 5)
+            state.processInput(this)
+        }
+
+        // Verify the mention was NOT deleted
+        assertEquals("@Alice\u00A0", state.textFieldState.text.toString())
+        assertEquals(1, state.spans.size)
+    }
+
+    @Test
+    fun `deleting a selection enclosing multiple mentions deletes them naturally without reverting`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("Hello [@Alice](mention:123) and [@Bob](mention:456)!", triggerConfigs)
+        state.isFocused = true
+
+        // Initial check: clean text is "Hello @Alice and @Bob!" (length 22)
+        assertEquals("Hello @Alice and @Bob!", state.text)
+        assertEquals(2, state.spans.filter { it.style is MarkupStyle.Mention }.size)
+
+        // Select the entire text and delete it
+        state.textFieldState.edit {
+            replace(0, length, "")
+            selection = TextRange(0)
+            state.processInput(this)
+        }
+
+        // Verify the entire text is deleted successfully and no mentions remain (no revert occurred)
+        assertEquals("", state.text)
+        assertTrue(state.spans.none { it.style is MarkupStyle.Mention })
     }
 }
