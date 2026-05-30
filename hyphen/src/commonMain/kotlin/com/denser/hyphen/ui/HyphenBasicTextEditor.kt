@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalClipboard
+import com.denser.hyphen.ui.LocalHyphenRawClipboard
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -105,6 +106,7 @@ fun HyphenBasicTextEditor(
     onTextChange: ((String) -> Unit)? = null,
     onMarkdownChange: ((String) -> Unit)? = null,
 ) {
+    val rawClipboard = LocalClipboard.current
     val customClipboard = rememberMarkdownClipboard(state, clipboardLabel)
 
     LaunchedEffect(state.selection) {
@@ -116,7 +118,10 @@ fun HyphenBasicTextEditor(
         onMarkdownChange?.invoke(state.toMarkdown())
     }
 
-    CompositionLocalProvider(LocalClipboard provides customClipboard) {
+    CompositionLocalProvider(
+        LocalClipboard provides customClipboard,
+        LocalHyphenRawClipboard provides rawClipboard,
+    ) {
         var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
         val wrappedDecorator = TextFieldDecorator { innerTextField ->

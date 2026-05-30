@@ -61,6 +61,8 @@ Type Markdown syntax directly and watch it convert as you write — no mode swit
 
 Cut, copy, and paste all work across Android, Desktop, and Web. Copying a selection serializes it to Markdown automatically, paste into any Markdown-aware editor and all formatting travels with it.
 
+When you need to write something else to the clipboard from inside the editor (e.g. a raw URL from a link context menu), use [`LocalHyphenRawClipboard`](#bypassing-markdown-clipboard-serialization) to reach the underlying system clipboard directly.
+
 ### ⌨️ Keyboard Shortcuts
 
 Full hardware keyboard support on Desktop and Web:
@@ -352,6 +354,46 @@ viewModelScope.launch {
 }
 ```
 
+### Bypassing Markdown clipboard serialization
+
+Hyphen intercepts every `Clipboard.setClipEntry()` call made from within the editor. When there is an active selection it replaces whatever you wrote with the Markdown-serialized form of that selection. This is the right behaviour for a user pressing **Ctrl+C**, but not for a programmatic action like "Copy link URL" that is triggered from a context menu while the link text happens to be selected.
+
+Use `LocalHyphenRawClipboard` to access the original, unintercepted system clipboard:
+
+```kotlin
+import com.denser.hyphen.ui.LocalHyphenRawClipboard
+
+@Composable
+fun LinkContextMenu(url: String, onDismiss: () -> Unit) {
+    // Always falls through to the real system clipboard, ignoring any editor selection
+    val rawClipboard = LocalHyphenRawClipboard.current
+    val scope = rememberCoroutineScope()
+
+    DropdownMenuItem(
+        text = { Text("Copy URL") },
+        onClick = {
+            scope.launch {
+                rawClipboard?.setClipEntry(
+                    ClipEntry(ClipData.newPlainText("URL", url))
+                )
+            }
+            onDismiss()
+        }
+    )
+}
+```
+
+`LocalHyphenRawClipboard.current` is `null` when the composable is rendered outside a `HyphenBasicTextEditor`. Fall back to `LocalClipboard.current` if you need to handle both cases:
+
+```kotlin
+val clipboard = LocalHyphenRawClipboard.current ?: LocalClipboard.current
+```
+
+> [!IMPORTANT]
+> On **Android**, `LocalHyphenRawClipboard` is **essential** for any custom clipboard write originating from inside the editor. Android has no alternative clipboard path — all `setClipEntry()` calls go through `LocalClipboard`, which Hyphen intercepts. If the editor has an active selection at the time (e.g. because a long-press on a link both selects it and opens a context menu), your custom value will be silently replaced with the Markdown-serialized selection unless you use `LocalHyphenRawClipboard`.
+>
+> On Desktop and Web the interception follows the same pattern but there are additional native clipboard APIs available as fallbacks.
+
 ---
 
 ## API Reference
@@ -511,10 +553,6 @@ MarkupStyle.Mention(display, scheme, id)
 
 Controls the prefix marker and content text of a list item independently. Used by `bulletListStyle`
 and `orderedListStyle` on `HyphenStyleConfig`.
-
-> [!NOTE]
-> Checklist items (`- [ ]`, `- [x]`) do not use `ListItemStyle`. They use an overlay widget and can
-> be styled via `checkboxCheckedStyle` and `checkboxUncheckedStyle` (which take a `SpanStyle?`).
 
 | Property       | Type         | Default | Description                                          |
 |----------------|--------------|---------|------------------------------------------------------|
