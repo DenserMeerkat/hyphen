@@ -13,6 +13,7 @@ internal object SpanManager {
         push: Boolean = false
     ): List<MarkupStyleRange> {
         if (lengthDifference == 0) return currentSpans
+        val deleteEnd = if (lengthDifference < 0) changeStart - lengthDifference else changeStart
 
         return currentSpans.mapNotNull { span ->
             val isAtomic = span.style is MarkupStyle.Mention || span.style is MarkupStyle.Link
@@ -20,12 +21,21 @@ internal object SpanManager {
             when {
                 changeStart > span.end || (changeStart == span.end && (isAtomic || !push)) -> span
                 changeStart < span.start || (changeStart == span.start && ((isAtomic && lengthDifference > 0) || push)) -> {
-                    val newStart = (span.start + lengthDifference).coerceAtLeast(0)
-                    val newEnd = (span.end + lengthDifference).coerceAtLeast(newStart)
-                    if (newStart == newEnd) null else span.copy(start = newStart, end = newEnd)
+                    if (lengthDifference < 0 && changeStart < span.start && deleteEnd > span.start) {
+                        val newEnd = (span.end + lengthDifference).coerceAtLeast(changeStart)
+                        if (changeStart == newEnd) null else span.copy(start = changeStart, end = newEnd)
+                    } else {
+                        val newStart = (span.start + lengthDifference).coerceAtLeast(0)
+                        val newEnd = (span.end + lengthDifference).coerceAtLeast(newStart)
+                        if (newStart == newEnd) null else span.copy(start = newStart, end = newEnd)
+                    }
                 }
                 else -> {
-                    val newEnd = (span.end + lengthDifference).coerceAtLeast(span.start)
+                    val newEnd = if (lengthDifference < 0 && deleteEnd > span.end) {
+                        changeStart
+                    } else {
+                        span.end + lengthDifference
+                    }.coerceAtLeast(span.start)
                     if (span.start == newEnd) null else span.copy(end = newEnd)
                 }
             }

@@ -759,15 +759,6 @@ class HyphenTextState(
         
         val existingLink = _spans.find { it.style is MarkupStyle.Link && selStart >= it.start && selStart <= it.end }
         if (existingLink != null) {
-            if (selStart == selEnd && selStart == existingLink.end) {
-                val isOff = pendingOverrides[existingLink.style] == false
-                pendingOverrides = if (isOff) {
-                    pendingOverrides - existingLink.style
-                } else {
-                    pendingOverrides + (existingLink.style to false)
-                }
-                return
-            }
             
             activeLinkForEditing = existingLink
             return
@@ -861,7 +852,7 @@ class HyphenTextState(
         if (style is MarkupStyle.Link && style.url.isEmpty()) {
             val (selStart, selEnd) = resolvedSelection()
             return if (selStart == selEnd) {
-                _spans.any { it.style is MarkupStyle.Link && selStart > it.start && selStart <= it.end }
+                _spans.any { it.style is MarkupStyle.Link && selStart >= it.start && selStart <= it.end }
             } else {
                 _spans.any { it.style is MarkupStyle.Link && it.start <= selStart && it.end >= selEnd }
             }
