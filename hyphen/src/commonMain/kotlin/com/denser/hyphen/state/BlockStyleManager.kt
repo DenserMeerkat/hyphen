@@ -103,6 +103,7 @@ internal object BlockStyleManager {
         }
     }
 
+    @Suppress("REDUNDANT_ELSE_IN_WHEN")
     fun applyBlockStyle(
         buffer: TextFieldBuffer,
         spans: List<MarkupStyleRange>,

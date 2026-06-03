@@ -14,7 +14,7 @@ class MarkdownProcessorTest {
         val text = "Just a normal string without formatting."
         val result = MarkdownProcessor.process(text, cursorPosition = 5)
 
-        assertNull(result,"Processor should return null to avoid unnecessary recompositions")
+        assertNull(result, "Processor should return null to avoid unnecessary recompositions")
     }
 
     @Test
@@ -25,14 +25,14 @@ class MarkdownProcessorTest {
         val result = MarkdownProcessor.process(text, cursorPosition = 0)
 
         assertNotNull(result)
-        assertEquals("Hello World", result?.cleanText)
+        assertEquals("Hello World", result.cleanText)
 
-        assertEquals(1, result?.newSpans?.size)
-        val span = result?.newSpans?.first()
+        assertEquals(1, result.newSpans.size)
+        val span = result.newSpans.first()
 
-        assertEquals(MarkupStyle.Bold, span?.style)
-        assertEquals(6, span?.start) // 'W' is at index 6
-        assertEquals(11, span?.end)  // 'd' ends at index 11
+        assertEquals(MarkupStyle.Bold, span.style)
+        assertEquals(6, span.start) // 'W' is at index 6
+        assertEquals(11, span.end)  // 'd' ends at index 11
     }
 
     @Test
@@ -42,19 +42,19 @@ class MarkdownProcessorTest {
         val result = MarkdownProcessor.process(text, cursorPosition = 0)
 
         assertNotNull(result)
-        assertEquals("Bold and Italic", result?.cleanText)
-        assertEquals(2, result?.newSpans?.size)
+        assertEquals("Bold and Italic", result.cleanText)
+        assertEquals(2, result.newSpans.size)
 
-        val boldSpan = result?.newSpans?.find { it.style == MarkupStyle.Bold }
-        val italicSpan = result?.newSpans?.find { it.style == MarkupStyle.Italic }
+        val boldSpan = result.newSpans.find { it.style == MarkupStyle.Bold }
+        val italicSpan = result.newSpans.find { it.style == MarkupStyle.Italic }
 
         assertNotNull(boldSpan)
-        assertEquals(0, boldSpan?.start)
-        assertEquals(4, boldSpan?.end) // "Bold"
+        assertEquals(0, boldSpan.start)
+        assertEquals(4, boldSpan.end) // "Bold"
 
         assertNotNull(italicSpan)
-        assertEquals(9, italicSpan?.start)
-        assertEquals(15, italicSpan?.end) // "Italic"
+        assertEquals(9, italicSpan.start)
+        assertEquals(15, italicSpan.end) // "Italic"
     }
 
     @Test
@@ -68,15 +68,15 @@ class MarkdownProcessorTest {
         for ((text, expectedStyle) in textsAndStyles) {
             val result = MarkdownProcessor.process(text, cursorPosition = 0)
 
-            assertNotNull(result,"Failed on: $text")
+            assertNotNull(result, "Failed on: $text")
             // Block styles should NOT strip the prefix from the cleanText
-            assertEquals(text, result?.cleanText)
+            assertEquals(text, result.cleanText)
 
-            assertEquals(1, result?.newSpans?.size)
-            val span = result?.newSpans?.first()
-            assertEquals(expectedStyle, span?.style)
-            assertEquals(0, span?.start)
-            assertEquals(text.length, span?.end)
+            assertEquals(1, result.newSpans.size)
+            val span = result.newSpans.first()
+            assertEquals(expectedStyle, span.style)
+            assertEquals(0, span.start)
+            assertEquals(text.length, span.end)
         }
     }
 
@@ -94,14 +94,14 @@ class MarkdownProcessorTest {
             assertNotNull(result, "Failed on: $text")
 
             // Checkbox block styles should preserve the prefix
-            assertEquals(text, result?.cleanText)
+            assertEquals(text, result.cleanText)
 
             // Checkboxes might also generate a BulletList span since they start with "- "
             // We just need to assert that the specific Checkbox span was generated and covers the line.
-            val span = result?.newSpans?.find { it.style == expectedStyle }
+            val span = result.newSpans.find { it.style == expectedStyle }
             assertNotNull(span, "Missing expected $expectedStyle for text: $text")
-            assertEquals(0, span?.start)
-            assertEquals(text.length, span?.end)
+            assertEquals(0, span.start)
+            assertEquals(text.length, span.end)
         }
     }
 
@@ -113,10 +113,10 @@ class MarkdownProcessorTest {
         val result = MarkdownProcessor.process(text, cursorPosition = 8)
 
         assertNotNull(result)
-        assertEquals("abcd", result?.cleanText)
+        assertEquals("abcd", result.cleanText)
 
         // The ** (2) and ** (2) were removed, so the cursor should shift left by 4
-        assertEquals(4, result?.newCursorPosition)
+        assertEquals(4, result.newCursorPosition)
     }
 
     @Test
@@ -127,11 +127,11 @@ class MarkdownProcessorTest {
         val result = MarkdownProcessor.process(text, cursorPosition = 3)
 
         assertNotNull(result)
-        assertEquals("ab", result?.cleanText)
+        assertEquals("ab", result.cleanText)
 
         // The prefix ** (2 chars) was removed to the left of the cursor.
         // The cursor should shift left by 2.
-        assertEquals(1, result?.newCursorPosition)
+        assertEquals(1, result.newCursorPosition)
     }
 
     @Test
@@ -143,7 +143,7 @@ class MarkdownProcessorTest {
 
         assertNotNull(result)
         // Cursor should snap safely to the end of the inner text
-        assertEquals(3, result?.newCursorPosition)
+        assertEquals(3, result.newCursorPosition)
     }
 
     @Test
@@ -153,13 +153,13 @@ class MarkdownProcessorTest {
         val result = MarkdownProcessor.process(text, cursorPosition = 0, triggerConfigs = triggerConfigs)
 
         assertNotNull(result)
-        assertEquals("John Doe", result?.cleanText)
-        assertEquals(1, result?.newSpans?.size)
+        assertEquals("John Doe", result.cleanText)
+        assertEquals(1, result.newSpans.size)
 
-        val span = result?.newSpans?.first()
-        assertEquals(MarkupStyle.Mention(display = "John Doe", scheme = "mention", id = "123"), span?.style)
-        assertEquals(0, span?.start)
-        assertEquals(8, span?.end)
+        val span = result.newSpans.first()
+        assertEquals(MarkupStyle.Mention(display = "John Doe", scheme = "mention", id = "123"), span.style)
+        assertEquals(0, span.start)
+        assertEquals(8, span.end)
     }
 
     @Test
@@ -169,19 +169,19 @@ class MarkdownProcessorTest {
         val result = MarkdownProcessor.process(text, cursorPosition = 0, triggerConfigs = triggerConfigs)
 
         assertNotNull(result)
-        assertEquals("John Doe and Bold", result?.cleanText)
-        assertEquals(2, result?.newSpans?.size)
+        assertEquals("John Doe and Bold", result.cleanText)
+        assertEquals(2, result.newSpans.size)
 
-        val mentionSpan = result?.newSpans?.find { it.style is MarkupStyle.Mention }
-        val boldSpan = result?.newSpans?.find { it.style == MarkupStyle.Bold }
+        val mentionSpan = result.newSpans.find { it.style is MarkupStyle.Mention }
+        val boldSpan = result.newSpans.find { it.style == MarkupStyle.Bold }
 
         assertNotNull(mentionSpan)
-        assertEquals(0, mentionSpan?.start)
-        assertEquals(8, mentionSpan?.end)
+        assertEquals(0, mentionSpan.start)
+        assertEquals(8, mentionSpan.end)
 
         assertNotNull(boldSpan)
-        assertEquals(13, boldSpan?.start)
-        assertEquals(17, boldSpan?.end)
+        assertEquals(13, boldSpan.start)
+        assertEquals(17, boldSpan.end)
     }
 
     @Test
@@ -191,18 +191,18 @@ class MarkdownProcessorTest {
         val result = MarkdownProcessor.process(text, cursorPosition = 0, triggerConfigs = triggerConfigs)
 
         assertNotNull(result)
-        assertEquals("Alice and Bob", result?.cleanText)
-        assertEquals(2, result?.newSpans?.size)
+        assertEquals("Alice and Bob", result.cleanText)
+        assertEquals(2, result.newSpans.size)
 
-        val aliceSpan = result?.newSpans?.find { (it.style as? MarkupStyle.Mention)?.id == "1" }
-        val bobSpan = result?.newSpans?.find { (it.style as? MarkupStyle.Mention)?.id == "2" }
+        val aliceSpan = result.newSpans.find { (it.style as? MarkupStyle.Mention)?.id == "1" }
+        val bobSpan = result.newSpans.find { (it.style as? MarkupStyle.Mention)?.id == "2" }
 
         assertNotNull(aliceSpan)
-        assertEquals(0, aliceSpan?.start)
-        assertEquals(5, aliceSpan?.end)
+        assertEquals(0, aliceSpan.start)
+        assertEquals(5, aliceSpan.end)
 
         assertNotNull(bobSpan)
-        assertEquals(10, bobSpan?.start)
-        assertEquals(13, bobSpan?.end)
+        assertEquals(10, bobSpan.start)
+        assertEquals(13, bobSpan.end)
     }
 }

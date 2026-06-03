@@ -344,7 +344,7 @@ class HyphenTextStateTest {
         assertEquals(1, state.spans.size)
         val mention = state.spans[0]
         assertEquals("123", (mention.style as MarkupStyle.Mention).id)
-        assertEquals("@Alice", (mention.style as MarkupStyle.Mention).display)
+        assertEquals("@Alice", mention.style.display)
         assertEquals(0, mention.start)
         assertEquals(6, mention.end)
 
