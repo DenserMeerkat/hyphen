@@ -8,13 +8,13 @@
 <br>
 
 <p align="center">
-  A <strong>WYSIWYG Markdown editor</strong> for Compose Multiplatform.<br>
-  Type in Markdown, see formatting live. Copy as Markdown. Works on Android, Desktop, and Web.
+  <strong>The Markdown-Native WYSIWYG Editor for Compose Multiplatform.</strong><br>
+  Type Markdown, see live formatting. Copy selections as clean Markdown, and build autocomplete triggers (like @mentions) in minutes.
 </p>
 
 <p align="center">
   <a href="https://github.com/densermeerkat/hyphen/releases"><img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.densermeerkat/hyphen?color=4CAF50&label=Maven%20Central"></a>
-  <a href="https://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.2.21-7F52FF?logo=kotlin&logoColor=white"></a>
+  <a href="https://kotlinlang.org"><img alt="Kotlin" src="https://img.shields.io/badge/Kotlin-2.3.21-7F52FF?logo=kotlin&logoColor=white"></a>
   <a href="https://www.jetbrains.com/compose-multiplatform/"><img alt="Compose Multiplatform" src="https://img.shields.io/badge/Compose%20Multiplatform-1.10.1-4285F4?logo=jetpackcompose&logoColor=white"></a>
   <img alt="Platforms" src="https://img.shields.io/badge/Platforms-Android%20%7C%20Desktop%20%7C%20Web-orange">
 </p>
@@ -29,11 +29,20 @@
   <img alt="Hyphen editor Demo screenshot" src="assets/images/demo_light.png" width="100%">
 </picture>
 
+## Key Pillars
+
+*   🚀 **Markdown-Native State**: Unlike traditional rich text editors, Markdown is the source of truth. The editor state is built directly around Markdown, ensuring flawless serialization and zero conversion loss.
+*   ✍️ **Instant Inline Formatting**: Type Markdown tags directly (`**`, `_`, `#`) and watch them transform instantly under the cursor. No preview split-panes, no mode-switching.
+*   📋 **Smart Clipboard Serialization**: Copying formatted content automatically serializes it into clean Markdown, allowing users to paste flawlessly into Slack, Discord, GitHub, or Obsidian.
+*   🏷️ **First-Class Triggers & Autocomplete**: Define trigger symbols like `@` or `#` to invoke suggestion overlays with built-in hardware keyboard navigation, hover cards, and context menus.
+
+---
+
 ## Features
 
-### ✍️ Live Markdown Input
+### ✍️ Instant Inline Markdown Rendering
 
-Type Markdown syntax directly and watch it convert as you write — no mode switching, no preview pane required.
+Type Markdown syntax directly and watch it convert as you write — no mode switching or preview pane required.
 
 | Syntax                  | Style                |
 |-------------------------|----------------------|
@@ -57,11 +66,11 @@ Type Markdown syntax directly and watch it convert as you write — no mode swit
 | `- [x] ` at line start  | Checkbox (checked)   |
 | `[text](scheme:id)`    | Mention              |
 
-### 📋 Markdown Clipboard
+### 📋 Zero-Loss Markdown Clipboard
 
-Cut, copy, and paste all work across Android, Desktop, and Web. Copying a selection serializes it to Markdown automatically, paste into any Markdown-aware editor and all formatting travels with it.
+Visual selections automatically serialize to standard Markdown on copy. Paste formatted content directly into Obsidian, GitHub, or Slack.
 
-When you need to write something else to the clipboard from inside the editor (e.g. a raw URL from a link context menu), use [`LocalHyphenRawClipboard`](#bypassing-markdown-clipboard-serialization) to reach the underlying system clipboard directly.
+To bypass serialization programmatically, use [`LocalHyphenRawClipboard`](#bypassing-markdown-clipboard-serialization) to access the raw system clipboard directly.
 
 ### ⌨️ Keyboard Shortcuts
 
@@ -89,17 +98,13 @@ Full hardware keyboard support on Desktop and Web:
 | `Ctrl / Cmd + Y`         | Redo                            |
 | `Ctrl / Cmd + Shift + Z` | Redo                            |
 
-### ↩️ Undo / Redo History
+### ↩️ Granular Undo & Redo History
 
-Granular history with snapshots saved at word boundaries, pastes, and Markdown conversions. The redo stack is maintained correctly across all operations, including toolbar toggles and programmatic edits.
+Saves state snapshots at word boundaries, clipboard actions, and markdown conversions. The redo history is preserved across both toolbar toggles and programmatic changes.
 
-### 🌍 Compose Multiplatform
+### 🏷️ Trigger-Based Autocomplete Framework
 
-Single shared implementation targeting Android, Desktop (JVM), and Web (WasmJS / JS).
-
-### 🏷️ Mentions & Autocomplete
-
-Powerful trigger-based autocomplete and interaction system. Define triggers like `@` or `#`, show custom suggestion menus, and handle mention-specific hover cards or context menus.
+Define triggers like `@` or `#` to invoke suggestions menu with built-in hardware keyboard arrow/enter key synchronization, hover cards, and context dropdowns.
 
 ---
 
@@ -113,7 +118,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.5.0-alpha04"
+hyphen = "0.5.0-alpha05"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -142,7 +147,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.5.0-alpha04")
+            implementation("io.github.densermeerkat:hyphen:0.5.0-alpha05")
         }
     }
 }

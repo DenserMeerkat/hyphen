@@ -1,3 +1,10 @@
+## [0.5.0-alpha05] - 2026-06-03
+
+### 🛠️ Fixed
+* **Link Display Name Editing:** Resolved an issue where editing a link's display text through the modal dialogue interface broke the link styling.
+
+---
+
 ## [0.5.0-alpha04] - 2026-05-30
 
 ### ✨ Added
