@@ -816,16 +816,17 @@ class HyphenTextState(
             replace(span.start, span.end, newText)
         }
 
-        val shiftedSpans = SpanManager.shiftSpans(_spans, span.start, lengthDiff)
+        val remainingSpans = _spans.toMutableList().apply { removeAt(index) }
+        val shiftedSpans = SpanManager.shiftSpans(remainingSpans, span.start, lengthDiff)
 
-        val finalSpans = shiftedSpans.map { s ->
-            if (s.start == span.start && s.style is MarkupStyle.Link && s.style.url == (span.style as MarkupStyle.Link).url) {
-                s.copy(style = MarkupStyle.Link(newUrl))
-            } else s
-        }
+        val updatedSpan = MarkupStyleRange(
+            style = MarkupStyle.Link(newUrl),
+            start = span.start,
+            end = span.start + newText.length
+        )
         
         _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(finalSpans))
+        _spans.addAll(SpanManager.consolidateSpans(shiftedSpans + updatedSpan))
         selectionManager.clear()
     }
  

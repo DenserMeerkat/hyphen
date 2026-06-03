@@ -209,6 +209,28 @@ class HyphenTextStateTest {
     }
 
     @Test
+    fun `updating a link display name and url updates correctly even when display text length increases`() {
+        val state = HyphenTextState("Click here for info")
+        state.isFocused = true
+        state.select(6, 10) // "here"
+        val linkStyle = MarkupStyle.Link("https://google.com")
+        state.toggleStyle(linkStyle)
+
+        val initialLink = state.spans.find { it.style is MarkupStyle.Link }!!
+        assertEquals(6, initialLink.start)
+        assertEquals(10, initialLink.end)
+
+        // Update display text to "here now" (length increases from 4 to 8)
+        state.updateLink(initialLink, "here now", "https://github.com")
+
+        assertEquals("Click here now for info", state.text)
+        val updatedLink = state.spans.find { it.style is MarkupStyle.Link }!!
+        assertEquals(6, updatedLink.start)
+        assertEquals(14, updatedLink.end)
+        assertEquals("https://github.com", (updatedLink.style as MarkupStyle.Link).url)
+    }
+
+    @Test
     fun `link style should not expand when replacing suffix with space`() {
         // Test case for the fix: rawLengthDifference <= 0 but whitespace inserted
         val state = HyphenTextState("googleX")
