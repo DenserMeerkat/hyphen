@@ -37,20 +37,31 @@ internal object MarkdownProcessor {
             var match = regex.find(processedText)
 
             while (match != null) {
+                val style = styleFactory(match)
                 val matchRange = match.range.first..(match.range.last + 1)
 
                 val overlaps = extractedSpans.any { existing ->
                     if (existing.style in StyleSets.allHeadings || existing.style in StyleSets.allBlock) return@any false
                     val existingRange = existing.start until existing.end
-                    matchRange.first < existingRange.last && existingRange.first < matchRange.last
+                    val isAtomic = existing.style is MarkupStyle.Link || 
+                                   existing.style is MarkupStyle.Mention || 
+                                   existing.style is MarkupStyle.InlineCode ||
+                                   style is MarkupStyle.Link ||
+                                   style is MarkupStyle.Mention ||
+                                   style is MarkupStyle.InlineCode ||
+                                   existing.style::class == style::class
+                    
+                    if (isAtomic) {
+                        matchRange.first < existingRange.last && existingRange.first < matchRange.last
+                    } else {
+                        false
+                    }
                 }
 
                 if (overlaps) {
                     match = regex.find(processedText, match.range.last + 1)
                     continue
                 }
-
-                val style = styleFactory(match)
                 val innerText = match.groupValues[1]
                 val startIndex = match.range.first
 

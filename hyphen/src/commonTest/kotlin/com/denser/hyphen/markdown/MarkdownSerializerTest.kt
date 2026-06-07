@@ -116,4 +116,17 @@ class MarkdownSerializerTest {
 
         assertEquals("- [ ] Buy **Milk**", result)
     }
+
+    @Test
+    fun `serialize handles nested bold italic and underline correctly`() {
+        val text = "nestedformatting"
+        val spans = listOf(
+            MarkupStyleRange(MarkupStyle.Bold, 0, 16),
+            MarkupStyleRange(MarkupStyle.Italic, 0, 16),
+            MarkupStyleRange(MarkupStyle.Underline, 0, 16)
+        )
+
+        val result = MarkdownSerializer.serialize(text, spans)
+        assertEquals("***__nestedformatting__***", result)
+    }
 }

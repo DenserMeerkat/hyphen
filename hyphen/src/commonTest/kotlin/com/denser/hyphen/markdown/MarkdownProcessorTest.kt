@@ -205,4 +205,21 @@ class MarkdownProcessorTest {
         assertEquals(10, bobSpan.start)
         assertEquals(13, bobSpan.end)
     }
+
+    @Test
+    fun `process handles nested inline styles correctly`() {
+        val text = "***__nestedformatting__***"
+        val result = MarkdownProcessor.process(text, cursorPosition = 0)
+        assertNotNull(result)
+        assertEquals("nestedformatting", result.cleanText)
+        assertEquals(3, result.newSpans.size)
+
+        val boldSpan = result.newSpans.find { it.style == MarkupStyle.Bold }
+        val italicSpan = result.newSpans.find { it.style == MarkupStyle.Italic }
+        val underlineSpan = result.newSpans.find { it.style == MarkupStyle.Underline }
+
+        assertNotNull(boldSpan)
+        assertNotNull(italicSpan)
+        assertNotNull(underlineSpan)
+    }
 }
