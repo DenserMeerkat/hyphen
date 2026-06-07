@@ -14,6 +14,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -53,3 +55,43 @@ jobs:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
           ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_PASSWORD }}
+
+      - name: Extract Release Notes
+        id: extract_changelog
+        shell: bash
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          echo "Extracting release notes for version: $VERSION"
+          python -c "
+          import re
+          version = '$VERSION'
+          with open('CHANGELOG.md', 'r', encoding='utf-8') as f:
+              content = f.read()
+          pattern = r'## \[' + re.escape(version) + r'\][^\n]*\n(.*?)(?=\n## \[\d|\Z)'
+          match = re.search(pattern, content, re.DOTALL)
+          if match:
+              notes = match.group(1).strip()
+              if notes.endswith('---'):
+                  notes = notes[:-3].strip()
+              with open('release_notes.md', 'w', encoding='utf-8') as out:
+                  out.write(notes)
+              print('Successfully extracted release notes:')
+              print(notes)
+          else:
+              print(f'Warning: No release notes found for version {version}')
+              with open('release_notes.md', 'w', encoding='utf-8') as out:
+                  out.write('Release notes not found.')
+          "
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          name: Release ${{ github.ref_name }}
+          draft: true
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

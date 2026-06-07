@@ -1,3 +1,10 @@
+## [0.5.0-alpha06] - 2026-06-07
+
+### 🛠️ Fixed
+* **Nested Inline Styles:** Fixed parsing failure of nested formatting (e.g. `***__nestedformatting__***`) during editor reloads due to strict overlap checks.
+
+---
+
 ## [0.5.0-alpha05] - 2026-06-03
 
 ### 🛠️ Fixed

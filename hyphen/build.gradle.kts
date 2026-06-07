@@ -16,7 +16,7 @@ group = "io.github.densermeerkat"
 val overrideVersion = project.findProperty("version")?.toString()
 version = System.getenv("LIBRARY_VERSION")
     ?: if (!overrideVersion.isNullOrEmpty() && overrideVersion != "unspecified") overrideVersion else null
-    ?: "0.5.0-alpha05"
+    ?: "0.5.0-alpha06"
 
 android {
     namespace = "com.denser.hyphen"
