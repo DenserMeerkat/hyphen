@@ -27,15 +27,18 @@ fun HyphenInlinePopup(
             ): IntOffset {
                 val screenPadding = 8
                 val verticalGap = 4
+                
+                val maxX = (windowSize.width - popupContentSize.width - screenPadding).coerceAtLeast(screenPadding)
                 var x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2
-                x = x.coerceIn(screenPadding, windowSize.width - popupContentSize.width - screenPadding)
+                x = x.coerceIn(screenPadding, maxX)
 
                 var y = anchorBounds.bottom + verticalGap
                 if (y + popupContentSize.height > windowSize.height - screenPadding) {
                     y = anchorBounds.top - popupContentSize.height - verticalGap
                 }
 
-                y = y.coerceIn(screenPadding, windowSize.height - popupContentSize.height - screenPadding)
+                val maxY = (windowSize.height - popupContentSize.height - screenPadding).coerceAtLeast(screenPadding)
+                y = y.coerceIn(screenPadding, maxY)
                 
                 return IntOffset(x, y)
             }

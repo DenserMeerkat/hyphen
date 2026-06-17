@@ -368,6 +368,32 @@ class HyphenTextState(
 
         val previousText = textFieldState.text.toString()
         var newText = buffer.asCharSequence().toString()
+        
+        var cleanedText = newText
+        var modified = false
+        for (i in cleanedText.indices) {
+            if (cleanedText[i] == '\u00A0') {
+                val isStillAtLineEnd = i + 1 == cleanedText.length || cleanedText[i + 1] == '\n'
+                if (!isStillAtLineEnd) {
+                    cleanedText = cleanedText.substring(0, i) + ' ' + cleanedText.substring(i + 1)
+                    modified = true
+                }
+            } else if (cleanedText[i] == ' ') {
+                val isAtLineEnd = i + 1 == cleanedText.length || cleanedText[i + 1] == '\n'
+                if (isAtLineEnd) {
+                    cleanedText = cleanedText.substring(0, i) + '\u00A0' + cleanedText.substring(i + 1)
+                    modified = true
+                }
+            }
+        }
+
+        if (modified) {
+            val savedSelection = buffer.selection
+            buffer.replace(0, buffer.length, cleanedText)
+            buffer.selection = savedSelection
+            newText = cleanedText
+        }
+
         var rawLengthDifference = newText.length - previousText.length
         var cursorPosition = buffer.selection.start
         var changeOrigin = SpanManager.resolveChangeOrigin(
@@ -375,17 +401,6 @@ class HyphenTextState(
             rawLengthDifference,
             previousText.length
         )
-
-        if (rawLengthDifference == 1 && previousText != newText) {
-            val typedChar = newText.getOrNull(changeOrigin)
-            if (typedChar == ' ') {
-                val isAtLineEndInMiddle = changeOrigin + 1 < newText.length && newText[changeOrigin + 1] == '\n'
-                if (isAtLineEndInMiddle) {
-                    buffer.replace(changeOrigin, changeOrigin + 1, "\u00A0")
-                    newText = buffer.asCharSequence().toString()
-                }
-            }
-        }
 
         val mentionSpans = _spans.filter { it.style is MarkupStyle.Mention && it.style.id.isNotEmpty() }
         if (mentionSpans.isNotEmpty() && previousText != newText) {
