@@ -74,6 +74,14 @@ jobs:
               notes = match.group(1).strip()
               if notes.endswith('---'):
                   notes = notes[:-3].strip()
+              versions = re.findall(r'## \[([^\]]+)\]', content)
+              prev_version = None
+              if version in versions:
+                  idx = versions.index(version)
+                  if idx + 1 < len(versions):
+                      prev_version = versions[idx + 1]
+              if prev_version:
+                  notes += f'\n\n**Full Changelog**: https://github.com/DenserMeerkat/hyphen/compare/v{prev_version}...v{version}'
               with open('release_notes.md', 'w', encoding='utf-8') as out:
                   out.write(notes)
               print('Successfully extracted release notes:')
@@ -89,7 +97,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           body_path: release_notes.md
-          name: Release ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           draft: true
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
         env:

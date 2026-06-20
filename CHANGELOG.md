@@ -1,3 +1,11 @@
+## [0.5.0-alpha07] - 2026-06-20
+
+### 🛠️ Fixed
+* **Text Wrapping:** Fixed text wrapping behavior by converting trailing space characters to non-breaking spaces (`\u00A0`) and restoring them to normal spaces when they are no longer at the line boundary.
+* **Popup Positioning:** Fixed out-of-bounds positioning logic for the inline suggestions popup.
+
+---
+
 ## [0.5.0-alpha06] - 2026-06-07
 
 ### 🛠️ Fixed
