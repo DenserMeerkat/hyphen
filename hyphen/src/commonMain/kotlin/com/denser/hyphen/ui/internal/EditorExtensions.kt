@@ -68,14 +68,36 @@ internal fun handleHardwareKeyEvent(
                 else -> false
             }
         }
-        event.key == Key.Enter && !isPrimaryModifier && !isShift && !isAlt -> {
+        event.key == Key.Enter && !isPrimaryModifier && !isAlt -> {
             var consumed = false
-            state.textFieldState.edit {
-                val handled = BlockStyleManager.handleSmartEnter(state, this)
-                if (handled) {
-                    state.processInput(this)
-                    consumed = true
+            val hasSelection = !state.selection.collapsed
+            if (!hasSelection) {
+                if (!isShift) {
+                    state.textFieldState.edit {
+                        val handled = BlockStyleManager.handleSmartEnter(state, this)
+                        if (handled) {
+                            state.processInput(this)
+                            consumed = true
+                        }
+                    }
                 }
+            } else {
+                state.textFieldState.edit {
+                    val selStart = minOf(selection.start, selection.end)
+                    val selEnd = maxOf(selection.start, selection.end)
+                    replace(selStart, selEnd, "\n")
+                    state.processInput(this)
+                }
+                consumed = true
+            }
+            if (!consumed && isShift) {
+                state.textFieldState.edit {
+                    val selStart = minOf(selection.start, selection.end)
+                    val selEnd = maxOf(selection.start, selection.end)
+                    replace(selStart, selEnd, "\n")
+                    state.processInput(this)
+                }
+                consumed = true
             }
             consumed
         }
