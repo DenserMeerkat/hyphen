@@ -25,7 +25,7 @@ class EditorExtensionsTest {
 
         val resultingText = bufferState.text.toString()
         assertTrue(
-            resultingText.contains("- Item 1\n- "),
+            resultingText.contains("- Item 1\n-\u00A0"),
             "Expected SmartEnter to intercept the newline and insert a new bullet point, but got: $resultingText"
         )
     }
@@ -45,7 +45,7 @@ class EditorExtensionsTest {
 
         val resultingText = bufferState.text.toString()
         assertEquals(
-            "- [ ] Task 1\n- [ ] ",
+            "- [ ] Task 1\n- [ ]\u00A0",
             resultingText,
             "Expected SmartEnter to append a new unchecked checkbox."
         )
@@ -66,7 +66,7 @@ class EditorExtensionsTest {
 
         val resultingText = bufferState.text.toString()
         assertEquals(
-            "- [x] Done task\n- [ ] ",
+            "- [x] Done task\n- [ ]\u00A0",
             resultingText,
             "Expected SmartEnter on a checked task to append a new UNCHECKED checkbox."
         )
@@ -109,7 +109,7 @@ class EditorExtensionsTest {
 
         val resultingText = bufferState.text.toString()
         assertEquals(
-            "1. First step\n2. ",
+            "1. First step\n2.\u00A0",
             resultingText,
             "Expected SmartEnter to increment the ordered list number to 2."
         )
@@ -133,6 +133,88 @@ class EditorExtensionsTest {
             "",
             resultingText,
             "Expected SmartEnter on an empty bullet item to exit the list."
+        )
+    }
+
+    @Test
+    fun testProcessMarkdownInput_softEnterOnBlockquote_appendsNewBlockquotePrefix() {
+        val text = "> Quote"
+        val state = HyphenTextState(initialText = text)
+        state.textFieldState.setTextAndPlaceCursorAtEnd(text)
+
+        val bufferState = TextFieldState(text)
+
+        bufferState.edit {
+            insert(length, "\n")
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        val resultingText = bufferState.text.toString()
+        assertEquals(
+            "> Quote\n>\u00A0",
+            resultingText,
+            "Expected SmartEnter to append a new blockquote prefix."
+        )
+    }
+
+    @Test
+    fun testProcessMarkdownInput_softEnterOnEmptyBlockquote_removesBlockquotePrefix() {
+        val text = "> "
+        val state = HyphenTextState(initialText = text)
+        state.textFieldState.setTextAndPlaceCursorAtEnd(text)
+
+        val bufferState = TextFieldState(text)
+
+        bufferState.edit {
+            insert(length, "\n")
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        val resultingText = bufferState.text.toString()
+        assertEquals(
+            "",
+            resultingText,
+            "Expected SmartEnter on an empty blockquote to remove prefix."
+        )
+    }
+
+    @Test
+    fun testProcessMarkdownInput_backspaceOnEmptyBlockquotePrefix_clearsEntirePrefix() {
+        val text = "> "
+        val state = HyphenTextState(initialText = text)
+        state.textFieldState.setTextAndPlaceCursorAtEnd(text) // cursor at index 2
+
+        val bufferState = TextFieldState(">") // simulate deleting the space
+
+        bufferState.edit {
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        val resultingText = bufferState.text.toString()
+        assertEquals(
+            "",
+            resultingText,
+            "Expected Backspace on empty blockquote prefix to clear the rest of the prefix."
+        )
+    }
+
+    @Test
+    fun testProcessMarkdownInput_backspaceOnEmptyCheckboxPrefix_clearsEntirePrefix() {
+        val text = "- [ ] "
+        val state = HyphenTextState(initialText = text)
+        state.textFieldState.setTextAndPlaceCursorAtEnd(text) // cursor at index 6
+
+        val bufferState = TextFieldState("- [ ]") // simulate deleting the trailing space
+
+        bufferState.edit {
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        val resultingText = bufferState.text.toString()
+        assertEquals(
+            "",
+            resultingText,
+            "Expected Backspace on empty checkbox prefix to clear the rest of the prefix."
         )
     }
 }
