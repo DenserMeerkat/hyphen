@@ -30,31 +30,31 @@ internal object MarkdownConstants {
 
     // -, *, or • at line start
     val BULLET_LIST_REGEX = Regex(
-        pattern = """^[\-*•] (.*?)$""",
+        pattern = """^[\-*•][ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
     // 1. at line start
     val ORDERED_LIST_REGEX = Regex(
-        pattern = """^\d+\. (.*?)$""",
+        pattern = """^\d+\.[ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
-    // > or ┃ at line start
+    // > at line start
     val BLOCKQUOTE_REGEX = Regex(
-        pattern = """^[>┃] (.*?)$""",
+        pattern = """^>[ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
     // - [ ] or * [ ] at line start
     val CHECKBOX_UNCHECKED_REGEX = Regex(
-        pattern = """^[\-*] \[\s\] (.*?)$""",
+        pattern = """^[\-*][ \u00A0]\[\s\][ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
     // - [x] or * [X] at line start
     val CHECKBOX_CHECKED_REGEX = Regex(
-        pattern = """^[\-*] \[[xX]\] (.*?)$""",
+        pattern = """^[\-*][ \u00A0]\[[xX]\][ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
