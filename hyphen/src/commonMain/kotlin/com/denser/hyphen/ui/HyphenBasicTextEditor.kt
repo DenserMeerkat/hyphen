@@ -2,6 +2,7 @@ package com.denser.hyphen.ui
 
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -15,13 +16,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalClipboard
-import com.denser.hyphen.ui.LocalHyphenRawClipboard
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.state.HyphenTextState
@@ -35,6 +36,7 @@ import com.denser.hyphen.ui.internal.applyMarkdownStyles
 import com.denser.hyphen.ui.internal.handleHardwareKeyEvent
 import com.denser.hyphen.ui.internal.processMarkdownInput
 import com.denser.hyphen.ui.internal.rememberMarkdownClipboard
+import com.denser.hyphen.ui.internal.drawBlockquotes
 
 /**
  * A markdown-aware text editor that provides rich inline formatting, block-level styles,
@@ -156,7 +158,9 @@ fun HyphenBasicTextEditor(
                 .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
                 .onFocusChanged { focusState ->
                     state.isFocused = focusState.isFocused
-                },
+                }
+                .drawBlockquotes(state, styleConfig, { textLayoutResult }, scrollState)
+                .padding(horizontal = 8.dp),
             enabled = enabled,
             readOnly = readOnly,
             textStyle = textStyle,

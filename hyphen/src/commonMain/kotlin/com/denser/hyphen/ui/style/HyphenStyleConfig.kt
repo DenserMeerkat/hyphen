@@ -8,6 +8,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 /**
  * Visual style applied to the prefix marker and content text of a list item.
@@ -85,9 +87,7 @@ data class HyphenStyleConfig(
         fontFamily = FontFamily.Monospace,
     ),
     val blockquoteSpanStyle: SpanStyle = SpanStyle(
-        fontStyle = FontStyle.Italic,
         color = Color.Gray,
-        background = Color.Gray.copy(alpha = 0.05f),
     ),
     val bulletListStyle: ListItemStyle = ListItemStyle(),
     val orderedListStyle: ListItemStyle = ListItemStyle(),
@@ -119,4 +119,23 @@ data class HyphenStyleConfig(
      * If a scheme is not present in this map, it falls back to [mentionStyle].
      */
     val mentionStyles: Map<String, SpanStyle> = emptyMap(),
+    val blockquoteStyle: BlockquoteStyle = BlockquoteStyle(),
+)
+
+/**
+ * Visual configuration for blockquotes.
+ *
+ * @property backgroundColor Color of the blockquote highlight block.
+ * @property borderColor Color of the thick border on the left.
+ * @property borderWidth Thickness of the left border.
+ * @property cornerRadius Corner radius of the blockquote highlight background.
+ * @property borderCornerRadius Corner radius of the thick border.
+ */
+@Immutable
+data class BlockquoteStyle(
+    val backgroundColor: Color = Color.Gray.copy(alpha = 0.08f),
+    val borderColor: Color = Color.Gray.copy(alpha = 0.4f),
+    val borderWidth: Dp = 3.dp,
+    val cornerRadius: Dp = 4.dp,
+    val borderCornerRadius: Dp = 2.dp,
 )

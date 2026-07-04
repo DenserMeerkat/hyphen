@@ -2,6 +2,15 @@ package com.denser.hyphen.ui.internal
 
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.insert
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.ScrollState
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
@@ -134,6 +143,18 @@ internal fun applyMarkdownStyles(
             }
         }
 
+        val blockquotes = state.spans
+            .filter { it.style is MarkupStyle.Blockquote }
+            .sortedByDescending { it.start }
+
+        blockquotes.forEach { bq ->
+            val safeStart = (bq.start + adjustment).coerceIn(0, length)
+            val safeEnd = (bq.start + adjustment + 1).coerceIn(0, length)
+            if (safeStart < safeEnd) {
+                replace(safeStart, safeEnd, " ")
+            }
+        }
+
         val baseSpanStyle = baseTextStyle.toSpanStyle()
         val currentTextSeq = asCharSequence()
         for (i in currentTextSeq.indices) {
@@ -207,10 +228,31 @@ internal fun processMarkdownInput(
     val newText = buffer.asCharSequence().toString()
 
     val cursorBefore = state.selection.start
-    val isSoftEnter = cursorBefore < newText.length &&
-            newText[cursorBefore] == '\n' &&
-            newText.length == previousText.length + 1 &&
-            newText.removeRange(cursorBefore, cursorBefore + 1) == previousText
+    
+    // Check if a single character was deleted (Backspace)
+    if (newText.length == previousText.length - 1 && cursorBefore > 0) {
+        val lastNewline = previousText.lastIndexOf('\n', (cursorBefore - 1).coerceAtLeast(0))
+        val lineStart = if (lastNewline == -1) 0 else lastNewline + 1
+        
+        if (state.isStyleAt(lineStart, MarkupStyle.Blockquote) && cursorBefore == lineStart + 2) {
+            if (lineStart < buffer.length && buffer.asCharSequence()[lineStart] == '>') {
+                buffer.replace(lineStart, lineStart + 1, "")
+            }
+        } else if ((state.isStyleAt(lineStart, MarkupStyle.CheckboxUnchecked) || state.isStyleAt(lineStart, MarkupStyle.CheckboxChecked)) && cursorBefore == lineStart + 6) {
+            val prefixEnd = lineStart + 5
+            if (prefixEnd <= buffer.length) {
+                val prefix = buffer.asCharSequence().substring(lineStart, prefixEnd)
+                if (prefix == "- [ ]" || prefix == "* [ ]" || prefix == "- [x]" || prefix == "* [x]" || prefix == "- [X]" || prefix == "* [X]") {
+                    buffer.replace(lineStart, prefixEnd, "")
+                }
+            }
+        }
+    }
+
+    val isSoftEnter = cursorBefore < buffer.length &&
+            buffer.asCharSequence()[cursorBefore] == '\n' &&
+            buffer.length == previousText.length + 1 &&
+            buffer.asCharSequence().toString().removeRange(cursorBefore, cursorBefore + 1) == previousText
 
     if (isSoftEnter) {
         buffer.revertAllChanges()
@@ -228,3 +270,67 @@ internal expect fun rememberMarkdownClipboard(
     state: HyphenTextState,
     clipboardLabel: String,
 ): Clipboard
+
+internal fun Modifier.drawBlockquotes(
+    state: HyphenTextState,
+    styleConfig: HyphenStyleConfig,
+    textLayoutResult: () -> TextLayoutResult?,
+    scrollState: ScrollState
+): Modifier = this.drawBehind {
+    val layout = textLayoutResult() ?: return@drawBehind
+    val textLen = layout.layoutInput.text.length
+    val scrollY = scrollState.value
+
+    val intervals = state.spans
+        .filter { it.style is MarkupStyle.Blockquote }
+        .mapNotNull { span ->
+            val visualStart = HyphenOffsetMapper.toVisual(span.start, state).coerceIn(0, textLen)
+            val visualEnd = HyphenOffsetMapper.toVisual(span.end, state).coerceIn(0, textLen)
+            if (visualStart >= visualEnd) return@mapNotNull null
+
+            val startLine = layout.getLineForOffset(visualStart)
+            val endLine = layout.getLineForOffset(visualEnd)
+
+            val top = layout.getLineTop(startLine) - scrollY
+            val bottom = layout.getLineBottom(endLine) - scrollY
+            top to bottom
+        }
+        .sortedBy { it.first }
+
+    if (intervals.isNotEmpty()) {
+        val mergedIntervals = mutableListOf<Pair<Float, Float>>()
+        var current = intervals[0]
+        for (i in 1 until intervals.size) {
+            val next = intervals[i]
+            if (next.first <= current.second + 2f) {
+                current = current.first to maxOf(current.second, next.second)
+            } else {
+                mergedIntervals.add(current)
+                current = next
+            }
+        }
+        mergedIntervals.add(current)
+
+        val bqStyle = styleConfig.blockquoteStyle
+
+        mergedIntervals.forEach { (top, bottom) ->
+            // Draw background with slightly rounded corners
+            drawRoundRect(
+                color = bqStyle.backgroundColor,
+                topLeft = Offset(0f, top),
+                size = Size(size.width - 8.dp.toPx(), bottom - top),
+                cornerRadius = CornerRadius(bqStyle.cornerRadius.toPx())
+            )
+
+            // Draw thick border on the left with rounded corners
+            val borderWidth = bqStyle.borderWidth.toPx()
+            val borderLeft = 4.dp.toPx()
+            drawRoundRect(
+                color = bqStyle.borderColor,
+                topLeft = Offset(borderLeft, top),
+                size = Size(borderWidth, bottom - top),
+                cornerRadius = CornerRadius(bqStyle.borderCornerRadius.toPx())
+            )
+        }
+    }
+}
