@@ -1,3 +1,13 @@
+## [0.6.0-alpha01] - 2026-07-05
+
+### 🚀 Added
+* **Blockquote Block:** Added support for rendering blockquote blocks with background color, rounded corners, and a customizable left border.
+
+### 🛠️ Fixed
+* **Shift + Enter Behaviour:** Allowed insertion of standard newline characters using Shift + Enter key combination to bypass the editor's block auto-formatting / smart enter logic.
+
+---
+
 ## [0.5.0-alpha07] - 2026-06-20
 
 ### 🛠️ Fixed
