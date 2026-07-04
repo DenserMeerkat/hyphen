@@ -349,12 +349,9 @@ private val DEMO_TEXT = """
     # Heading 1
     ## Heading 2
     ### Heading 3
-    #### Heading 4
-    ##### Heading 5
-    ###### Heading 6
+    **H1-H6 supported**
     
-    This is a paragraph demonstrating formatting:
-    **Bold**, *Italic*, __Underline__, ~~Strikethrough~~, ==Highlight==, `Inline Code`, and [Links](https://github.com/densermeerkat/hyphen).
+    This is a paragraph with **Bold**, *Italic*, __Underline__, ~~Strikethrough~~, ==Highlight==, `Inline Code`, and [Links](https://github.com/densermeerkat/hyphen).
 
     > This is a blockquote. Nested text can also be **bold** inside quotes.
 
@@ -367,7 +364,5 @@ private val DEMO_TEXT = """
     - [ ] Checklist task 1
     - [x] Checklist task 2
 
-    @Alice @Bob
-    #bug #feature
-    {project_name} {{user_count}}
+    @Alice #tag {variable}
 """.trimIndent()
