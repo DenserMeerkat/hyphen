@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.input.TextFieldDecorator
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -137,7 +138,10 @@ fun HyphenBasicTextEditor(
                     triggerPopup = triggerPopup,
                     showDefaultSuggestionsPopup = showDefaultSuggestionsPopup,
                     textStyle = textStyle,
-                    modifier = Modifier,
+                    modifier = Modifier
+                        .clipToBounds()
+                        .drawBlockquotes(state, styleConfig, { textLayoutResult }, scrollState)
+                        .padding(horizontal = 8.dp),
                 ) {
                     innerTextField()
                 }
@@ -158,9 +162,7 @@ fun HyphenBasicTextEditor(
                 .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
                 .onFocusChanged { focusState ->
                     state.isFocused = focusState.isFocused
-                }
-                .drawBlockquotes(state, styleConfig, { textLayoutResult }, scrollState)
-                .padding(horizontal = 8.dp),
+                },
             enabled = enabled,
             readOnly = readOnly,
             textStyle = textStyle,

@@ -59,43 +59,60 @@ internal object BlockStyleManager {
 
         val lastNewline = bufferText.lastIndexOf('\n', cursor - 1)
         val lineStart = if (lastNewline == -1) 0 else lastNewline + 1
-        val lineText = bufferText.substring(lineStart, cursor)
+        val lineEnd = bufferText.indexOf('\n', lineStart).let { if (it == -1) bufferText.length else it }
+        val fullLineText = bufferText.substring(lineStart, lineEnd)
 
         return when {
-            (state.isStyleAt(lineStart, MarkupStyle.CheckboxUnchecked) && MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText)) ||
-                    (state.isStyleAt(lineStart, MarkupStyle.CheckboxChecked) && MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)) -> {
-
-                val prefix = "- [ ] "
-                val currentPrefixLen = 6
-
-                if (lineText.length == currentPrefixLen) {
-                    buffer.replace(lineStart, cursor, "")
+            (state.isStyleAt(lineStart, MarkupStyle.CheckboxUnchecked) || state.isStyleAt(lineStart, MarkupStyle.CheckboxChecked)) -> {
+                val isPrefixOnly = Regex("""^[\-*][ \u00A0]\[\s\][ \u00A0]?$""").matches(fullLineText)
+                if (isPrefixOnly) {
+                    buffer.replace(lineStart, lineEnd, "")
                 } else {
+                    val prefix = if (fullLineText.startsWith("*")) "* [ ] " else "- [ ] "
                     buffer.insert(cursor, "\n$prefix")
                 }
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.BulletList) && MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText) -> {
-                val prefix = lineText.take(2)
-                if (lineText == prefix) buffer.replace(lineStart, cursor, "")
-                else buffer.insert(cursor, "\n$prefix")
+            state.isStyleAt(lineStart, MarkupStyle.BulletList) -> {
+                val isPrefixOnly = Regex("""^[\-*•][ \u00A0]?$""").matches(fullLineText)
+                if (isPrefixOnly) {
+                    buffer.replace(lineStart, lineEnd, "")
+                } else {
+                    val prefix = if (fullLineText.isNotEmpty()) {
+                        val firstChar = fullLineText[0]
+                        if (firstChar == '-' || firstChar == '*' || firstChar == '•') {
+                            if (fullLineText.length >= 2 && (fullLineText[1] == ' ' || fullLineText[1] == '\u00A0')) {
+                                fullLineText.take(2)
+                            } else {
+                                "$firstChar "
+                            }
+                        } else "- "
+                    } else "- "
+                    buffer.insert(cursor, "\n$prefix")
+                }
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.OrderedList) && MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText) -> {
-                val prefixLen = lineText.indexOf('.') + 2
-                val prefix = lineText.take(prefixLen)
-                val currentNumber = prefix.dropLast(2).toIntOrNull() ?: 1
-                if (lineText == prefix) buffer.replace(lineStart, cursor, "")
-                else buffer.insert(cursor, "\n${currentNumber + 1}. ")
+            state.isStyleAt(lineStart, MarkupStyle.OrderedList) -> {
+                val dotIndex = fullLineText.indexOf('.')
+                val isPrefixOnly = Regex("""^\d+\.[ \u00A0]?$""").matches(fullLineText)
+                if (isPrefixOnly) {
+                    buffer.replace(lineStart, lineEnd, "")
+                } else {
+                    val currentNumber = if (dotIndex != -1) fullLineText.substring(0, dotIndex).toIntOrNull() ?: 1 else 1
+                    buffer.insert(cursor, "\n${currentNumber + 1}. ")
+                }
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.Blockquote) && MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText) -> {
-                val prefix = lineText.take(2)
-                if (lineText == prefix) buffer.replace(lineStart, cursor, "")
-                else buffer.insert(cursor, "\n$prefix")
+            state.isStyleAt(lineStart, MarkupStyle.Blockquote) -> {
+                val isPrefixOnly = Regex("""^>[ \u00A0]?$""").matches(fullLineText)
+                if (isPrefixOnly) {
+                    buffer.replace(lineStart, lineEnd, "")
+                } else {
+                    buffer.insert(cursor, "\n> ")
+                }
                 true
             }
 

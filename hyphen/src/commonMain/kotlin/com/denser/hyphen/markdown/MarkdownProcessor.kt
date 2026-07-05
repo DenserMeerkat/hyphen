@@ -151,8 +151,8 @@ internal object MarkdownProcessor {
         applyRule(
             MarkdownConstants.BLOCKQUOTE_REGEX,
             { MarkupStyle.Blockquote },
-            getPrefixRemoved = { 2 },
-            getPrefixAdded = { match -> match.value.substring(0, 2) }
+            getPrefixRemoved = { match -> if (match.value.length >= 2 && (match.value[1] == ' ' || match.value[1] == '\u00A0')) 2 else 1 },
+            getPrefixAdded = { match -> if (match.value.length >= 2 && (match.value[1] == ' ' || match.value[1] == '\u00A0')) match.value.substring(0, 2) else ">" }
         )
         applyRule(
             MarkdownConstants.ORDERED_LIST_REGEX,

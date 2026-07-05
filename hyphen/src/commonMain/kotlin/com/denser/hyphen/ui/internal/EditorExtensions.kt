@@ -27,6 +27,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.em
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.StyleSets
+import com.denser.hyphen.model.TextRangeWith
 import com.denser.hyphen.state.BlockStyleManager
 import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.ui.style.HyphenStyleConfig
@@ -154,28 +155,42 @@ internal fun applyMarkdownStyles(
 
         val checkboxes = state.spans
             .filter { it.style is MarkupStyle.CheckboxUnchecked || it.style is MarkupStyle.CheckboxChecked }
-            .sortedByDescending { it.start }
 
         val adjustment = if (needsBaselineAnchor) 1 else 0
+
+        val replacements = mutableListOf<TextRangeWith<String>>()
+
         checkboxes.forEach { cb ->
             val safeStart = (cb.start + adjustment).coerceIn(0, length)
             val safeEnd = (cb.start + adjustment + 6).coerceIn(0, length)
             if (safeStart < safeEnd) {
-                replace(safeStart, safeEnd, "  ")
+                replacements.add(TextRangeWith(safeStart, safeEnd, "  "))
             }
         }
 
         val blockquotes = state.spans
             .filter { it.style is MarkupStyle.Blockquote }
-            .sortedByDescending { it.start }
 
         blockquotes.forEach { bq ->
+            val sourceText = state.textFieldState.text.toString()
+            val startIdx = bq.start
+            val prefixLen = if (startIdx + 1 < sourceText.length && 
+                (sourceText[startIdx + 1] == ' ' || sourceText[startIdx + 1] == '\u00A0')) 2 else 1
+
             val safeStart = (bq.start + adjustment).coerceIn(0, length)
-            val safeEnd = (bq.start + adjustment + 1).coerceIn(0, length)
+            val safeEnd = (bq.start + adjustment + prefixLen).coerceIn(0, length)
             if (safeStart < safeEnd) {
-                replace(safeStart, safeEnd, " ")
+                replacements.add(TextRangeWith(safeStart, safeEnd, "\u200B"))
             }
         }
+
+        replacements.sortByDescending { it.start }
+        replacements.forEach { rep ->
+            if (rep.start < length && rep.end <= length) {
+                replace(rep.start, rep.end, rep.value)
+            }
+        }
+
 
         val baseSpanStyle = baseTextStyle.toSpanStyle()
         val currentTextSeq = asCharSequence()
@@ -256,9 +271,27 @@ internal fun processMarkdownInput(
         val lastNewline = previousText.lastIndexOf('\n', (cursorBefore - 1).coerceAtLeast(0))
         val lineStart = if (lastNewline == -1) 0 else lastNewline + 1
         
+        if (lineStart > 0 && previousText[lineStart - 1] == '\n') {
+            val isBlockquote = state.isStyleAt(lineStart, MarkupStyle.Blockquote)
+            if (isBlockquote) {
+                val lineEnd = previousText.indexOf('\n', lineStart).let { if (it == -1) previousText.length else it }
+                val lineText = previousText.substring(lineStart, lineEnd)
+                val isPrefixOnly = lineText == "> " || lineText == ">\u00A0"
+                if (isPrefixOnly && cursorBefore >= lineStart && cursorBefore <= lineStart + lineText.length) {
+                    buffer.insert(lineStart - 1, "\n")
+                    buffer.replace(lineStart, lineStart + lineText.length, "")
+                    return
+                }
+            }
+        }
+
         if (state.isStyleAt(lineStart, MarkupStyle.Blockquote) && cursorBefore == lineStart + 2) {
             if (lineStart < buffer.length && buffer.asCharSequence()[lineStart] == '>') {
-                buffer.replace(lineStart, lineStart + 1, "")
+                val hasSpace = lineStart + 1 < buffer.length && 
+                    (buffer.asCharSequence()[lineStart + 1] == ' ' || buffer.asCharSequence()[lineStart + 1] == '\u00A0')
+                if (!hasSpace) {
+                    buffer.replace(lineStart, lineStart + 1, "")
+                }
             }
         } else if ((state.isStyleAt(lineStart, MarkupStyle.CheckboxUnchecked) || state.isStyleAt(lineStart, MarkupStyle.CheckboxChecked)) && cursorBefore == lineStart + 6) {
             val prefixEnd = lineStart + 5
@@ -308,10 +341,10 @@ internal fun Modifier.drawBlockquotes(
         .mapNotNull { span ->
             val visualStart = HyphenOffsetMapper.toVisual(span.start, state).coerceIn(0, textLen)
             val visualEnd = HyphenOffsetMapper.toVisual(span.end, state).coerceIn(0, textLen)
-            if (visualStart >= visualEnd) return@mapNotNull null
+            if (visualStart > visualEnd) return@mapNotNull null
 
             val startLine = layout.getLineForOffset(visualStart)
-            val endLine = layout.getLineForOffset(visualEnd)
+            val endLine = layout.getLineForOffset((visualEnd - 1).coerceAtLeast(visualStart))
 
             val top = layout.getLineTop(startLine) - scrollY
             val bottom = layout.getLineBottom(endLine) - scrollY
@@ -346,10 +379,9 @@ internal fun Modifier.drawBlockquotes(
 
             // Draw thick border on the left with rounded corners
             val borderWidth = bqStyle.borderWidth.toPx()
-            val borderLeft = 4.dp.toPx()
             drawRoundRect(
                 color = bqStyle.borderColor,
-                topLeft = Offset(borderLeft, top),
+                topLeft = Offset(0f, top),
                 size = Size(borderWidth, bottom - top),
                 cornerRadius = CornerRadius(bqStyle.borderCornerRadius.toPx())
             )

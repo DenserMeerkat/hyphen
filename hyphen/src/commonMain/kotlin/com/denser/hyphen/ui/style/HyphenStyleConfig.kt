@@ -135,7 +135,7 @@ data class HyphenStyleConfig(
 data class BlockquoteStyle(
     val backgroundColor: Color = Color.Gray.copy(alpha = 0.08f),
     val borderColor: Color = Color.Gray.copy(alpha = 0.4f),
-    val borderWidth: Dp = 3.dp,
+    val borderWidth: Dp = 4.dp,
     val cornerRadius: Dp = 4.dp,
     val borderCornerRadius: Dp = 2.dp,
 )

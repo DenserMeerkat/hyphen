@@ -25,6 +25,22 @@ internal object HyphenOffsetMapper {
                 }
             }
         }
+
+        val blockquotes = state.spans
+            .filter { it.style is MarkupStyle.Blockquote }
+            .sortedBy { it.start }
+
+        for (bq in blockquotes) {
+            if (bq.start < originalOffset) {
+                val sourceText = state.textFieldState.text.toString()
+                val prefixLen = if (bq.start + 1 < sourceText.length && 
+                    (sourceText[bq.start + 1] == ' ' || sourceText[bq.start + 1] == '\u00A0')) 2 else 1
+                
+                val charsBeforePrefix = (originalOffset - bq.start).coerceAtMost(prefixLen)
+                visualOffset -= (charsBeforePrefix - 1).coerceAtLeast(0)
+            }
+        }
+
         return visualOffset
     }
 }

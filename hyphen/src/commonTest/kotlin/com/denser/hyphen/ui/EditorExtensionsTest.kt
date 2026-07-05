@@ -3,11 +3,14 @@ package com.denser.hyphen.ui
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.insert
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.ui.text.TextRange
 import com.denser.hyphen.state.HyphenTextState
 import com.denser.hyphen.ui.internal.processMarkdownInput
+import com.denser.hyphen.model.MarkupStyle
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.test.assertNotNull
 
 class EditorExtensionsTest {
 
@@ -216,5 +219,41 @@ class EditorExtensionsTest {
             resultingText,
             "Expected Backspace on empty checkbox prefix to clear the rest of the prefix."
         )
+    }
+
+    @Test
+    fun testProcessMarkdownInput_pasteBlockquote() {
+        val state = HyphenTextState(initialText = "")
+        val bufferState = TextFieldState("> asdaasdda")
+
+        bufferState.edit {
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        // Verify that the span is added
+        val blockquoteSpan = state.spans.find { it.style is MarkupStyle.Blockquote }
+        assertNotNull(blockquoteSpan, "Expected Blockquote span to be created upon pasting.")
+        assertEquals(0, blockquoteSpan.start)
+        assertEquals(11, blockquoteSpan.end)
+    }
+
+    @Test
+    fun testProcessMarkdownInput_backspaceOnEmptyBlockquoteLineStart_deletesPrefix() {
+        val initialText = "Hello\n> "
+        val state = HyphenTextState(initialText = initialText)
+        state.setMarkdown(initialText)
+        state.textFieldState.edit {
+            this.selection = TextRange(6) // cursor is at start of line 2 prefix
+        }
+
+        // Simulate deleting the newline before '> ' (which happens when cursor is visually at start of line 2)
+        val bufferState = TextFieldState("Hello> ") // deleted '\n' at index 5
+
+        bufferState.edit {
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        // Verify that prefix is deleted and newline is restored
+        assertEquals("Hello\n", bufferState.text.toString(), "Expected blockquote prefix to be deleted and newline restored.")
     }
 }
