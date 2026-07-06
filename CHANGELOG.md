@@ -1,3 +1,11 @@
+## [0.6.0-alpha02] - 2026-07-06
+
+### 🛠️ Fixed
+* **Blockquote Editing Behavior:** Added auto-detection/span creation for blockquote formatting on paste, fixed offset mapping issues with blockquote prefixes, and restored proper newline positioning when deleting a blockquote prefix at the start of a line.
+* **Blockquote Styling:** Adjusted default left border width to 4.dp and improved layout drawing offset coordinates to align perfectly with the editor.
+
+---
+
 ## [0.6.0-alpha01] - 2026-07-05
 
 ### 🚀 Added
