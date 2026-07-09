@@ -118,7 +118,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.6.0-alpha02"
+hyphen = "0.6.0-alpha03"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -147,7 +147,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.6.0-alpha02")
+            implementation("io.github.densermeerkat:hyphen:0.6.0-alpha03")
         }
     }
 }
@@ -472,7 +472,8 @@ val clipboard = LocalHyphenRawClipboard.current ?: LocalClipboard.current
 | `strikethroughStyle`     | `SpanStyle(textDecoration = TextDecoration.LineThrough)`                                           |
 | `highlightStyle`         | `SpanStyle(background = Color(0xFFFFEB3B).copy(alpha = 0.4f))`                                     |
 | `inlineCodeStyle`        | `SpanStyle(background = Color.Gray.copy(alpha = 0.15f), fontFamily = FontFamily.Monospace)`        |
-| `blockquoteSpanStyle`    | `SpanStyle(fontStyle = FontStyle.Italic, color = Color.Gray, background = Color.Gray.copy(0.05f))` |
+| `blockquoteSpanStyle`    | `SpanStyle(color = Color.Gray)`                                                                    |
+| `blockquoteStyle`        | `BlockquoteStyle()`                                                                                |
 | `bulletListStyle`        | `ListItemStyle()`                                                                                  |
 | `orderedListStyle`       | `ListItemStyle()`                                                                                  |
 | `checkboxCheckedStyle`   | `SpanStyle(textDecoration = TextDecoration.LineThrough)`                                           |
@@ -563,6 +564,18 @@ and `orderedListStyle` on `HyphenStyleConfig`.
 |----------------|--------------|---------|------------------------------------------------------|
 | `prefixStyle`  | `SpanStyle?` | `null`  | Applied to the marker (`-`, `1.`, `- [ ]`, `- [x]`). |
 | `contentStyle` | `SpanStyle?` | `null`  | Applied to the text after the marker.                |
+
+### `BlockquoteStyle`
+
+Controls the background highlight and border styling of blockquotes.
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `backgroundColor` | `Color` | `Color.Gray.copy(alpha = 0.08f)` | Background color of the blockquote highlight block. |
+| `borderColor` | `Color` | `Color.Gray.copy(alpha = 0.4f)` | Color of the thick left border. |
+| `borderWidth` | `Dp` | `4.dp` | Thickness of the left border. |
+| `cornerRadius` | `Dp` | `4.dp` | Corner radius of the blockquote highlight background. |
+| `borderCornerRadius` | `Dp` | `2.dp` | Corner radius of the thick border. |
 
 ### Checklist Styling
 

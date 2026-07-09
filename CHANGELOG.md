@@ -1,3 +1,12 @@
+## [0.6.0-alpha03] - 2026-07-09
+
+### 🛠️ Fixed
+* **Mobile Smart Enter:** Improved soft enter detection using `buffer.changes` to work reliably with complex IME/composition updates on mobile software keyboards.
+* **Heading Toggle & State:** Resolved UI state inconsistency for active heading toggles at start-of-line boundaries and fixed pending override issues.
+* **Text Field Padding:** Introduced a customizable `horizontalPadding` parameter in `HyphenBasicTextEditor` and `HyphenTextField` to control padding of the text editor, placeholder text, and blockquote drawing.
+
+---
+
 ## [0.6.0-alpha02] - 2026-07-06
 
 ### 🛠️ Fixed
