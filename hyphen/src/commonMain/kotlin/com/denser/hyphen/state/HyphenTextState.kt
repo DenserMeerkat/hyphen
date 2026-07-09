@@ -476,6 +476,10 @@ class HyphenTextState(
             buffer.asCharSequence().substring(start, buffer.selection.start).contains('\n')
         } else false
 
+        if (isNewlineInsertion) {
+            pendingOverrides = pendingOverrides.filterKeys { it !in StyleSets.allHeadings }
+        }
+
         val availableInlineStyles = StyleSets.allInline
         val activeInlineStyles = availableInlineStyles.filter { style ->
             val hasStyleAtCursor = when {
@@ -865,6 +869,17 @@ class HyphenTextState(
             return BlockStyleManager.hasBlockStyle(text, selection, style)
         }
         
+        if (pendingOverrides.containsKey(style)) return pendingOverrides[style] == true
+        
+        if (style in StyleSets.allHeadings) {
+            val (selStart, selEnd) = resolvedSelection()
+            val startLine = text.lastIndexOf('\n', (selStart - 1).coerceAtLeast(0)).let { if (it == -1) 0 else it + 1 }
+            val endLine = text.indexOf('\n', selEnd).let { if (it == -1) text.length else it }
+            return _spans.any { span ->
+                span.style == style && span.start <= startLine && span.end >= endLine
+            }
+        }
+        
         if (style is MarkupStyle.Link && style.url.isEmpty()) {
             val (selStart, selEnd) = resolvedSelection()
             return if (selStart == selEnd) {
@@ -873,8 +888,6 @@ class HyphenTextState(
                 _spans.any { it.style is MarkupStyle.Link && it.start <= selStart && it.end >= selEnd }
             }
         }
-
-        if (pendingOverrides.containsKey(style)) return pendingOverrides[style] == true
 
         val (selStart, selEnd) = resolvedSelection()
         return if (selStart == selEnd) {
@@ -1126,7 +1139,8 @@ class HyphenTextState(
 
         var newSpans = SpanManager.toggleStyle(_spans, style, selStart, selEnd)
 
-        if (isHeading && !hasStyle(style)) {
+        val hasHeadingSpan = _spans.any { it.style == style && it.start <= selStart && it.end >= selEnd }
+        if (isHeading && !hasHeadingSpan) {
             val otherHeadings = StyleSets.allHeadings.filter { it != style }
 
             newSpans = newSpans.flatMap { span ->
@@ -1170,6 +1184,10 @@ class HyphenTextState(
 
         _spans.clear()
         _spans.addAll(SpanManager.consolidateSpans(newSpans))
+
+        if (isHeading) {
+            pendingOverrides = pendingOverrides.filterKeys { it !in StyleSets.allHeadings }
+        }
     }
 
     private fun getCurrentSnapshot() = EditorSnapshot(text, selection, _spans.toList())

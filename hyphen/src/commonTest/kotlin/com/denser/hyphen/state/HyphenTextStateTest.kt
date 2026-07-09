@@ -449,4 +449,83 @@ class HyphenTextStateTest {
         assertEquals("", state.text)
         assertTrue(state.spans.none { it.style is MarkupStyle.Mention })
     }
+
+    @Test
+    fun `heading style hasStyle returns true at start of line`() {
+        val state = HyphenTextState("# Title")
+        state.isFocused = true
+
+        // Position 0 is at the start of the line (before the first character)
+        state.select(0)
+        assertTrue(state.hasStyle(MarkupStyle.H1))
+        assertFalse(state.hasStyle(MarkupStyle.H2))
+
+        // Position 3 is in the middle of the title
+        state.select(3)
+        assertTrue(state.hasStyle(MarkupStyle.H1))
+
+        // Toggle H2
+        state.toggleStyle(MarkupStyle.H2)
+        state.select(0)
+        assertTrue(state.hasStyle(MarkupStyle.H2))
+        assertFalse(state.hasStyle(MarkupStyle.H1))
+    }
+
+    @Test
+    fun `heading pending override works on empty line`() {
+        val state = HyphenTextState("")
+        state.isFocused = true
+
+        // Toggle H1 on an empty line
+        state.toggleStyle(MarkupStyle.H1)
+        assertTrue(state.hasStyle(MarkupStyle.H1))
+
+        // Type a character
+        state.textFieldState.edit {
+            replace(0, 0, "A")
+            selection = TextRange(1)
+            state.processInput(this)
+        }
+
+        // Verify that the heading span is applied to the typed character
+        val headingSpans = state.spans.filter { it.style is MarkupStyle.H1 }
+        assertEquals(1, headingSpans.size)
+        assertEquals(0, headingSpans[0].start)
+        assertEquals(1, headingSpans[0].end)
+    }
+
+    @Test
+    fun `heading pending overrides are cleared on newline`() {
+        val state = HyphenTextState("")
+        state.isFocused = true
+
+        // Toggle H1 on an empty line
+        state.toggleStyle(MarkupStyle.H1)
+        assertTrue(state.hasStyle(MarkupStyle.H1))
+
+        // Press Enter (insert a newline)
+        state.textFieldState.edit {
+            replace(0, 0, "\n")
+            selection = TextRange(1)
+            state.processInput(this)
+        }
+
+        // Verify that H1 pending override is cleared
+        assertFalse(state.hasStyle(MarkupStyle.H1))
+    }
+
+    @Test
+    fun `toggle H1 on H3 line replaces H3 with H1 even if H1 has pending override`() {
+        val state = HyphenTextState("### Heading 3")
+        state.isFocused = true
+
+        // Simulate H1 in pending overrides (e.g. from a prior toggling action)
+        state.toggleStyle(MarkupStyle.H1) // toggling H1 on the H3 line
+
+        // Verify H3 is removed and H1 is active
+        assertTrue(state.hasStyle(MarkupStyle.H1))
+        assertFalse(state.hasStyle(MarkupStyle.H3))
+        assertEquals(1, state.spans.size)
+        assertEquals(MarkupStyle.H1, state.spans[0].style)
+    }
 }
