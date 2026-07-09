@@ -3,12 +3,16 @@ package com.denser.hyphen.ui.material3
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -123,6 +127,7 @@ fun HyphenTextField(
     showDefaultSuggestionsPopup: Boolean = true,
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
+    horizontalPadding: Dp = 8.dp,
     onTextChange: ((String) -> Unit)? = null,
     onMarkdownChange: ((String) -> Unit)? = null,
 ) {
@@ -164,6 +169,7 @@ fun HyphenTextField(
             cursorBrush = SolidColor(cursorColor),
             onTextLayout = onTextLayout,
             clipboardLabel = clipboardLabel,
+            horizontalPadding = horizontalPadding,
             onTextChange = onTextChange,
             onMarkdownChange = onMarkdownChange,
             decorator = TextFieldDefaults.decorator(
@@ -174,7 +180,13 @@ fun HyphenTextField(
                 interactionSource = actualInteractionSource,
                 labelPosition = labelPosition,
                 label = label?.let { { it() } },
-                placeholder = placeholder,
+                placeholder = placeholder?.let {
+                    @Composable {
+                        Box(modifier = Modifier.padding(horizontal = horizontalPadding)) {
+                            it()
+                        }
+                    }
+                },
                 leadingIcon = leadingIcon,
                 trailingIcon = trailingIcon,
                 prefix = prefix,

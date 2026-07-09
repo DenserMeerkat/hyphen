@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.state.HyphenTextState
@@ -106,6 +107,7 @@ fun HyphenBasicTextEditor(
     decorator: TextFieldDecorator? = null,
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
+    horizontalPadding: Dp = 8.dp,
     onTextChange: ((String) -> Unit)? = null,
     onMarkdownChange: ((String) -> Unit)? = null,
 ) {
@@ -140,8 +142,8 @@ fun HyphenBasicTextEditor(
                     textStyle = textStyle,
                     modifier = Modifier
                         .clipToBounds()
-                        .drawBlockquotes(state, styleConfig, { textLayoutResult }, scrollState)
-                        .padding(horizontal = 8.dp),
+                        .drawBlockquotes(state, styleConfig, { textLayoutResult }, scrollState, horizontalPadding)
+                        .padding(horizontal = horizontalPadding),
                 ) {
                     innerTextField()
                 }

@@ -9,6 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.ScrollState
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.runtime.Composable
@@ -330,7 +331,8 @@ internal fun Modifier.drawBlockquotes(
     state: HyphenTextState,
     styleConfig: HyphenStyleConfig,
     textLayoutResult: () -> TextLayoutResult?,
-    scrollState: ScrollState
+    scrollState: ScrollState,
+    horizontalPadding: Dp = 8.dp
 ): Modifier = this.drawBehind {
     val layout = textLayoutResult() ?: return@drawBehind
     val textLen = layout.layoutInput.text.length
@@ -373,7 +375,7 @@ internal fun Modifier.drawBlockquotes(
             drawRoundRect(
                 color = bqStyle.backgroundColor,
                 topLeft = Offset(0f, top),
-                size = Size(size.width - 8.dp.toPx(), bottom - top),
+                size = Size(size.width - horizontalPadding.toPx(), bottom - top),
                 cornerRadius = CornerRadius(bqStyle.cornerRadius.toPx())
             )
 
