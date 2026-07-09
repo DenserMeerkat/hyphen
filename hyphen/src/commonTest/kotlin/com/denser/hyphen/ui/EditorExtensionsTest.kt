@@ -34,6 +34,26 @@ class EditorExtensionsTest {
     }
 
     @Test
+    fun testProcessMarkdownInput_softEnterDetectsNewline_withMobileMultiChanges() {
+        val state = HyphenTextState(initialText = "- Item 1")
+        state.textFieldState.setTextAndPlaceCursorAtEnd("- Item 1")
+
+        val bufferState = TextFieldState("- Item 1")
+
+        bufferState.edit {
+            replace(2, 6, "Item")
+            insert(length, "\n")
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        val resultingText = bufferState.text.toString()
+        assertTrue(
+            resultingText.contains("- Item 1\n-\u00A0"),
+            "Expected SmartEnter to intercept the newline and insert a new bullet point, but got: $resultingText"
+        )
+    }
+
+    @Test
     fun testProcessMarkdownInput_softEnterOnUncheckedCheckbox_insertsNewUncheckedCheckbox() {
         val text = "- [ ] Task 1"
         val state = HyphenTextState(initialText = text)
@@ -255,5 +275,24 @@ class EditorExtensionsTest {
 
         // Verify that prefix is deleted and newline is restored
         assertEquals("Hello\n", bufferState.text.toString(), "Expected blockquote prefix to be deleted and newline restored.")
+    }
+
+    @Test
+    fun testProcessMarkdownInput_softEnterOnHeading_doesNotCarryOverHeadingStyle() {
+        val state = HyphenTextState("# Header")
+        state.textFieldState.setTextAndPlaceCursorAtEnd("# Header")
+
+        val bufferState = TextFieldState("# Header")
+
+        bufferState.edit {
+            insert(length, "\n")
+            processMarkdownInput(state = state, buffer = this)
+        }
+
+        // The heading style H1 should only cover "# Header" (the first line), not the second line.
+        val headingSpans = state.spans.filter { it.style is MarkupStyle.H1 }
+        assertEquals(1, headingSpans.size)
+        assertEquals(0, headingSpans[0].start)
+        assertEquals(6, headingSpans[0].end)
     }
 }

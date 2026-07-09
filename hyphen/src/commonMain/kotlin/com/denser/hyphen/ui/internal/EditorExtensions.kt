@@ -2,6 +2,7 @@ package com.denser.hyphen.ui.internal
 
 import androidx.compose.foundation.text.input.TextFieldBuffer
 import androidx.compose.foundation.text.input.insert
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
@@ -258,6 +259,7 @@ internal fun applyMarkdownStyles(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 internal fun processMarkdownInput(
     state: HyphenTextState,
     buffer: TextFieldBuffer
@@ -305,10 +307,25 @@ internal fun processMarkdownInput(
         }
     }
 
-    val isSoftEnter = cursorBefore < buffer.length &&
-            buffer.asCharSequence()[cursorBefore] == '\n' &&
-            buffer.length == previousText.length + 1 &&
-            buffer.asCharSequence().toString().removeRange(cursorBefore, cursorBefore + 1) == previousText
+    val isSoftEnter = run {
+        if (!state.selection.collapsed) return@run false
+        var newlineInserted = false
+        var newlineIndex = -1
+        for (i in 0 until buffer.changes.changeCount) {
+            val range = buffer.changes.getRange(i)
+            val originalRange = buffer.changes.getOriginalRange(i)
+            if (originalRange.collapsed) {
+                val insertedText = buffer.asCharSequence().substring(range.min, range.max)
+                val nlIdx = insertedText.indexOf('\n')
+                if (nlIdx != -1) {
+                    newlineInserted = true
+                    newlineIndex = range.min + nlIdx
+                    break
+                }
+            }
+        }
+        newlineInserted && newlineIndex == cursorBefore
+    }
 
     if (isSoftEnter) {
         buffer.revertAllChanges()
