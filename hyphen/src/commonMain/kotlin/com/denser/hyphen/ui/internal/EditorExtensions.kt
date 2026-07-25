@@ -105,6 +105,14 @@ internal fun handleHardwareKeyEvent(
             consumed
         }
 
+        event.key == Key.Tab && !isPrimaryModifier && !isAlt -> {
+            state.textFieldState.edit {
+                BlockStyleManager.handleIndent(state, this, isShift)
+                state.processInput(this)
+            }
+            true
+        }
+
         isPrimaryModifier && !isShift && !isAlt -> {
             when (event.key) {
                 Key.B -> { state.toggleStyle(MarkupStyle.Bold); true }
@@ -159,6 +167,7 @@ internal fun applyMarkdownStyles(
             .filter { it.style is MarkupStyle.CheckboxUnchecked || it.style is MarkupStyle.CheckboxChecked }
 
         val adjustment = if (needsBaselineAnchor) 1 else 0
+        val sourceText = state.textFieldState.text.toString()
 
         val replacements = mutableListOf<TextRangeWith<String>>()
 
@@ -218,29 +227,34 @@ internal fun applyMarkdownStyles(
                 is MarkupStyle.Blockquote -> addStyle(styleConfig.blockquoteSpanStyle, visualStart, visualEnd)
 
                 is MarkupStyle.BulletList -> {
-                    val prefixEnd = (visualStart + 2).coerceAtMost(visualEnd)
+                    val lineText = currentTextSeq.substring(visualStart, visualEnd)
+                    val leadingSpaces = lineText.takeWhile { it == ' ' || it == '\t' }.length
+                    val prefixEnd = (visualStart + leadingSpaces + 2).coerceAtMost(visualEnd)
                     styleConfig.bulletListStyle.prefixStyle?.let { addStyle(it, visualStart, prefixEnd) }
                     styleConfig.bulletListStyle.contentStyle?.let { addStyle(it, prefixEnd, visualEnd) }
                 }
 
                 is MarkupStyle.OrderedList -> {
                     val lineText = currentTextSeq.substring(visualStart, visualEnd)
-                    val dotIndex = lineText.indexOf('.')
-                    val prefixLen = if (dotIndex != -1) (dotIndex + 2).coerceAtMost(lineText.length) else 3
+                    val leadingSpaces = lineText.takeWhile { it == ' ' || it == '\t' }.length
+                    val dotIndex = lineText.indexOf('.', leadingSpaces)
+                    val prefixLen = if (dotIndex != -1) (dotIndex + 2).coerceAtMost(lineText.length) else leadingSpaces + 3
                     val prefixEnd = (visualStart + prefixLen).coerceAtMost(visualEnd)
                     styleConfig.orderedListStyle.prefixStyle?.let { addStyle(it, visualStart, prefixEnd) }
                     styleConfig.orderedListStyle.contentStyle?.let { addStyle(it, prefixEnd, visualEnd) }
                 }
 
                 is MarkupStyle.CheckboxUnchecked -> {
+                    val slotStart = visualStart
                     val slotEnd = (visualStart + 2).coerceAtMost(visualEnd)
-                    addStyle(SpanStyle(letterSpacing = 0.8.em), visualStart, slotEnd)
+                    addStyle(SpanStyle(letterSpacing = 0.8.em), slotStart, slotEnd)
                     styleConfig.checkboxUncheckedStyle?.let { addStyle(it, slotEnd, visualEnd) }
                 }
 
                 is MarkupStyle.CheckboxChecked -> {
+                    val slotStart = visualStart
                     val slotEnd = (visualStart + 2).coerceAtMost(visualEnd)
-                    addStyle(SpanStyle(letterSpacing = 0.8.em), visualStart, slotEnd)
+                    addStyle(SpanStyle(letterSpacing = 0.8.em), slotStart, slotEnd)
                     styleConfig.checkboxCheckedStyle?.let { addStyle(it, slotEnd, visualEnd) }
                 }
 

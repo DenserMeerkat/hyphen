@@ -28,15 +28,15 @@ internal object MarkdownConstants {
     // [display](scheme:id)
     const val MENTION_REGEX_TEMPLATE = """\[(.+?)\]\((%s):(.+?)\)"""
 
-    // -, *, or • at line start
+    // -, *, or • at line start (with optional leading indentation)
     val BULLET_LIST_REGEX = Regex(
-        pattern = """^[\-*•][ \u00A0](.*?)$""",
+        pattern = """^[ \t]*[\-*•][ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
-    // 1. at line start
+    // 1. at line start (with optional leading indentation)
     val ORDERED_LIST_REGEX = Regex(
-        pattern = """^\d+\.[ \u00A0](.*?)$""",
+        pattern = """^[ \t]*\d+\.[ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 

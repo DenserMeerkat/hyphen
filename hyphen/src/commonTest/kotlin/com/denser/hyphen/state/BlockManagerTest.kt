@@ -275,4 +275,50 @@ class BlockStyleManagerTest {
         }
         assertEquals("- [x] Task", state.text.toString())
     }
+
+    // --- Indented List Item Tests ---
+    @Test
+    fun `hasBlockStyle detects indented block styles`() {
+        val text = "  - Indented item 1\n    1. Indented item 2"
+
+        assertTrue(BlockStyleManager.hasBlockStyle(text, TextRange(5), MarkupStyle.BulletList))
+        assertTrue(BlockStyleManager.hasBlockStyle(text, TextRange(25), MarkupStyle.OrderedList))
+    }
+
+    @Test
+    fun `handleSmartEnter preserves indentation for bullet list`() {
+        val state = HyphenTextState("  - First Item")
+
+        state.textFieldState.edit {
+            this.selection = TextRange(state.textFieldState.text.length)
+            val handled = BlockStyleManager.handleSmartEnter(state, this)
+            assertTrue(handled)
+        }
+
+        assertEquals("  - First Item\n  - ", state.textFieldState.text.toString())
+    }
+
+    @Test
+    fun `handleSmartEnter preserves indentation for ordered list`() {
+        val state = HyphenTextState("    1. First Subitem")
+
+        state.textFieldState.edit {
+            this.selection = TextRange(state.textFieldState.text.length)
+            val handled = BlockStyleManager.handleSmartEnter(state, this)
+            assertTrue(handled)
+        }
+
+        assertEquals("    1. First Subitem\n    2. ", state.textFieldState.text.toString())
+    }
+
+    @Test
+    fun `applyBlockStyle preserves line indentation when toggling list`() {
+        val state = TextFieldState("  Some indented text")
+
+        state.edit {
+            BlockStyleManager.applyBlockStyle(this, emptyList(), TextRange(5), MarkupStyle.BulletList)
+        }
+
+        assertEquals("  - Some indented text", state.text.toString())
+    }
 }

@@ -62,46 +62,49 @@ internal object BlockStyleManager {
         val lineEnd = bufferText.indexOf('\n', lineStart).let { if (it == -1) bufferText.length else it }
         val fullLineText = bufferText.substring(lineStart, lineEnd)
 
+        val indent = fullLineText.takeWhile { it == ' ' || it == '\t' }
+        val unindentedLine = fullLineText.substring(indent.length)
+
         return when {
             (state.isStyleAt(lineStart, MarkupStyle.CheckboxUnchecked) || state.isStyleAt(lineStart, MarkupStyle.CheckboxChecked)) -> {
-                val isPrefixOnly = Regex("""^[\-*][ \u00A0]\[\s\][ \u00A0]?$""").matches(fullLineText)
+                val isPrefixOnly = Regex("""^[\-*][ \u00A0]\[\s\][ \u00A0]?$""").matches(unindentedLine)
                 if (isPrefixOnly) {
                     buffer.replace(lineStart, lineEnd, "")
                 } else {
-                    val prefix = if (fullLineText.startsWith("*")) "* [ ] " else "- [ ] "
-                    buffer.insert(cursor, "\n$prefix")
+                    val prefix = if (unindentedLine.startsWith("*")) "* [ ] " else "- [ ] "
+                    buffer.insert(cursor, "\n$indent$prefix")
                 }
                 true
             }
 
             state.isStyleAt(lineStart, MarkupStyle.BulletList) -> {
-                val isPrefixOnly = Regex("""^[\-*•][ \u00A0]?$""").matches(fullLineText)
+                val isPrefixOnly = Regex("""^[\-*•][ \u00A0]?$""").matches(unindentedLine)
                 if (isPrefixOnly) {
                     buffer.replace(lineStart, lineEnd, "")
                 } else {
-                    val prefix = if (fullLineText.isNotEmpty()) {
-                        val firstChar = fullLineText[0]
+                    val prefix = if (unindentedLine.isNotEmpty()) {
+                        val firstChar = unindentedLine[0]
                         if (firstChar == '-' || firstChar == '*' || firstChar == '•') {
-                            if (fullLineText.length >= 2 && (fullLineText[1] == ' ' || fullLineText[1] == '\u00A0')) {
-                                fullLineText.take(2)
+                            if (unindentedLine.length >= 2 && (unindentedLine[1] == ' ' || unindentedLine[1] == '\u00A0')) {
+                                unindentedLine.take(2)
                             } else {
                                 "$firstChar "
                             }
                         } else "- "
                     } else "- "
-                    buffer.insert(cursor, "\n$prefix")
+                    buffer.insert(cursor, "\n$indent$prefix")
                 }
                 true
             }
 
             state.isStyleAt(lineStart, MarkupStyle.OrderedList) -> {
-                val dotIndex = fullLineText.indexOf('.')
-                val isPrefixOnly = Regex("""^\d+\.[ \u00A0]?$""").matches(fullLineText)
+                val dotIndex = unindentedLine.indexOf('.')
+                val isPrefixOnly = Regex("""^\d+\.[ \u00A0]?$""").matches(unindentedLine)
                 if (isPrefixOnly) {
                     buffer.replace(lineStart, lineEnd, "")
                 } else {
-                    val currentNumber = if (dotIndex != -1) fullLineText.substring(0, dotIndex).toIntOrNull() ?: 1 else 1
-                    buffer.insert(cursor, "\n${currentNumber + 1}. ")
+                    val currentNumber = if (dotIndex != -1) unindentedLine.substring(0, dotIndex).toIntOrNull() ?: 1 else 1
+                    buffer.insert(cursor, "\n$indent${currentNumber + 1}. ")
                 }
                 true
             }
@@ -177,9 +180,12 @@ internal object BlockStyleManager {
             val lineEnd = bufferText.indexOf('\n', lineStart).let { if (it == -1) buffer.length else it }
             val lineText = bufferText.substring(lineStart, lineEnd)
 
+            val leadingIndentLen = lineText.takeWhile { it == ' ' || it == '\t' }.length
+            val unindentedText = lineText.substring(leadingIndentLen)
+
             var existingPrefixLen = 0
             if (MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)) {
-                existingPrefixLen = lineText.indexOf('.') + 2
+                existingPrefixLen = unindentedText.indexOf('.') + 2
             } else if (MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText) || MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)) {
                 existingPrefixLen = 6
             } else if (MarkdownConstants.BULLET_LIST_REGEX.containsMatchIn(lineText)) {
@@ -187,6 +193,8 @@ internal object BlockStyleManager {
             } else if (MarkdownConstants.BLOCKQUOTE_REGEX.containsMatchIn(lineText)) {
                 existingPrefixLen = 2
             }
+
+            val prefixStart = lineStart + leadingIndentLen
 
             if (isRemoving) {
                 val matchTarget = when (style) {
@@ -200,27 +208,27 @@ internal object BlockStyleManager {
                 }
 
                 if (matchTarget && existingPrefixLen > 0) {
-                    buffer.replace(lineStart, lineStart + existingPrefixLen, "")
-                    currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, -existingPrefixLen)
+                    buffer.replace(prefixStart, prefixStart + existingPrefixLen, "")
+                    currentSpans = SpanManager.shiftSpans(currentSpans, prefixStart, -existingPrefixLen)
                 }
             } else {
                 val actualPrefix = if (style is MarkupStyle.OrderedList) "1. " else prefix
 
                 if (existingPrefixLen > 0) {
-                    val existingPrefix = lineText.take(existingPrefixLen)
+                    val existingPrefix = unindentedText.take(existingPrefixLen)
                     if (existingPrefix != actualPrefix) {
-                        buffer.replace(lineStart, lineStart + existingPrefixLen, actualPrefix)
+                        buffer.replace(prefixStart, prefixStart + existingPrefixLen, actualPrefix)
                         val diff = actualPrefix.length - existingPrefixLen
-                        currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, diff, push = true)
+                        currentSpans = SpanManager.shiftSpans(currentSpans, prefixStart, diff, push = true)
                     }
                 } else {
-                    buffer.insert(lineStart, actualPrefix)
-                    currentSpans = SpanManager.shiftSpans(currentSpans, lineStart, actualPrefix.length, push = true)
+                    buffer.insert(prefixStart, actualPrefix)
+                    currentSpans = SpanManager.shiftSpans(currentSpans, prefixStart, actualPrefix.length, push = true)
                 }
             }
         }
 
-        var listCounter = 1
+        val listCounters = mutableMapOf<String, Int>()
         var currentLineStart = 0
         while (currentLineStart < buffer.length) {
             val bufferStr = buffer.asCharSequence()
@@ -229,20 +237,26 @@ internal object BlockStyleManager {
             val lineText = bufferStr.substring(currentLineStart, lineEnd)
 
             if (MarkdownConstants.ORDERED_LIST_REGEX.containsMatchIn(lineText)) {
-                val oldPrefixLen = lineText.indexOf('.') + 2
-                val oldPrefix = lineText.take(oldPrefixLen)
+                val indent = lineText.takeWhile { it == ' ' || it == '\t' }
+                val unindented = lineText.substring(indent.length)
+                val oldPrefixLen = unindented.indexOf('.') + 2
+                val oldPrefix = unindented.take(oldPrefixLen)
+
+                val listCounter = (listCounters[indent] ?: 0) + 1
+                listCounters[indent] = listCounter
+
                 val newPrefix = "$listCounter. "
+                val prefixStart = currentLineStart + indent.length
                 if (oldPrefix != newPrefix) {
-                    buffer.replace(currentLineStart, currentLineStart + oldPrefixLen, newPrefix)
+                    buffer.replace(prefixStart, prefixStart + oldPrefixLen, newPrefix)
                     val diff = newPrefix.length - oldPrefixLen
-                    currentSpans = SpanManager.shiftSpans(currentSpans, currentLineStart + oldPrefixLen, diff)
+                    currentSpans = SpanManager.shiftSpans(currentSpans, prefixStart + oldPrefixLen, diff)
                     currentLineStart = lineEnd + diff + 1
                 } else {
                     currentLineStart = lineEnd + 1
                 }
-                listCounter++
             } else {
-                listCounter = 1
+                listCounters.clear()
                 currentLineStart = lineEnd + 1
             }
         }
@@ -263,18 +277,61 @@ internal object BlockStyleManager {
         val lineEnd = bufferText.indexOf('\n', lineStart).let { if (it == -1) buffer.length else it }
         val lineText = bufferText.substring(lineStart, lineEnd)
 
-        val isInPrefix = offset >= lineStart && offset <= lineStart + 6
+        val indentLen = lineText.takeWhile { it == ' ' || it == '\t' }.length
+        val prefixStart = lineStart + indentLen
+        val isInPrefix = offset >= lineStart && offset <= prefixStart + 6
 
         if (!strictPrefixCheck || isInPrefix) {
             if (MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.containsMatchIn(lineText)) {
-                buffer.replace(lineStart, lineStart + 6, "- [x] ")
+                buffer.replace(prefixStart, prefixStart + 6, "- [x] ")
                 return true to spans
             }
             if (MarkdownConstants.CHECKBOX_CHECKED_REGEX.containsMatchIn(lineText)) {
-                buffer.replace(lineStart, lineStart + 6, "- [ ] ")
+                buffer.replace(prefixStart, prefixStart + 6, "- [ ] ")
                 return true to spans
             }
         }
         return false to spans
+    }
+
+    fun handleIndent(state: HyphenTextState, buffer: TextFieldBuffer, isShift: Boolean) {
+        val bufferText = buffer.asCharSequence()
+        val selStart = minOf(buffer.selection.start, buffer.selection.end)
+        val selEnd = maxOf(buffer.selection.start, buffer.selection.end)
+
+        val lineStarts = mutableListOf<Int>()
+        var currentStart = bufferText.lastIndexOf('\n', (selStart - 1).coerceAtLeast(0)) + 1
+        if (currentStart == -1) currentStart = 0
+        lineStarts.add(currentStart)
+
+        var searchIndex = currentStart
+        while (searchIndex < selEnd) {
+            val nextNewline = bufferText.indexOf('\n', searchIndex)
+            if (nextNewline != -1 && nextNewline < selEnd) {
+                if (nextNewline == selEnd - 1 && selStart != selEnd) break
+                lineStarts.add(nextNewline + 1)
+                searchIndex = nextNewline + 1
+            } else break
+        }
+
+        var currentSpans = state.spans
+        for (start in lineStarts.reversed()) {
+            val lineEnd = bufferText.indexOf('\n', start).let { if (it == -1) buffer.length else it }
+            val lineText = bufferText.substring(start, lineEnd)
+            val indentLen = lineText.takeWhile { it == ' ' || it == '\t' }.length
+
+            if (!isShift) {
+                buffer.insert(start, "  ")
+                currentSpans = SpanManager.shiftSpans(currentSpans, start, 2, push = true)
+            } else {
+                if (indentLen > 0) {
+                    val removeCount = minOf(2, indentLen)
+                    buffer.replace(start, start + removeCount, "")
+                    currentSpans = SpanManager.shiftSpans(currentSpans, start, -removeCount)
+                }
+            }
+        }
+        state._spans.clear()
+        state._spans.addAll(currentSpans)
     }
 }
