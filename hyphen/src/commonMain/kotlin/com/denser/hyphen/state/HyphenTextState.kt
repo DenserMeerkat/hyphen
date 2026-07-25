@@ -329,7 +329,7 @@ class HyphenTextState(
                 }
 
                 textFieldState.edit {
-                    selection = TextRange(snapTarget)
+                    selection = TextRange(snapTarget.coerceIn(0, length))
                 }
                 lastCursorPosition = snapTarget
                 return
@@ -390,7 +390,10 @@ class HyphenTextState(
         if (modified) {
             val savedSelection = buffer.selection
             buffer.replace(0, buffer.length, cleanedText)
-            buffer.selection = savedSelection
+            buffer.selection = TextRange(
+                savedSelection.start.coerceIn(0, buffer.length),
+                savedSelection.end.coerceIn(0, buffer.length)
+            )
             newText = cleanedText
         }
 
@@ -409,24 +412,23 @@ class HyphenTextState(
 
             val modifiedMention = mentionSpans.find { mention ->
                 val display = (mention.style as MarkupStyle.Mention).display
-
-                if (editStart <= mention.start && editEnd >= mention.end) {
-                    return@find false
-                }
-
-                when {
-                    editStart >= mention.end -> {
-                        val actual = if (mention.end <= newText.length) newText.substring(mention.start, mention.end) else ""
-                        actual != display
-                    }
+                val (checkStart, checkEnd) = when {
                     editEnd <= mention.start -> {
-                        val newStart = mention.start + rawLengthDifference
-                        val newEnd = mention.end + rawLengthDifference
-                        val actual = if (newStart >= 0 && newEnd <= newText.length) newText.substring(newStart, newEnd) else ""
-                        actual != display
+                        (mention.start + rawLengthDifference) to (mention.end + rawLengthDifference)
                     }
-                    else -> true
+                    editStart >= mention.end -> {
+                        mention.start to mention.end
+                    }
+                    else -> {
+                        mention.start to (mention.end + rawLengthDifference)
+                    }
                 }
+                val actual = if (checkStart >= 0 && checkEnd <= newText.length && checkStart <= checkEnd) {
+                    newText.substring(checkStart, checkEnd)
+                } else {
+                    ""
+                }
+                actual != display
             }
             if (modifiedMention != null) {
                 val effectiveStart = minOf(editStart, modifiedMention.start)
@@ -1200,7 +1202,10 @@ class HyphenTextState(
         isUndoingOrRedoing = true
         textFieldState.edit {
             replace(0, length, snapshot.text)
-            this.selection = snapshot.selection
+            this.selection = TextRange(
+                snapshot.selection.start.coerceIn(0, length),
+                snapshot.selection.end.coerceIn(0, length)
+            )
         }
         _spans.clear()
         _spans.addAll(snapshot.spans)

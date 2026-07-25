@@ -194,13 +194,9 @@ internal fun applyMarkdownStyles(
         }
 
 
-        val baseSpanStyle = baseTextStyle.toSpanStyle()
+
+
         val currentTextSeq = asCharSequence()
-        for (i in currentTextSeq.indices) {
-            if (currentTextSeq[i] == '\n') {
-                addStyle(baseSpanStyle, i, i + 1)
-            }
-        }
 
         state.spans.forEach { span ->
             val visualStart = HyphenOffsetMapper.toVisual(span.start, state).coerceIn(0, length)

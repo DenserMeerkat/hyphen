@@ -35,12 +35,14 @@ internal fun InlineMention(
         span = span,
         onHoverChanged = { isHovered = it },
         onClick = { isCtrl, isRight, offset ->
-            if (isRight) {
+            if (isRight && state.selection.collapsed) {
                 menuOffset = offset
                 showMenu = true
                 true
-            } else {
+            } else if (!isRight && state.selection.collapsed) {
                 mentionConfig.onMentionClick(mention)
+                false
+            } else {
                 false
             }
         },

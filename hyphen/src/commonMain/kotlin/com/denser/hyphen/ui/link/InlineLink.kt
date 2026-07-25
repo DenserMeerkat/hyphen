@@ -56,13 +56,17 @@ internal fun InlineLink(
         onClick = { isCtrl, isRight, offset ->
             when {
                 isRight -> {
-                    val currentStart = state.selection.start
-                    state.textFieldState.edit {
-                        selection = TextRange(currentStart)
+                    if (state.selection.collapsed) {
+                        val currentStart = state.selection.start
+                        state.textFieldState.edit {
+                            selection = TextRange(currentStart)
+                        }
+                        menuOffset = offset
+                        showMenu = true
+                        true
+                    } else {
+                        false
                     }
-                    menuOffset = offset
-                    showMenu = true
-                    true
                 }
                 isCtrl -> {
                     openUrl()
