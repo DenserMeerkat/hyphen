@@ -1,3 +1,16 @@
+## [0.6.0-alpha04] - 2026-07-26
+
+### 🚀 Added
+* **Indentation Support**: Added Tab / Shift+Tab indentation support and smart enter continuation for checklists, bullet lists, and ordered lists.
+* **Checkbox Overlay Alignment**: Synchronized interactive checkbox UI overlays with text indentation levels.
+* **Configurable Indent Width**: Added `indentSpaces` parameter to `HyphenStyleConfig`.
+
+### 🛠️ Fixed
+* **Textfield Padding**: Resolved textfield padding inconsistency in `HyphenBasicTextEditor` and `HyphenTextField`.
+* **Selection Improvements**: Improved text selection bounds handling and context menu behavior.
+
+---
+
 ## [0.6.0-alpha03] - 2026-07-09
 
 ### 🛠️ Fixed

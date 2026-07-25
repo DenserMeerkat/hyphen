@@ -118,7 +118,7 @@ Add the version and library entry to your version catalog:
 
 ```toml
 [versions]
-hyphen = "0.6.0-alpha03"
+hyphen = "0.6.0-alpha04"
 
 [libraries]
 hyphen = { group = "io.github.densermeerkat", name = "hyphen", version.ref = "hyphen" }
@@ -147,7 +147,7 @@ kotlin {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation("io.github.densermeerkat:hyphen:0.6.0-alpha03")
+            implementation("io.github.densermeerkat:hyphen:0.6.0-alpha04")
         }
     }
 }
@@ -237,6 +237,7 @@ This applies to any clickable element in your toolbar — `IconButton`, `Button`
 HyphenBasicTextEditor(
     state = state,
     styleConfig = HyphenStyleConfig(
+        indentSpaces = 4,
         boldStyle = SpanStyle(
             fontWeight = FontWeight.ExtraBold,
             color = Color(0xFF1A73E8),
