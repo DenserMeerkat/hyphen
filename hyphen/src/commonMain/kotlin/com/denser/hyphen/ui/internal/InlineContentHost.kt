@@ -133,6 +133,7 @@ internal fun InlineContentHost(
                 val textLen = layoutResult.layoutInput.text.length
                 inlinePlaceables.forEach { (span, placeable) ->
                     if (textLen == 0) return@forEach
+
                     val transformedIndex = HyphenOffsetMapper.toVisual(span.start, state)
                         .coerceIn(0, textLen - 1)
                     val boundingBox = layoutResult.getBoundingBox(transformedIndex)

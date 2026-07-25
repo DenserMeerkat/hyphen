@@ -78,16 +78,15 @@ fun HyphenSampleApp(
     context: Any? = null,
 ) {
     val isAndroid = context != null
-    val editorState = rememberHyphenTextState(initialText = "")
-    
-    LaunchedEffect(Unit) {
-        editorState.triggerConfigs = listOf(
+    val triggerConfigs = remember {
+        listOf(
             TriggerConfig(trigger = "@", scheme = "user"),
             TriggerConfig(trigger = "#", scheme = "tag"),
             TriggerConfig(trigger = "{", scheme = "var", endTrigger = "}", addSpaceOnCompletion = false),
             TriggerConfig(trigger = "{{", scheme = "var", endTrigger = "}}", addSpaceOnCompletion = false)
         )
     }
+    val editorState = rememberHyphenTextState(initialText = "", triggerConfigs = triggerConfigs)
 
     val snackbarHostState = remember { SnackbarHostState() }
     var isDarkTheme by remember { mutableStateOf(false) }
@@ -364,5 +363,5 @@ private val DEMO_TEXT = """
     - [ ] Checklist task 1
     - [x] Checklist task 2
 
-    @Alice #tag {variable}
+    [@Alice](user:Alice) [#tag](tag:tag) [{variable}](var:variable)
 """.trimIndent()

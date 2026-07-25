@@ -120,6 +120,7 @@ data class HyphenStyleConfig(
      */
     val mentionStyles: Map<String, SpanStyle> = emptyMap(),
     val blockquoteStyle: BlockquoteStyle = BlockquoteStyle(),
+    val indentSpaces: Int = 2,
 )
 
 /**

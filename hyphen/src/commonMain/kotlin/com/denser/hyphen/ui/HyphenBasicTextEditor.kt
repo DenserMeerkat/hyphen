@@ -162,7 +162,7 @@ fun HyphenBasicTextEditor(
         BasicTextField(
             state = state.textFieldState,
             modifier = modifier
-                .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state) }
+                .onPreviewKeyEvent { event -> handleHardwareKeyEvent(event, state, styleConfig) }
                 .onFocusChanged { focusState ->
                     state.isFocused = focusState.isFocused
                 },
