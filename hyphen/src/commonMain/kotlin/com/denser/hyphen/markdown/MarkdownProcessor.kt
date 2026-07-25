@@ -145,8 +145,11 @@ internal object MarkdownProcessor {
         applyRule(
             MarkdownConstants.BULLET_LIST_REGEX,
             { MarkupStyle.BulletList },
-            getPrefixRemoved = { 2 },
-            getPrefixAdded = { match -> match.value.substring(0, 2) }
+            getPrefixRemoved = { match ->
+                val leadingSpaces = match.value.takeWhile { it == ' ' || it == '\t' }.length
+                leadingSpaces + 2
+            },
+            getPrefixAdded = { match -> match.value.substring(0, match.value.takeWhile { it == ' ' || it == '\t' }.length + 2) }
         )
         applyRule(
             MarkdownConstants.BLOCKQUOTE_REGEX,
@@ -157,8 +160,15 @@ internal object MarkdownProcessor {
         applyRule(
             MarkdownConstants.ORDERED_LIST_REGEX,
             { MarkupStyle.OrderedList },
-            getPrefixRemoved = { match -> match.value.indexOf('.') + 2 },
-            getPrefixAdded = { match -> match.value.substring(0, match.value.indexOf('.') + 2) }
+            getPrefixRemoved = { match ->
+                val leadingSpaces = match.value.takeWhile { it == ' ' || it == '\t' }.length
+                match.value.indexOf('.', leadingSpaces) + 2
+            },
+            getPrefixAdded = { match ->
+                val leadingSpaces = match.value.takeWhile { it == ' ' || it == '\t' }.length
+                val dotIndex = match.value.indexOf('.', leadingSpaces)
+                match.value.substring(0, dotIndex + 2)
+            }
         )
 
         triggerConfigs.forEach { config ->
