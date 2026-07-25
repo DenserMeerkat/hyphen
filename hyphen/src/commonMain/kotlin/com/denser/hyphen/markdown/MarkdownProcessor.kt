@@ -132,15 +132,35 @@ internal object MarkdownProcessor {
         applyRule(
             MarkdownConstants.CHECKBOX_UNCHECKED_REGEX,
             { MarkupStyle.CheckboxUnchecked },
-            getPrefixRemoved = { 6 },
-            getPrefixAdded = { match -> match.value.substring(0, 6) }
+            getPrefixRemoved = { match ->
+                val leadingSpaces = match.value.takeWhile { it == ' ' || it == '\t' }.length
+                leadingSpaces + 6
+            },
+            getPrefixAdded = { match ->
+                val leadingSpaces = match.value.takeWhile { it == ' ' || it == '\t' }.length
+                match.value.substring(0, leadingSpaces + 6)
+            }
         )
         applyRule(
             MarkdownConstants.CHECKBOX_CHECKED_REGEX,
             { MarkupStyle.CheckboxChecked },
-            getPrefixRemoved = { 6 },
-            getPrefixAdded = { match -> match.value.substring(0, 6) }
+            getPrefixRemoved = { match ->
+                val leadingSpaces = match.value.takeWhile { it == ' ' || it == '\t' }.length
+                leadingSpaces + 6
+            },
+            getPrefixAdded = { match ->
+                val leadingSpaces = match.value.takeWhile { it == ' ' || it == '\t' }.length
+                match.value.substring(0, leadingSpaces + 6)
+            }
         )
+
+        extractedSpans = extractedSpans.map { span ->
+            if (span.style is MarkupStyle.CheckboxUnchecked || span.style is MarkupStyle.CheckboxChecked) {
+                val rawStart = span.start.coerceIn(0, processedText.length)
+                val indentLen = processedText.substring(rawStart).takeWhile { it == ' ' || it == '\t' }.length
+                if (indentLen > 0) span.copy(start = span.start + indentLen) else span
+            } else span
+        }
 
         applyRule(
             MarkdownConstants.BULLET_LIST_REGEX,

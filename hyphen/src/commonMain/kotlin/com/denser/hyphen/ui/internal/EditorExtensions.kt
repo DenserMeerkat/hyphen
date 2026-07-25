@@ -36,7 +36,8 @@ import com.denser.hyphen.ui.style.HyphenStyleConfig
 
 internal fun handleHardwareKeyEvent(
     event: KeyEvent,
-    state: HyphenTextState
+    state: HyphenTextState,
+    styleConfig: HyphenStyleConfig = HyphenStyleConfig(),
 ): Boolean {
     val isKeyDown = event.type == KeyEventType.KeyDown
     if (!isKeyDown) return false
@@ -74,26 +75,17 @@ internal fun handleHardwareKeyEvent(
         event.key == Key.Enter && !isPrimaryModifier && !isAlt -> {
             var consumed = false
             val hasSelection = !state.selection.collapsed
-            if (!hasSelection) {
-                if (!isShift) {
-                    state.textFieldState.edit {
-                        val handled = BlockStyleManager.handleSmartEnter(state, this)
-                        if (handled) {
-                            state.processInput(this)
-                            consumed = true
-                        }
+            if (!hasSelection && !isShift) {
+                state.saveSnapshot(force = true)
+                state.textFieldState.edit {
+                    consumed = BlockStyleManager.handleSmartEnter(state, this)
+                    if (consumed) {
+                        state.processInput(this)
                     }
                 }
-            } else {
-                state.textFieldState.edit {
-                    val selStart = minOf(selection.start, selection.end)
-                    val selEnd = maxOf(selection.start, selection.end)
-                    replace(selStart, selEnd, "\n")
-                    state.processInput(this)
-                }
-                consumed = true
             }
-            if (!consumed && isShift) {
+            if (!consumed) {
+                state.saveSnapshot(force = true)
                 state.textFieldState.edit {
                     val selStart = minOf(selection.start, selection.end)
                     val selEnd = maxOf(selection.start, selection.end)
@@ -106,9 +98,9 @@ internal fun handleHardwareKeyEvent(
         }
 
         event.key == Key.Tab && !isPrimaryModifier && !isAlt -> {
+            state.saveSnapshot(force = true)
             state.textFieldState.edit {
-                BlockStyleManager.handleIndent(state, this, isShift)
-                state.processInput(this)
+                BlockStyleManager.handleIndent(state, this, isShift, styleConfig.indentSpaces)
             }
             true
         }

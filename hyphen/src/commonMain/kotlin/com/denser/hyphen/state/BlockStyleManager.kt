@@ -65,9 +65,11 @@ internal object BlockStyleManager {
         val indent = fullLineText.takeWhile { it == ' ' || it == '\t' }
         val unindentedLine = fullLineText.substring(indent.length)
 
+        val styleCheckIndex = lineStart + indent.length
+
         return when {
-            (state.isStyleAt(lineStart, MarkupStyle.CheckboxUnchecked) || state.isStyleAt(lineStart, MarkupStyle.CheckboxChecked)) -> {
-                val isPrefixOnly = Regex("""^[\-*][ \u00A0]\[\s\][ \u00A0]?$""").matches(unindentedLine)
+            (state.isStyleAt(styleCheckIndex, MarkupStyle.CheckboxUnchecked) || state.isStyleAt(styleCheckIndex, MarkupStyle.CheckboxChecked)) -> {
+                val isPrefixOnly = Regex("""^[\-*][ \u00A0]\[[\s\S]\][ \u00A0]?$""").matches(unindentedLine)
                 if (isPrefixOnly) {
                     buffer.replace(lineStart, lineEnd, "")
                 } else {
@@ -77,7 +79,7 @@ internal object BlockStyleManager {
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.BulletList) -> {
+            state.isStyleAt(styleCheckIndex, MarkupStyle.BulletList) -> {
                 val isPrefixOnly = Regex("""^[\-*•][ \u00A0]?$""").matches(unindentedLine)
                 if (isPrefixOnly) {
                     buffer.replace(lineStart, lineEnd, "")
@@ -97,7 +99,7 @@ internal object BlockStyleManager {
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.OrderedList) -> {
+            state.isStyleAt(styleCheckIndex, MarkupStyle.OrderedList) -> {
                 val dotIndex = unindentedLine.indexOf('.')
                 val isPrefixOnly = Regex("""^\d+\.[ \u00A0]?$""").matches(unindentedLine)
                 if (isPrefixOnly) {
@@ -109,7 +111,7 @@ internal object BlockStyleManager {
                 true
             }
 
-            state.isStyleAt(lineStart, MarkupStyle.Blockquote) -> {
+            state.isStyleAt(styleCheckIndex, MarkupStyle.Blockquote) -> {
                 val isPrefixOnly = Regex("""^>[ \u00A0]?$""").matches(fullLineText)
                 if (isPrefixOnly) {
                     buffer.replace(lineStart, lineEnd, "")
@@ -294,7 +296,7 @@ internal object BlockStyleManager {
         return false to spans
     }
 
-    fun handleIndent(state: HyphenTextState, buffer: TextFieldBuffer, isShift: Boolean) {
+    fun handleIndent(state: HyphenTextState, buffer: TextFieldBuffer, isShift: Boolean, indentSpaces: Int = 2): Boolean {
         val bufferText = buffer.asCharSequence()
         val selStart = minOf(buffer.selection.start, buffer.selection.end)
         val selEnd = maxOf(buffer.selection.start, buffer.selection.end)
@@ -314,6 +316,9 @@ internal object BlockStyleManager {
             } else break
         }
 
+        val indentString = " ".repeat(indentSpaces.coerceAtLeast(1))
+
+        var modified = false
         var currentSpans = state.spans
         for (start in lineStarts.reversed()) {
             val lineEnd = bufferText.indexOf('\n', start).let { if (it == -1) buffer.length else it }
@@ -321,17 +326,22 @@ internal object BlockStyleManager {
             val indentLen = lineText.takeWhile { it == ' ' || it == '\t' }.length
 
             if (!isShift) {
-                buffer.insert(start, "  ")
-                currentSpans = SpanManager.shiftSpans(currentSpans, start, 2, push = true)
+                buffer.insert(start, indentString)
+                currentSpans = SpanManager.shiftSpans(currentSpans, start, indentString.length, push = true)
+                modified = true
             } else {
                 if (indentLen > 0) {
-                    val removeCount = minOf(2, indentLen)
+                    val removeCount = minOf(indentSpaces.coerceAtLeast(1), indentLen)
                     buffer.replace(start, start + removeCount, "")
                     currentSpans = SpanManager.shiftSpans(currentSpans, start, -removeCount)
+                    modified = true
                 }
             }
         }
-        state._spans.clear()
-        state._spans.addAll(currentSpans)
+        if (modified) {
+            state._spans.clear()
+            state._spans.addAll(currentSpans)
+        }
+        return modified
     }
 }

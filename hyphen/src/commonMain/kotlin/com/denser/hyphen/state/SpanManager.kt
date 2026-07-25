@@ -72,7 +72,7 @@ internal object SpanManager {
                           style is MarkupStyle.CheckboxChecked || style is MarkupStyle.CheckboxUnchecked
             
             if (isAtomic) {
-                consolidated.addAll(sorted)
+                consolidated.addAll(sorted.distinctBy { Triple(it.start, it.end, it.style) })
                 return@forEach
             }
 

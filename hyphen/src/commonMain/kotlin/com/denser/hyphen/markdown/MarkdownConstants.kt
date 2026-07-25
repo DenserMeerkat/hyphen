@@ -46,15 +46,15 @@ internal object MarkdownConstants {
         option = RegexOption.MULTILINE
     )
 
-    // - [ ] or * [ ] at line start
+    // - [ ] or * [ ] at line start (with optional leading indentation)
     val CHECKBOX_UNCHECKED_REGEX = Regex(
-        pattern = """^[\-*][ \u00A0]\[\s\][ \u00A0](.*?)$""",
+        pattern = """^[ \t]*[\-*][ \u00A0]\[\s\][ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
-    // - [x] or * [X] at line start
+    // - [x] or * [X] at line start (with optional leading indentation)
     val CHECKBOX_CHECKED_REGEX = Regex(
-        pattern = """^[\-*][ \u00A0]\[[xX]\][ \u00A0](.*?)$""",
+        pattern = """^[ \t]*[\-*][ \u00A0]\[[xX]\][ \u00A0](.*?)$""",
         option = RegexOption.MULTILINE
     )
 
