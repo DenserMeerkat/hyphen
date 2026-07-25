@@ -78,6 +78,7 @@ import com.denser.hyphen.ui.internal.drawBlockquotes
  * @param decorator Optional [TextFieldDecorator] for Material3 decorations.
  * @param onTextLayout Callback invoked on text layout recalculation.
  * @param clipboardLabel Label attached to clipboard entries on copy/cut.
+ * @param horizontalPadding Internal horizontal padding required to draw blockquote background and border without text overlap. Defaults to 8.dp.
  * @param onTextChange Callback invoked whenever the plain text changes.
  * @param onMarkdownChange Callback invoked whenever text or formatting changes, providing
  *   the serialized Markdown string.

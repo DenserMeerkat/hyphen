@@ -424,8 +424,28 @@ val clipboard = LocalHyphenRawClipboard.current ?: LocalClipboard.current
 | `decorator`         | `TextFieldDecorator?`       | `null`                        | Optional decorator for external visual styling.                                                 |
 | `onTextLayout`      | `(Density.(...) -> Unit)?`  | `null`                        | Callback invoked on every text layout recalculation.                                            |
 | `clipboardLabel`    | `String`                    | `"Markdown Text"`             | Label attached to clipboard entries on copy/cut.                                                |
+| `horizontalPadding` | `Dp`                        | `8.dp`                        | Internal horizontal padding required to draw blockquote background and border without text overlap. |
 | `onTextChange`      | `((String) -> Unit)?`       | `null`                        | Callback invoked whenever the plain text changes.                                               |
 | `onMarkdownChange`  | `((String) -> Unit)?`       | `null`                        | Callback invoked whenever text or formatting changes, providing the serialized Markdown string. |
+
+### `HyphenTextField` *(Material 3)*
+
+`HyphenTextField` inherits all parameters from [`HyphenBasicTextEditor`](#hyphenbasictexteditor) while adding standard Material3 `TextField` decoration parameters:
+
+| Parameter           | Type                        | Default                       | Description                                                                                     |
+|:--------------------|:----------------------------|:------------------------------|:------------------------------------------------------------------------------------------------|
+| `labelPosition`     | `TextFieldLabelPosition`    | `Attached()`                  | Controls label placement (attached vs above).                                                   |
+| `label`             | `@Composable (() -> Unit)?` | `null`                        | Optional label composable.                                                                      |
+| `placeholder`       | `@Composable (() -> Unit)?` | `null`                        | Optional placeholder composable shown when field is empty.                                      |
+| `leadingIcon`       | `@Composable (() -> Unit)?` | `null`                        | Optional icon composable at start of field.                                                     |
+| `trailingIcon`      | `@Composable (() -> Unit)?` | `null`                        | Optional icon composable at end of field.                                                       |
+| `prefix`            | `@Composable (() -> Unit)?` | `null`                        | Optional prefix composable before input text.                                                   |
+| `suffix`            | `@Composable (() -> Unit)?` | `null`                        | Optional suffix composable after input text.                                                    |
+| `supportingText`    | `@Composable (() -> Unit)?` | `null`                        | Optional helper or error text below field.                                                      |
+| `isError`           | `Boolean`                   | `false`                       | Error state flag.                                                                               |
+| `shape`             | `Shape`                     | `TextFieldDefaults.shape`     | Shape of filled container.                                                                      |
+| `colors`            | `TextFieldColors`           | `TextFieldDefaults.colors()`  | Color mapping across states.                                                                    |
+| `contentPadding`    | `PaddingValues`             | `contentPaddingWithoutLabel()`| Outer decoration padding (automatically adjusts for `horizontalPadding`).                       |
 
 ### `HyphenTextState`
 

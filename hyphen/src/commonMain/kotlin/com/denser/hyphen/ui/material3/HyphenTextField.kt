@@ -88,6 +88,7 @@ import com.denser.hyphen.model.TriggerState
  *   is active. Provides the current [TriggerState] for rendering autocomplete suggestions.
  * @param onTextLayout Callback invoked on text layout recalculation.
  * @param clipboardLabel Label attached to clipboard entries on copy/cut.
+ * @param horizontalPadding Internal horizontal padding required to draw blockquote background and border without text overlap. Defaults to 8.dp.
  * @param onTextChange Callback invoked whenever the plain text changes.
  * @param onMarkdownChange Callback invoked whenever text or formatting changes, providing the
  *   serialized Markdown string.
@@ -114,10 +115,17 @@ fun HyphenTextField(
     scrollState: ScrollState = rememberScrollState(),
     shape: Shape = TextFieldDefaults.shape,
     colors: TextFieldColors = TextFieldDefaults.colors(),
+    horizontalPadding: Dp = 8.dp,
     contentPadding: PaddingValues = if (label == null || labelPosition is TextFieldLabelPosition.Above) {
-        TextFieldDefaults.contentPaddingWithoutLabel()
+        TextFieldDefaults.contentPaddingWithoutLabel(
+            start = (16.dp - horizontalPadding).coerceAtLeast(0.dp),
+            end = (16.dp - horizontalPadding).coerceAtLeast(0.dp)
+        )
     } else {
-        TextFieldDefaults.contentPaddingWithLabel()
+        TextFieldDefaults.contentPaddingWithLabel(
+            start = (16.dp - horizontalPadding).coerceAtLeast(0.dp),
+            end = (16.dp - horizontalPadding).coerceAtLeast(0.dp)
+        )
     },
     interactionSource: MutableInteractionSource? = null,
     styleConfig: HyphenStyleConfig = HyphenStyleConfig(),
@@ -127,7 +135,6 @@ fun HyphenTextField(
     showDefaultSuggestionsPopup: Boolean = true,
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
-    horizontalPadding: Dp = 8.dp,
     onTextChange: ((String) -> Unit)? = null,
     onMarkdownChange: ((String) -> Unit)? = null,
 ) {
