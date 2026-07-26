@@ -1,3 +1,10 @@
+## [0.6.0-alpha05] - 2026-07-26
+
+### 🛠️ Fixed
+* **List Style in Checkbox Content**: Fixed issue where checkbox lines starting with `- [ ]` or `- [x]` incorrectly generated `BulletList` markup spans alongside checkbox spans.
+
+---
+
 ## [0.6.0-alpha04] - 2026-07-26
 
 ### 🚀 Added
