@@ -191,6 +191,13 @@ internal object MarkdownProcessor {
             }
         )
 
+        extractedSpans = extractedSpans.filterNot { span ->
+            span.style is MarkupStyle.BulletList && extractedSpans.any { other ->
+                (other.style is MarkupStyle.CheckboxUnchecked || other.style is MarkupStyle.CheckboxChecked) &&
+                        other.start <= span.end && span.start <= other.end
+            }
+        }
+
         triggerConfigs.forEach { config ->
             val escapedTrigger = Regex.escape(config.trigger)
             val longerTriggers = triggerConfigs.filter { it.trigger.length > config.trigger.length && it.trigger.contains(config.trigger) }

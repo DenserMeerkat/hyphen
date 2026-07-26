@@ -96,12 +96,14 @@ class MarkdownProcessorTest {
             // Checkbox block styles should preserve the prefix
             assertEquals(text, result.cleanText)
 
-            // Checkboxes might also generate a BulletList span since they start with "- "
-            // We just need to assert that the specific Checkbox span was generated and covers the line.
-            val span = result.newSpans.find { it.style == expectedStyle }
-            assertNotNull(span, "Missing expected $expectedStyle for text: $text")
-            assertEquals(0, span.start)
-            assertEquals(text.length, span.end)
+            // Checkboxes should generate only the specific Checkbox span and NOT a BulletList span.
+            val checkboxSpan = result.newSpans.find { it.style == expectedStyle }
+            assertNotNull(checkboxSpan, "Missing expected $expectedStyle for text: $text")
+            assertEquals(0, checkboxSpan.start)
+            assertEquals(text.length, checkboxSpan.end)
+
+            val bulletSpan = result.newSpans.find { it.style == MarkupStyle.BulletList }
+            assertNull(bulletSpan, "Checkbox should not generate a BulletList span for text: $text")
         }
     }
 
