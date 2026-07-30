@@ -139,6 +139,17 @@ class BlockStyleManagerTest {
         assertEquals("", state.textFieldState.text.toString())
     }
 
+    @Test
+    fun `handleSmartEnter ignores when cursor is before prefix`() {
+        val state = HyphenTextState("1. Item 1")
+
+        state.textFieldState.edit {
+            this.selection = TextRange(0) // Before "1. "
+            val handled = BlockStyleManager.handleSmartEnter(state, this)
+            assertFalse(handled)
+        }
+    }
+
     // --- applyBlockStyle Tests ---
     @Test
     fun `applyBlockStyle adds prefix to a plain line`() {

@@ -67,6 +67,28 @@ internal object BlockStyleManager {
 
         val styleCheckIndex = lineStart + indent.length
 
+        val regexMatch = when {
+            state.isStyleAt(styleCheckIndex, MarkupStyle.CheckboxUnchecked) -> MarkdownConstants.CHECKBOX_UNCHECKED_REGEX.find(unindentedLine)
+            state.isStyleAt(styleCheckIndex, MarkupStyle.CheckboxChecked) -> MarkdownConstants.CHECKBOX_CHECKED_REGEX.find(unindentedLine)
+            state.isStyleAt(styleCheckIndex, MarkupStyle.BulletList) -> MarkdownConstants.BULLET_LIST_REGEX.find(unindentedLine)
+            state.isStyleAt(styleCheckIndex, MarkupStyle.OrderedList) -> MarkdownConstants.ORDERED_LIST_REGEX.find(unindentedLine)
+            state.isStyleAt(styleCheckIndex, MarkupStyle.Blockquote) -> MarkdownConstants.BLOCKQUOTE_REGEX.find(unindentedLine)
+            else -> null
+        }
+
+        if (regexMatch != null) {
+            val contentGroup = regexMatch.groups[1]
+            val prefixEndOffset = if (contentGroup != null) {
+                val idx = unindentedLine.indexOf(contentGroup.value)
+                if (idx != -1) idx else regexMatch.value.length
+            } else {
+                regexMatch.value.length
+            }
+            if (cursor < lineStart + indent.length + prefixEndOffset) {
+                return false
+            }
+        }
+
         return when {
             (state.isStyleAt(styleCheckIndex, MarkupStyle.CheckboxUnchecked) || state.isStyleAt(styleCheckIndex, MarkupStyle.CheckboxChecked)) -> {
                 val isPrefixOnly = Regex("""^[\-*][ \u00A0]\[[\s\S]\][ \u00A0]?$""").matches(unindentedLine)
