@@ -41,6 +41,19 @@ internal object HyphenOffsetMapper {
             }
         }
 
+        val mentions = state.spans
+            .filter { it.style is MarkupStyle.Mention }
+
+        val sourceText = state.textFieldState.text.toString()
+        for (m in mentions) {
+            if (originalOffset >= m.start) {
+                val charAtStart = sourceText.getOrNull(m.start)
+                if (charAtStart == '@' || charAtStart == '#' || charAtStart == '{') {
+                    visualOffset += 1
+                }
+            }
+        }
+
         return visualOffset
     }
 }

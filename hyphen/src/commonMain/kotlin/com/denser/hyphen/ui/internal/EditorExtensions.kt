@@ -11,6 +11,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.foundation.ScrollState
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.runtime.Composable
@@ -184,6 +185,19 @@ internal fun applyMarkdownStyles(
             val safeEnd = (bq.start + adjustment + prefixLen).coerceIn(0, length)
             if (safeStart < safeEnd) {
                 replacements.add(TextRangeWith(safeStart, safeEnd, "\u200B"))
+            }
+        }
+
+        val mentions = state.spans
+            .filter { it.style is MarkupStyle.Mention }
+
+        mentions.forEach { m ->
+            val safeStart = (m.start + adjustment).coerceIn(0, length)
+            if (safeStart < length) {
+                val charAtStart = sourceText.getOrNull(m.start)
+                if (charAtStart == '@' || charAtStart == '#' || charAtStart == '{') {
+                    replacements.add(TextRangeWith(safeStart, safeStart, "\u200E"))
+                }
             }
         }
 
@@ -388,21 +402,24 @@ internal fun Modifier.drawBlockquotes(
         mergedIntervals.add(current)
 
         val bqStyle = styleConfig.blockquoteStyle
+        val isRtl = layout.layoutInput.layoutDirection == LayoutDirection.Rtl
 
         mergedIntervals.forEach { (top, bottom) ->
             // Draw background with slightly rounded corners
+            val bgLeft = if (isRtl) horizontalPadding.toPx() else 0f
             drawRoundRect(
                 color = bqStyle.backgroundColor,
-                topLeft = Offset(0f, top),
+                topLeft = Offset(bgLeft, top),
                 size = Size(size.width - horizontalPadding.toPx(), bottom - top),
                 cornerRadius = CornerRadius(bqStyle.cornerRadius.toPx())
             )
 
-            // Draw thick border on the left with rounded corners
+            // Draw thick border on the right for RTL, left for LTR
             val borderWidth = bqStyle.borderWidth.toPx()
+            val borderX = if (isRtl) size.width - borderWidth else 0f
             drawRoundRect(
                 color = bqStyle.borderColor,
-                topLeft = Offset(0f, top),
+                topLeft = Offset(borderX, top),
                 size = Size(borderWidth, bottom - top),
                 cornerRadius = CornerRadius(bqStyle.borderCornerRadius.toPx())
             )

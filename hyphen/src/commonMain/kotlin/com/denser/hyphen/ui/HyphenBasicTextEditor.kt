@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -109,11 +111,13 @@ fun HyphenBasicTextEditor(
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
     horizontalPadding: Dp = 8.dp,
+    layoutDirection: LayoutDirection? = null,
     onTextChange: ((String) -> Unit)? = null,
     onMarkdownChange: ((String) -> Unit)? = null,
 ) {
     val rawClipboard = LocalClipboard.current
     val customClipboard = rememberMarkdownClipboard(state, clipboardLabel)
+    val effectiveLayoutDirection = layoutDirection ?: LocalLayoutDirection.current
 
     LaunchedEffect(state.selection) {
         state.updateSelection(state.selection)
@@ -127,6 +131,7 @@ fun HyphenBasicTextEditor(
     CompositionLocalProvider(
         LocalClipboard provides customClipboard,
         LocalHyphenRawClipboard provides rawClipboard,
+        LocalLayoutDirection provides effectiveLayoutDirection,
     ) {
         var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
