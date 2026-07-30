@@ -131,6 +131,7 @@ internal fun InlineContentHost(
             if (layoutResult != null) {
                 val scrollY = scrollState.value
                 val textLen = layoutResult.layoutInput.text.length
+                val isRtl = layoutResult.layoutInput.layoutDirection == LayoutDirection.Rtl
                 inlinePlaceables.forEach { (span, placeable) ->
                     if (textLen == 0) return@forEach
 
@@ -144,10 +145,15 @@ internal fun InlineContentHost(
                     val x = boundingBox.left.roundToInt()
 
                     if (span.style is MarkupStyle.Link || span.style is MarkupStyle.Mention) {
-                        placeable.placeRelative(x, lineTop - scrollY)
+                        placeable.place(x, lineTop - scrollY)
                     } else {
+                        val cbX = if (isRtl) {
+                            (layoutResult.size.width - placeable.width).coerceAtLeast(0)
+                        } else {
+                            0
+                        }
                         val y = lineTop + (lineHeight - placeable.height) / 2 - scrollY
-                        placeable.placeRelative(x, y)
+                        placeable.place(cbX, y)
                     }
                 }
 

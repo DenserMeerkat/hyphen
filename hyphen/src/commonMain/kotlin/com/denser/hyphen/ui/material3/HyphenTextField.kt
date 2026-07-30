@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -135,6 +136,7 @@ fun HyphenTextField(
     showDefaultSuggestionsPopup: Boolean = true,
     onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
     clipboardLabel: String = "Markdown Text",
+    layoutDirection: LayoutDirection? = null,
     onTextChange: ((String) -> Unit)? = null,
     onMarkdownChange: ((String) -> Unit)? = null,
 ) {
@@ -177,6 +179,7 @@ fun HyphenTextField(
             onTextLayout = onTextLayout,
             clipboardLabel = clipboardLabel,
             horizontalPadding = horizontalPadding,
+            layoutDirection = layoutDirection,
             onTextChange = onTextChange,
             onMarkdownChange = onMarkdownChange,
             decorator = TextFieldDefaults.decorator(
