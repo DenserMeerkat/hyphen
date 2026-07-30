@@ -31,10 +31,10 @@
 
 ## Key Pillars
 
-*   🚀 **Markdown-Native State**: Unlike traditional rich text editors, Markdown is the source of truth. The editor state is built directly around Markdown, ensuring flawless serialization and zero conversion loss.
+*   🚀 **Markdown-Native State**: Markdown is the source of truth. The editor state is built directly around Markdown, ensuring consistent serialization.
 *   ✍️ **Instant Inline Formatting**: Type Markdown tags directly (`**`, `_`, `#`) and watch them transform instantly under the cursor. No preview split-panes, no mode-switching.
-*   📋 **Smart Clipboard Serialization**: Copying formatted content automatically serializes it into clean Markdown, allowing users to paste flawlessly into Slack, Discord, GitHub, or Obsidian.
-*   🏷️ **First-Class Triggers & Autocomplete**: Define trigger symbols like `@` or `#` to invoke suggestion overlays with built-in hardware keyboard navigation, hover cards, and context menus.
+*   📋 **Smart Clipboard Serialization**: Copying formatted content automatically serializes it into Markdown, allowing users to paste directly into Slack, Discord, GitHub, or Obsidian.
+*   🏷️ **Triggers & Autocomplete**: Define trigger symbols like `@` or `#` to invoke suggestion overlays with built-in hardware keyboard navigation, hover cards, and context menus.
 
 ---
 
@@ -209,7 +209,26 @@ HyphenTextField(
 )
 ```
 
-Both composables accept the same `styleConfig`, `mentionConfig`, `triggerPopup`, `onTextChange`, `onMarkdownChange`, and `clipboardLabel` parameters. The Material3 variant additionally accepts `colors`, `shape`, `labelPosition`, `contentPadding`, and all standard decoration slots.
+Both composables accept the same `styleConfig`, `mentionConfig`, `triggerPopup`, `onTextChange`, `onMarkdownChange`, `layoutDirection`, and `clipboardLabel` parameters. The Material3 variant additionally accepts `colors`, `shape`, `labelPosition`, `contentPadding`, and all standard decoration slots.
+
+---
+
+## 🌐 Right-to-Left (RTL) & Bi-directional (Bidi) Support
+
+Hyphen supports Right-to-Left (RTL) languages (Arabic, Hebrew, Persian):
+
+```kotlin
+// Inherit direction from local context (Default)
+HyphenBasicTextEditor(
+    state = state,
+)
+
+// Explicit direction override
+HyphenBasicTextEditor(
+    state = state,
+    layoutDirection = LayoutDirection.Rtl,
+)
+```
 
 ---
 
@@ -273,7 +292,7 @@ state.redo()
 
 ### Mentions & Autocomplete
 
-Hyphen provides a powerful trigger-based autocomplete and interaction framework for mentions (such as @users), hashtags (such as #features), or custom template variables.
+Hyphen supports trigger-based autocomplete and interaction for mentions (such as @users), hashtags (such as #features), or custom template variables.
 
 #### 1. Define Triggers
 
