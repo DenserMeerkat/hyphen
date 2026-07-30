@@ -165,7 +165,7 @@ fun PlaygroundScaffold(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Wide Layout: JetBrains Activity Rail | Left Tool Drawer | Main Workspace | Bottom Terminal
+// Wide Layout: Main Workspace | Right Tool Drawer | Right Activity Rail
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -177,50 +177,6 @@ private fun IdePlatformLayout(
     isAndroid: Boolean,
 ) {
     Row(modifier = Modifier.fillMaxSize()) {
-        // ── Left Activity Rail (JetBrains / Fleet style) ─────────────────
-        LeftActivityRail(playgroundState = playgroundState)
-
-        VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-        // ── Collapsible Left Tool Drawer (Styles & Configs) ───────────────
-        AnimatedVisibility(
-            visible = playgroundState.activeLeftTool != null,
-            enter = expandHorizontally(tween(200)) + fadeIn(tween(200)),
-            exit = shrinkHorizontally(tween(180)) + fadeOut(tween(180)),
-        ) {
-            Row(modifier = Modifier.fillMaxHeight()) {
-                Box(
-                    modifier = Modifier
-                        .width(320.dp)
-                        .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow),
-                ) {
-                    when (playgroundState.activeLeftTool) {
-                        LeftToolWindow.StyleConfig -> StyleConfigPanel(
-                            state = playgroundState,
-                            modifier = Modifier.fillMaxSize(),
-                            verticalScrollbar = verticalScrollbar,
-                        )
-
-                        LeftToolWindow.EditorConfig -> EditorConfigPanel(
-                            state = playgroundState,
-                            modifier = Modifier.fillMaxSize(),
-                            verticalScrollbar = verticalScrollbar,
-                        )
-
-                        LeftToolWindow.StateInspector -> StateInspectorPanel(
-                            state = hyphenState,
-                            modifier = Modifier.fillMaxSize(),
-                            verticalScrollbar = verticalScrollbar,
-                        )
-
-                        null -> {}
-                    }
-                }
-                VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-            }
-        }
-
         // ── Central Workspace (Editor + Bottom Terminal Toolwindow) ───────
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
             // Editor Workspace Window
@@ -262,15 +218,59 @@ private fun IdePlatformLayout(
                 }
             }
         }
+
+        // ── Collapsible Right Tool Drawer (Styles & Configs) ───────────────
+        AnimatedVisibility(
+            visible = playgroundState.activeLeftTool != null,
+            enter = expandHorizontally(tween(200)) + fadeIn(tween(200)),
+            exit = shrinkHorizontally(tween(180)) + fadeOut(tween(180)),
+        ) {
+            Row(modifier = Modifier.fillMaxHeight()) {
+                VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                ) {
+                    when (playgroundState.activeLeftTool) {
+                        LeftToolWindow.StyleConfig -> StyleConfigPanel(
+                            state = playgroundState,
+                            modifier = Modifier.fillMaxSize(),
+                            verticalScrollbar = verticalScrollbar,
+                        )
+
+                        LeftToolWindow.EditorConfig -> EditorConfigPanel(
+                            state = playgroundState,
+                            modifier = Modifier.fillMaxSize(),
+                            verticalScrollbar = verticalScrollbar,
+                        )
+
+                        LeftToolWindow.StateInspector -> StateInspectorPanel(
+                            state = hyphenState,
+                            modifier = Modifier.fillMaxSize(),
+                            verticalScrollbar = verticalScrollbar,
+                        )
+
+                        null -> {}
+                    }
+                }
+            }
+        }
+
+        VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+        // ── Right Activity Rail ─────────────────────────────────────────
+        RightActivityRail(playgroundState = playgroundState)
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Left Activity Rail Component (Top items control Left Drawer, Bottom items control Bottom Terminal)
+// Right Activity Rail Component
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun LeftActivityRail(playgroundState: PlaygroundState) {
+private fun RightActivityRail(playgroundState: PlaygroundState) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = Modifier.fillMaxHeight().width(56.dp),
