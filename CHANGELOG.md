@@ -1,3 +1,16 @@
+## [0.7.0-alpha01] - 2026-07-30
+
+### 🚀 Added
+* **RTL Support**: Added right-to-left layout direction support across text editing, formatting, and UI elements.
+
+### 🛠️ Fixed
+* **Smart Enter Cursor Boundary**: Ensured smart enter is bypassed when pressing Enter while cursor is positioned at or before line/list prefixes.
+
+### 🎨 Refactored
+* **Sample App Enhancements**: Expanded sample application with additional layout and styling configuration options.
+
+---
+
 ## [0.6.0-alpha05] - 2026-07-26
 
 ### 🛠️ Fixed
