@@ -90,24 +90,36 @@ fun StateInspectorPanel(
                 if (horizontal) {
                     Row(
                         Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Box(Modifier.weight(1f)) { selectionGroup() }
-                        Box(Modifier.weight(1f)) { historyGroup() }
-                    }
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Box(Modifier.weight(1f)) { statsGroup() }
+                        Column(
+                            Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            selectionGroup()
+                            historyGroup()
+                        }
+                        Column(
+                            Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            statsGroup()
+                            StyleOverridesList(state)
+                        }
+                        Column(
+                            Modifier.weight(1.2f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            ActiveSpansList(state)
+                        }
                     }
                 } else {
                     selectionGroup()
                     historyGroup()
                     statsGroup()
+                    StyleOverridesList(state)
+                    ActiveSpansList(state)
                 }
-                StyleOverridesList(state)
-                ActiveSpansList(state)
                 Spacer(Modifier.height(4.dp))
             }
             verticalScrollbar?.invoke(
@@ -121,48 +133,4 @@ fun StateInspectorPanel(
     }
 }
 
-
-@Composable
-fun MarkdownPreviewPanel(
-    markdown: String,
-    modifier: Modifier = Modifier,
-    verticalScrollbar: VerticalScrollbarSlot?,
-) {
-    val scrollState = rememberScrollState()
-
-    Column(modifier = modifier) {
-        PanelHeader(
-            dot = MaterialTheme.colorScheme.tertiary,
-            label = "Markdown output",
-        )
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLowest),
-        ) {
-            SelectionContainer(modifier = Modifier.fillMaxSize()) {
-                Text(
-                    text = markdown.ifEmpty { "// empty" },
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = FontFamily.Monospace,
-                        color = if (markdown.isEmpty())
-                            MaterialTheme.colorScheme.outlineVariant
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(scrollState)
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                )
-            }
-            verticalScrollbar?.invoke(
-                scrollState,
-                Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight()
-                    .padding(vertical = 4.dp, horizontal = 2.dp),
-            )
-        }
-    }
-}
+

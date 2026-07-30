@@ -20,14 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.denser.hyphen.model.MarkupStyle
-import com.denser.hyphen.ui.style.HyphenStyleConfig
 import hyphen.sample.shared.generated.resources.Res
 import hyphen.sample.shared.generated.resources.bolt_24dp
 import hyphen.sample.shared.generated.resources.content_copy_24dp
@@ -39,26 +36,6 @@ import hyphen.sample.shared.generated.resources.refresh_24dp
 import hyphen.sample.shared.generated.resources.restore_page_24dp
 import hyphen.sample.shared.generated.resources.search_24dp
 import org.jetbrains.compose.resources.painterResource
-
-fun getSampleStyleConfig(): HyphenStyleConfig {
-    return HyphenStyleConfig(
-        mentionStyles = mapOf(
-            "user" to SpanStyle(
-                color = Color(0xFF1976D2),
-                fontWeight = FontWeight.Bold
-            ),
-            "tag" to SpanStyle(
-                color = Color(0xFF388E3C),
-                fontWeight = FontWeight.Bold
-            ),
-            "var" to SpanStyle(
-                color = Color(0xFF7B1FA2),
-                background = Color(0xFF7B1FA2).copy(alpha = 0.1f),
-                fontWeight = FontWeight.Medium
-            )
-        )
-    )
-}
 
 @Composable
 fun SampleMentionDropdown(
