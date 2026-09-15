@@ -31,11 +31,19 @@ enum class BottomToolWindow {
     MarkdownOutput,
 }
 
+enum class AppLanguage {
+    English,
+    Arabic,
+}
+
 class PlaygroundState {
 
     // ── Editor mode ──────────────────────────────────────────────────────────
     var editorMode by mutableStateOf(EditorMode.BasicEditor)
     var textFieldVariant by mutableStateOf(TextFieldVariant.Filled)
+
+    // ── Language & Direction ──────────────────────────────────────────────────
+    var currentLanguage by mutableStateOf(AppLanguage.English)
 
     // ── Tool Windows (Independent, IntelliJ style) ───────────────────────────
     var activeLeftTool by mutableStateOf<LeftToolWindow?>(LeftToolWindow.StyleConfig)
@@ -244,6 +252,7 @@ class PlaygroundState {
 
     fun resetEditorConfig() {
         editorMode = EditorMode.BasicEditor
+        currentLanguage = AppLanguage.English
         isRtl = false
         isReadOnly = false
         isEnabled = true

@@ -160,8 +160,41 @@ fun EditorConfigPanel(
                     }
                 }
 
-                // ── Behaviour toggles ─────────────────────────────────────
-                ConfigSection("Behaviour") {
+                // ── Language & Layout Direction ────────────────────────────
+                ConfigSection("Language & Direction") {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Sample Language",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        val languages = listOf(
+                            com.denser.hyphen.sample.shared.AppLanguage.English to "English",
+                            com.denser.hyphen.sample.shared.AppLanguage.Arabic to "العربية (Arabic)",
+                        )
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            languages.forEachIndexed { i, (lang, label) ->
+                                SegmentedButton(
+                                    selected = state.currentLanguage == lang,
+                                    onClick = {
+                                        state.currentLanguage = lang
+                                        state.isRtl = (lang == com.denser.hyphen.sample.shared.AppLanguage.Arabic)
+                                    },
+                                    shape = SegmentedButtonDefaults.itemShape(i, languages.size),
+                                    label = {
+                                        Text(
+                                            text = label,
+                                            style = MaterialTheme.typography.labelSmall,
+                                        )
+                                    },
+                                )
+                            }
+                        }
+                    }
+
                     ToggleRow("RTL layout", state.isRtl) { state.isRtl = it }
                     ToggleRow("Read-only", state.isReadOnly) { state.isReadOnly = it }
                     ToggleRow("Enabled", state.isEnabled) { state.isEnabled = it }

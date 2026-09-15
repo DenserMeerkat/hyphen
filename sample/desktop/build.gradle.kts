@@ -19,6 +19,7 @@ compose.desktop {
         mainClass = "com.denser.hyphen.sample.desktop.MainKt"
 
         nativeDistributions {
+            packageVersion = "1.0.0"
             targetFormats(
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg,
                 org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi,

@@ -63,7 +63,9 @@ fun HyphenSampleApp(
                 if (draft != null) {
                     hyphenState.setMarkdown(draft.text)
                 } else {
-                    hyphenState.setMarkdown(DEMO_TEXT)
+                    hyphenState.setMarkdown(
+                        if (playgroundState.currentLanguage == AppLanguage.Arabic) DEMO_TEXT_ARABIC else DEMO_TEXT
+                    )
                 }
             } catch (e: Exception) {
                 snackbarHostState.showSnackbar("DB error: ${e.message}")
@@ -111,7 +113,9 @@ fun HyphenSampleApp(
         {
             scope.launch {
                 database?.hyphenDao()?.clearDraft()
-                hyphenState.setMarkdown(DEMO_TEXT)
+                hyphenState.setMarkdown(
+                    if (playgroundState.currentLanguage == AppLanguage.Arabic) DEMO_TEXT_ARABIC else DEMO_TEXT
+                )
                 snackbarHostState.showSnackbar("Reset to demo text")
             }
             Unit
@@ -161,4 +165,26 @@ private val DEMO_TEXT = """
     - [x] Checklist task 2
 
     [@Alice](user:Alice) [#tag](tag:tag) [{variable}](var:variable)
+""".trimIndent()
+
+private val DEMO_TEXT_ARABIC = """
+    # عنوان 1
+    ## عنوان 2
+    ### عنوان 3
+    **العناوين مدعومة من H1 إلى H6**
+
+    هذه فقرة تحتوي على **خط عريض**، *خط مائل*، __تحته خط__، ~~مشطوب~~، ==تمييز==، `كود برمجي`، و [روابط](https://github.com/densermeerkat/hyphen).
+
+    > هذا اقتباس. يمكن أيضاً كتابة نص **عريض** داخل الاقتباسات.
+
+    - عنصر قائمة 1
+    - عنصر قائمة 2
+
+    1. عنصر قائمة مرقمة 1
+    2. عنصر قائمة مرقمة 2
+
+    - [ ] قائمة مهام 1
+    - [x] قائمة مهام 2
+
+    [@أليس](user:Alice) [#وسم](tag:tag) [{متغير}](var:variable)
 """.trimIndent()
