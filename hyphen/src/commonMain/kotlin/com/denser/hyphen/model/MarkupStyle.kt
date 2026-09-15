@@ -119,4 +119,12 @@ sealed interface MarkupStyle {
      * @property scheme The URI scheme identifying the entity type (e.g., "mention", "tag").
      */
     data class Mention(val id: String, val display: String, val scheme: String = "mention") : MarkupStyle
+
+    /**
+     * Opaque passthrough region for unsupported Markdown constructs (e.g. fenced code, tables).
+     * Serialized verbatim without delimiter modifications.
+     *
+     * @property rawMarkdown The raw Markdown string to emit verbatim during serialization.
+     */
+    data class Passthrough(val rawMarkdown: String) : MarkupStyle
 }

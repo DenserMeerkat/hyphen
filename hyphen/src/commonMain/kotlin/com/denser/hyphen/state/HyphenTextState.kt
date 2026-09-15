@@ -20,7 +20,9 @@ import com.denser.hyphen.model.MarkupStyleRange
 import com.denser.hyphen.model.StyleSets
 import com.denser.hyphen.model.TriggerConfig
 import com.denser.hyphen.model.TriggerState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
 
 /**
  * Hoisted state for a Hyphen markdown text editor.
@@ -114,6 +116,7 @@ class HyphenTextState(
     private val selectionManager = SelectionManager()
     private var isUndoingOrRedoing = false
     private var lastCursorPosition = 0
+    private var _cachedMarkdown: String? = null
 
     /**
      * The link span currently being edited in a dialog.
@@ -179,7 +182,11 @@ class HyphenTextState(
             finalDisplay = "$finalDisplay$endMarker"
         }
 
-        val actualDisplay = if (active.config.addSpaceOnCompletion) "$finalDisplay " else finalDisplay
+        val trailingSpace = if (active.config.addSpaceOnCompletion) {
+            val isAtLineEnd = end == text.length || (end < text.length && text[end] == '\n')
+            if (isAtLineEnd) "\u00A0" else " "
+        } else ""
+        val actualDisplay = "$finalDisplay$trailingSpace"
         
         saveSnapshot(force = true)
         
@@ -201,8 +208,7 @@ class HyphenTextState(
         }
         updated.add(newSpan)
         
-        _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(updated))
+        replaceSpans(SpanManager.consolidateSpans(updated))
         
         updateActiveTrigger(null)
 
@@ -395,10 +401,31 @@ class HyphenTextState(
 
         val previousText = textFieldState.text.toString()
         var newText = buffer.asCharSequence().toString()
-        
+
+        var rawLengthDifference = newText.length - previousText.length
+        var cursorPosition = buffer.selection.start
+        var changeOrigin = SpanManager.resolveChangeOrigin(
+            cursorPosition,
+            rawLengthDifference,
+            previousText.length
+        )
+
         var cleanedText = newText
         var modified = false
-        for (i in cleanedText.indices) {
+
+        val scanStart: Int
+        val scanEnd: Int
+        if (kotlin.math.abs(rawLengthDifference) > 1) {
+            val editStart = if (rawLengthDifference > 0) cursorPosition - rawLengthDifference else cursorPosition
+            scanStart = cleanedText.lastIndexOf('\n', (editStart - 1).coerceAtLeast(0)).let { if (it == -1) 0 else it + 1 }
+            val editEnd = if (rawLengthDifference > 0) cursorPosition else cursorPosition - rawLengthDifference
+            scanEnd = cleanedText.indexOf('\n', editEnd.coerceAtMost(cleanedText.length)).let { if (it == -1) cleanedText.length else it }
+        } else {
+            scanStart = cleanedText.lastIndexOf('\n', (cursorPosition - 1).coerceAtLeast(0)).let { if (it == -1) 0 else it + 1 }
+            scanEnd = cleanedText.indexOf('\n', cursorPosition).let { if (it == -1) cleanedText.length else it }
+        }
+
+        for (i in scanStart until scanEnd.coerceAtMost(cleanedText.length)) {
             if (cleanedText[i] == '\u00A0') {
                 val isStillAtLineEnd = i + 1 == cleanedText.length || cleanedText[i + 1] == '\n'
                 if (!isStillAtLineEnd) {
@@ -420,14 +447,6 @@ class HyphenTextState(
             buffer.selection = savedSelection
             newText = cleanedText
         }
-
-        var rawLengthDifference = newText.length - previousText.length
-        var cursorPosition = buffer.selection.start
-        var changeOrigin = SpanManager.resolveChangeOrigin(
-            cursorPosition,
-            rawLengthDifference,
-            previousText.length
-        )
 
         val mentionSpans = _spans.filter { it.style is MarkupStyle.Mention && it.style.id.isNotEmpty() }
         if (mentionSpans.isNotEmpty() && previousText != newText) {
@@ -503,6 +522,10 @@ class HyphenTextState(
             buffer.asCharSequence().substring(start, buffer.selection.start).contains('\n')
         } else false
 
+        if (isNewlineInsertion) {
+            pendingOverrides = pendingOverrides.filterKeys { it !in StyleSets.allHeadings }
+        }
+
         val availableInlineStyles = StyleSets.allInline
         val activeInlineStyles = availableInlineStyles.filter { style ->
             val hasStyleAtCursor = when {
@@ -515,13 +538,36 @@ class HyphenTextState(
             hasStyleAtCursor && (style !in StyleSets.allHeadings || pendingOverrides[style] == true)
         }
 
-        val markdownResult = MarkdownProcessor.process(newText, cursorPosition, triggerConfigs)
+        val parseRange: IntRange? = if (!isPasting && triggerConfigs.isEmpty()) {
+            val lineStart = newText.lastIndexOf('\n', (changeOrigin - 1).coerceAtLeast(0))
+                .let { if (it == -1) 0 else it + 1 }
+            val lineEnd = newText.indexOf('\n', cursorPosition)
+                .let { if (it == -1) newText.length else it }
+            val safeLineEnd = maxOf(lineStart, lineEnd)
+            lineStart until safeLineEnd
+        } else {
+            null
+        }
+
+        val markdownResult = MarkdownProcessor.process(newText, cursorPosition, triggerConfigs, parseRange)
         var updatedSpans: List<MarkupStyleRange>
 
         if (markdownResult != null) {
+            val rangeEnd = if (parseRange != null) {
+                if (parseRange.isEmpty()) parseRange.first else parseRange.last + 1
+            } else 0
+
+            val baseSpansForMerge: List<MarkupStyleRange> = if (parseRange != null) {
+                safeSpans.filter { span ->
+                    span.end <= parseRange.first || span.start >= rangeEnd
+                }
+            } else {
+                safeSpans
+            }
+
             val cleanLengthDifference = markdownResult.cleanText.length - previousText.length
 
-            var baseSpans = SpanManager.shiftSpans(safeSpans, changeOrigin, cleanLengthDifference)
+            var baseSpans = SpanManager.shiftSpans(baseSpansForMerge, changeOrigin, cleanLengthDifference)
 
             if (cleanLengthDifference > 0) {
                 val insertEnd = changeOrigin + cleanLengthDifference
@@ -659,8 +705,7 @@ class HyphenTextState(
             }
         }
 
-        _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(finalSpans))
+        replaceSpans(SpanManager.consolidateSpans(finalSpans))
     }
 
     // -------------------------------------------------------------------------
@@ -724,8 +769,7 @@ class HyphenTextState(
                 val (toggled, newSpans) = BlockStyleManager.toggleCheckbox(this, spansList, start, strictPrefixCheck = false)
                 if (toggled) {
                     anyToggled = true
-                    _spans.clear()
-                    _spans.addAll(newSpans)
+                    replaceSpans(newSpans)
                 }
             }
         }
@@ -734,8 +778,7 @@ class HyphenTextState(
             val result = MarkdownProcessor.process(text, selStart)
             val inlineSpans = _spans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
 
-            _spans.clear()
-            _spans.addAll(
+            replaceSpans(
                 if (result != null) {
                     SpanManager.consolidateSpans(SpanManager.mergeSpans(inlineSpans, result.newSpans))
                 } else {
@@ -785,8 +828,7 @@ class HyphenTextState(
             }
         }
 
-        _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(updatedSpans))
+        replaceSpans(SpanManager.consolidateSpans(updatedSpans))
         clearPendingOverrides()
         selectionManager.clear()
     }
@@ -814,8 +856,7 @@ class HyphenTextState(
             val updated = _spans.toMutableList()
             updated.add(newSpan)
             
-            _spans.clear()
-            _spans.addAll(SpanManager.consolidateSpans(updated))
+            replaceSpans(SpanManager.consolidateSpans(updated))
             
             activeLinkForEditing = _spans.find { it.style == newLinkStyle && it.start == selStart } ?: newSpan
         } else {
@@ -832,8 +873,7 @@ class HyphenTextState(
             val updated = shiftedSpans.toMutableList()
             updated.add(newSpan)
             
-            _spans.clear()
-            _spans.addAll(SpanManager.consolidateSpans(updated))
+            replaceSpans(SpanManager.consolidateSpans(updated))
             
             activeLinkForEditing = _spans.find { it.style == newLinkStyle && it.start == selStart } ?: newSpan
         }
@@ -867,8 +907,7 @@ class HyphenTextState(
             end = span.start + newText.length
         )
         
-        _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(shiftedSpans + updatedSpan))
+        replaceSpans(SpanManager.consolidateSpans(shiftedSpans + updatedSpan))
         selectionManager.clear()
     }
  
@@ -902,6 +941,15 @@ class HyphenTextState(
         }
 
         if (pendingOverrides.containsKey(style)) return pendingOverrides[style] == true
+
+        if (style in StyleSets.allHeadings) {
+            val (selStart, selEnd) = resolvedSelection()
+            val startLine = text.lastIndexOf('\n', (selStart - 1).coerceAtLeast(0)).let { if (it == -1) 0 else it + 1 }
+            val endLine = text.indexOf('\n', selEnd).let { if (it == -1) text.length else it }
+            return _spans.any { span ->
+                span.style == style && span.start <= startLine && span.end >= endLine
+            }
+        }
 
         val (selStart, selEnd) = resolvedSelection()
         return if (selStart == selEnd) {
@@ -995,13 +1043,22 @@ class HyphenTextState(
         val safeStart = start.coerceIn(0, text.length)
         val safeEnd = end.coerceIn(safeStart, text.length)
 
+        if (safeStart == 0 && safeEnd == text.length) {
+            _cachedMarkdown?.let { return it }
+        }
+
         val exportSpans = spans.filter { span ->
             val style = span.style
             if (style is MarkupStyle.Mention) style.id.isNotEmpty() else true
         }
         
         val serialized = MarkdownSerializer.serialize(textFieldState.text.toString(), exportSpans, safeStart, safeEnd)
-        return serialized.replace('\u00A0', ' ')
+        val result = serialized.replace('\u00A0', ' ')
+
+        if (safeStart == 0 && safeEnd == text.length) {
+            _cachedMarkdown = result
+        }
+        return result
     }
 
     /**
@@ -1020,10 +1077,47 @@ class HyphenTextState(
             }
         }
 
-        _spans.clear()
-        if (markdownResult != null) {
-            _spans.addAll(SpanManager.consolidateSpans(markdownResult.newSpans))
+        replaceSpans(
+            if (markdownResult != null) SpanManager.consolidateSpans(markdownResult.newSpans)
+            else emptyList()
+        )
+
+        clearPendingOverrides()
+        selectionManager.clear()
+        historyManager.clear()
+    }
+
+    /**
+     * Same as [setMarkdown] but runs the markdown parsing on [Dispatchers.Default],
+     * then applies the result on the calling (main) thread. Call this from a coroutine
+     * scope when loading large documents to avoid blocking the UI thread.
+     *
+     * Example (from a ViewModel):
+     * ```kotlin
+     * viewModelScope.launch {
+     *     state.setMarkdownAsync(loadedMarkdownString)
+     * }
+     * ```
+     *
+     * @param markdown The Markdown string to parse and display.
+     */
+    suspend fun setMarkdownAsync(markdown: String) {
+        val markdownResult = withContext(Dispatchers.Default) {
+            MarkdownProcessor.process(markdown, 0, triggerConfigs)
         }
+
+        textFieldState.edit {
+            if (markdownResult != null) {
+                replace(0, length, markdownResult.cleanText)
+            } else {
+                replace(0, length, markdown)
+            }
+        }
+
+        replaceSpans(
+            if (markdownResult != null) SpanManager.consolidateSpans(markdownResult.newSpans)
+            else emptyList()
+        )
 
         clearPendingOverrides()
         selectionManager.clear()
@@ -1119,8 +1213,7 @@ class HyphenTextState(
         }
         val result = MarkdownProcessor.process(text, selection.start)
         val inlineSpans = shiftedSpans.filterNot { BlockStyleManager.isBlockStyle(it.style) }
-        _spans.clear()
-        _spans.addAll(
+        replaceSpans(
             if (result != null) {
                 SpanManager.consolidateSpans(SpanManager.mergeSpans(inlineSpans, result.newSpans))
             } else {
@@ -1153,7 +1246,8 @@ class HyphenTextState(
 
         var newSpans = SpanManager.toggleStyle(_spans, style, selStart, selEnd)
 
-        if (isHeading && !hasStyle(style)) {
+        val hasHeadingSpan = _spans.any { it.style == style && it.start <= selStart && it.end >= selEnd }
+        if (isHeading && !hasHeadingSpan) {
             val otherHeadings = StyleSets.allHeadings.filter { it != style }
 
             newSpans = newSpans.flatMap { span ->
@@ -1195,11 +1289,24 @@ class HyphenTextState(
             }
         }
 
-        _spans.clear()
-        _spans.addAll(SpanManager.consolidateSpans(newSpans))
+        replaceSpans(SpanManager.consolidateSpans(newSpans))
+
+        if (isHeading) {
+            pendingOverrides = pendingOverrides.filterKeys { it !in StyleSets.allHeadings }
+        }
     }
 
     private fun getCurrentSnapshot() = EditorSnapshot(text, selection, _spans.toList())
+
+    /**
+     * Replaces the full span list atomically and invalidates the serialized Markdown cache.
+     * All span mutations must go through this method to keep the cache consistent.
+     */
+    internal fun replaceSpans(newSpans: List<MarkupStyleRange>) {
+        _cachedMarkdown = null
+        _spans.clear()
+        _spans.addAll(newSpans)
+    }
 
     internal fun saveSnapshot(force: Boolean = false) {
         historyManager.saveSnapshot(getCurrentSnapshot(), force)
@@ -1211,8 +1318,7 @@ class HyphenTextState(
             replace(0, length, snapshot.text)
             this.selection = snapshot.selection
         }
-        _spans.clear()
-        _spans.addAll(snapshot.spans)
+        replaceSpans(snapshot.spans)
         clearPendingOverrides()
         isUndoingOrRedoing = false
     }
@@ -1240,8 +1346,4 @@ fun rememberHyphenTextState(
  * updates in a ViewModel or applying debouncing before saving to a database.
  */
 val HyphenTextState.markdownFlow: Flow<String>
-    get() = snapshotFlow {
-        val currentText = this.text
-        val currentSpans = this.spans.toList()
-        MarkdownSerializer.serialize(currentText, currentSpans, 0, currentText.length)
-    }
+    get() = snapshotFlow { this.toMarkdown() }

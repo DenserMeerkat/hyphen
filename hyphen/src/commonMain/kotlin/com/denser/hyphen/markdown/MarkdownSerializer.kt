@@ -47,7 +47,20 @@ object MarkdownSerializer {
     }
 
     fun serialize(text: String, spans: List<MarkupStyleRange>): String {
-        val builder = StringBuilder(text)
+        var currentText = text
+        val passthroughSpans = spans
+            .filter { it.style is MarkupStyle.Passthrough }
+            .sortedByDescending { it.start }
+
+        for (pSpan in passthroughSpans) {
+            val style = pSpan.style as MarkupStyle.Passthrough
+            val safeStart = pSpan.start.coerceIn(0, currentText.length)
+            val safeEnd = pSpan.end.coerceIn(safeStart, currentText.length)
+            currentText = currentText.replaceRange(safeStart, safeEnd, style.rawMarkdown)
+        }
+
+        val builder = StringBuilder(currentText)
+
         val insertions = mutableListOf<Insertion>()
 
         for (span in spans) {

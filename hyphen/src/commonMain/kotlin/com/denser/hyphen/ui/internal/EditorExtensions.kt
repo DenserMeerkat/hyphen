@@ -27,6 +27,7 @@ import androidx.compose.ui.input.key.isAltPressed
 import androidx.compose.ui.platform.Clipboard
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.em
 import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.StyleSets
@@ -151,6 +152,10 @@ internal fun applyMarkdownStyles(
     buffer: TextFieldBuffer
 ) {
     with(buffer) {
+        val visualOffsetCache = HashMap<Int, Int>(state.spans.size * 2 + 4)
+        fun cachedToVisual(offset: Int): Int =
+            visualOffsetCache.getOrPut(offset) { HyphenOffsetMapper.toVisual(offset, state) }
+
         val needsBaselineAnchor = state.spans.any { it.start == 0 && it.style in StyleSets.allHeadings }
         if (needsBaselineAnchor) {
             insert(0, "\u200B")
@@ -214,8 +219,8 @@ internal fun applyMarkdownStyles(
         val currentTextSeq = asCharSequence()
 
         state.spans.forEach { span ->
-            val visualStart = HyphenOffsetMapper.toVisual(span.start, state).coerceIn(0, length)
-            val visualEnd = HyphenOffsetMapper.toVisual(span.end, state).coerceIn(0, length)
+            val visualStart = cachedToVisual(span.start).coerceIn(0, length)
+            val visualEnd = cachedToVisual(span.end).coerceIn(0, length)
             if (visualStart >= visualEnd) return@forEach
 
             when (span.style) {
@@ -270,6 +275,11 @@ internal fun applyMarkdownStyles(
                 is MarkupStyle.H4 -> addStyle(styleConfig.h4Style, visualStart, visualEnd)
                 is MarkupStyle.H5 -> addStyle(styleConfig.h5Style, visualStart, visualEnd)
                 is MarkupStyle.H6 -> addStyle(styleConfig.h6Style, visualStart, visualEnd)
+                is MarkupStyle.Passthrough -> addStyle(
+                    SpanStyle(fontFamily = FontFamily.Monospace),
+                    visualStart,
+                    visualEnd
+                )
             }
         }
     }
@@ -371,11 +381,15 @@ internal fun Modifier.drawBlockquotes(
     val textLen = layout.layoutInput.text.length
     val scrollY = scrollState.value
 
+    val bqVisualCache = HashMap<Int, Int>()
+    fun cachedBqToVisual(offset: Int): Int =
+        bqVisualCache.getOrPut(offset) { HyphenOffsetMapper.toVisual(offset, state) }
+
     val intervals = state.spans
         .filter { it.style is MarkupStyle.Blockquote }
         .mapNotNull { span ->
-            val visualStart = HyphenOffsetMapper.toVisual(span.start, state).coerceIn(0, textLen)
-            val visualEnd = HyphenOffsetMapper.toVisual(span.end, state).coerceIn(0, textLen)
+            val visualStart = cachedBqToVisual(span.start).coerceIn(0, textLen)
+            val visualEnd = cachedBqToVisual(span.end).coerceIn(0, textLen)
             if (visualStart > visualEnd) return@mapNotNull null
 
             val startLine = layout.getLineForOffset(visualStart)

@@ -16,7 +16,8 @@ internal object SpanManager {
         val deleteEnd = if (lengthDifference < 0) changeStart - lengthDifference else changeStart
 
         return currentSpans.mapNotNull { span ->
-            val isAtomic = span.style is MarkupStyle.Mention || span.style is MarkupStyle.Link
+            val isAtomic = span.style is MarkupStyle.Mention || span.style is MarkupStyle.Link ||
+                           span.style is MarkupStyle.Passthrough
             
             when {
                 changeStart > span.end || (changeStart == span.end && (isAtomic || !push)) -> span
@@ -69,7 +70,8 @@ internal object SpanManager {
             if (sorted.isEmpty()) return@forEach
 
             val isAtomic = style is MarkupStyle.Mention || style is MarkupStyle.Link || 
-                          style is MarkupStyle.CheckboxChecked || style is MarkupStyle.CheckboxUnchecked
+                          style is MarkupStyle.CheckboxChecked || style is MarkupStyle.CheckboxUnchecked ||
+                          style is MarkupStyle.Passthrough
             
             if (isAtomic) {
                 consolidated.addAll(sorted.distinctBy { Triple(it.start, it.end, it.style) })

@@ -18,8 +18,31 @@ internal object MarkdownProcessor {
     fun process(
         rawText: String, 
         cursorPosition: Int,
-        triggerConfigs: List<TriggerConfig> = emptyList()
+        triggerConfigs: List<TriggerConfig> = emptyList(),
+        parseRange: IntRange? = null
     ): ProcessResult? {
+        if (parseRange != null) {
+            val rangeStart = parseRange.first.coerceIn(0, rawText.length)
+            val rangeEnd = if (parseRange.isEmpty()) rangeStart else (parseRange.last + 1).coerceIn(rangeStart, rawText.length)
+            val lineText = rawText.substring(rangeStart, rangeEnd)
+
+            val localCursor = (cursorPosition - rangeStart).coerceIn(0, lineText.length)
+
+            val localResult = process(lineText, localCursor, triggerConfigs, parseRange = null)
+                ?: return null
+
+            val shiftedSpans = localResult.newSpans.map { span ->
+                span.copy(start = span.start + rangeStart, end = span.end + rangeStart)
+            }
+
+            return ProcessResult(
+                cleanText = rawText.substring(0, rangeStart) + localResult.cleanText + rawText.substring(rangeEnd),
+                newSpans = shiftedSpans,
+                newCursorPosition = localResult.newCursorPosition + rangeStart,
+                explicitlyClosedStyles = localResult.explicitlyClosedStyles
+            )
+        }
+
         var processedText = rawText
         var extractedSpans = listOf<MarkupStyleRange>()
         var currentCursor = cursorPosition
@@ -46,9 +69,11 @@ internal object MarkdownProcessor {
                     val isAtomic = existing.style is MarkupStyle.Link || 
                                    existing.style is MarkupStyle.Mention || 
                                    existing.style is MarkupStyle.InlineCode ||
+                                   existing.style is MarkupStyle.Passthrough ||
                                    style is MarkupStyle.Link ||
                                    style is MarkupStyle.Mention ||
                                    style is MarkupStyle.InlineCode ||
+                                   style is MarkupStyle.Passthrough ||
                                    existing.style::class == style::class
                     
                     if (isAtomic) {
@@ -121,6 +146,22 @@ internal object MarkdownProcessor {
                 match = regex.find(processedText)
             }
         }
+
+        fun addPassthrough(regex: Regex) {
+            regex.findAll(processedText).forEach { match ->
+                val rawMarkdown = match.value
+                val start = match.range.first
+                val end = match.range.last + 1
+                val style = MarkupStyle.Passthrough(rawMarkdown)
+                hasChanges = true
+                extractedSpans = extractedSpans + MarkupStyleRange(style, start, end)
+            }
+        }
+
+        addPassthrough(MarkdownConstants.FENCED_CODE_REGEX)
+        addPassthrough(MarkdownConstants.TABLE_BLOCK_REGEX)
+        addPassthrough(MarkdownConstants.HORIZONTAL_RULE_REGEX)
+        addPassthrough(MarkdownConstants.IMAGE_REGEX)
 
         applyRule(MarkdownConstants.H1_REGEX, { MarkupStyle.H1 }, getPrefixRemoved = { 2 })
         applyRule(MarkdownConstants.H2_REGEX, { MarkupStyle.H2 }, getPrefixRemoved = { 3 })

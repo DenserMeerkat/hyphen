@@ -1,3 +1,17 @@
+## [0.7.1-alpha01] - 2026-09-15
+
+### ✨ Added
+* **Passthrough Spans**: Added `MarkupStyle.Passthrough` for fenced code blocks, tables, images, and horizontal rules. Unsupported elements are now preserved byte-for-byte during serialization and rendered with dimmed monospace styling.
+* **Asynchronous Markdown Loading**: Added `setMarkdownAsync(markdown: String)` suspend function to allow background thread (`Dispatchers.Default`) parsing of large documents before dispatching state mutations to the Compose main thread.
+
+### ⚡ Performance
+* **Line-Scoped Interactive Parsing**: Markdown processing during interactive single-character typing is now scoped to the affected line only, reducing per-keystroke parse time from ~210ms to ~0.01ms on 50k character documents.
+* **Serialized Markdown Caching**: `HyphenTextState.toMarkdown()` now caches its serialized output, invalidating atomically only when text or spans mutate.
+* **Memoized Offset Mapping**: Cached `toVisual` lookups during Compose layout and drawing passes, converting O(N²) per-recomposition span scanning into O(N).
+* **Line-Scoped NBSP Normalization**: Restricted non-breaking space line-end scans to the edited line range rather than scanning the full document buffer.
+
+---
+
 ## [0.7.0-alpha01] - 2026-07-30
 
 ### 🚀 Added

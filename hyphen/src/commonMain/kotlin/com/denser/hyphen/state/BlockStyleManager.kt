@@ -361,8 +361,7 @@ internal object BlockStyleManager {
             }
         }
         if (modified) {
-            state._spans.clear()
-            state._spans.addAll(currentSpans)
+            state.replaceSpans(currentSpans)
         }
         return modified
     }

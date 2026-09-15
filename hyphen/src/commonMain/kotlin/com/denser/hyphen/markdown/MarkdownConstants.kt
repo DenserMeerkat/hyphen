@@ -93,4 +93,25 @@ internal object MarkdownConstants {
         pattern = """^###### (.+?)$""",
         option = RegexOption.MULTILINE
     )
+
+    // ``` or ~~~ at line start
+    val FENCED_CODE_REGEX = Regex(
+        pattern = """^(`{3,}|~{3,})([\w\-+#.]*)\n([\s\S]*?)\n\1\s*$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // | at line start
+    val TABLE_BLOCK_REGEX = Regex(
+        pattern = """^(\|.+\|\n)+""",
+        option = RegexOption.MULTILINE
+    )
+
+    // ---, ***, or ___ at line start (with optional leading indentation)
+    val HORIZONTAL_RULE_REGEX = Regex(
+        pattern = """^[ \t]*([*\-_][ \t]*){3,}$""",
+        option = RegexOption.MULTILINE
+    )
+
+    // ![alt](url)
+    val IMAGE_REGEX = Regex("""!\[(.+?)]\((.+?)\)""")
 }

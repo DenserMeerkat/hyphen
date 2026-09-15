@@ -279,6 +279,11 @@ HyphenBasicTextEditor(
 // Load new Markdown content (resets undo history)
 state.setMarkdown("# New content\n\nHello!")
 
+// Load large Markdown content asynchronously off the main thread
+coroutineScope.launch {
+    state.setMarkdownAsync(largeMarkdownContent)
+}
+
 // Toggle formatting from a custom button
 Button(onClick = { state.toggleStyle(MarkupStyle.Bold) }) { Text("B") }
 
@@ -500,6 +505,7 @@ val clipboard = LocalHyphenRawClipboard.current ?: LocalClipboard.current
 | `undo()` / `redo()`           | `Unit`                      | Navigates the undo / redo history stack.                                                   |
 | `toMarkdown(start?, end?)`    | `String`                    | Serializes content (or a substring range) to a Markdown formatted string.                  |
 | `setMarkdown(markdown)`       | `Unit`                      | Replaces all content programmatically, parses it, and resets history.                      |
+| `setMarkdownAsync(markdown)`  | `Unit` (suspend)            | Same as `setMarkdown`, but runs heavy parsing on `Dispatchers.Default` for large files.    |
 | `markdownFlow`                | `Flow<String>`              | Emits the serialized Markdown string on every text or formatting change.                   |
 
 ### `HyphenStyleConfig`
