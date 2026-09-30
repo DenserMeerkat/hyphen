@@ -528,4 +528,28 @@ class HyphenTextStateTest {
         assertEquals(1, state.spans.size)
         assertEquals(MarkupStyle.H1, state.spans[0].style)
     }
+
+    @Test
+    fun `glide typing multi character insertion ending in space does not convert space to nbsp`() {
+        val state = HyphenTextState("")
+        state.isFocused = true
+
+        state.textFieldState.edit {
+            replace(0, 0, "hello ")
+            selection = TextRange(6)
+            state.processInput(this)
+        }
+
+        assertEquals("hello ", state.textFieldState.text.toString())
+        assertFalse(state.textFieldState.text.toString().contains('\u00A0'))
+
+        state.textFieldState.edit {
+            replace(6, 6, "world ")
+            selection = TextRange(12)
+            state.processInput(this)
+        }
+
+        assertEquals("hello world ", state.textFieldState.text.toString())
+        assertFalse(state.textFieldState.text.toString().contains('\u00A0'))
+    }
 }

@@ -410,6 +410,15 @@ class HyphenTextState(
             previousText.length
         )
 
+        val isNewlineInsertion = if (rawLengthDifference > 0) {
+            val start = (cursorPosition - rawLengthDifference).coerceAtLeast(0)
+            newText.substring(start, cursorPosition).contains('\n')
+        } else false
+
+        val insertedChar = if (rawLengthDifference == 1 && cursorPosition > 0) newText[cursorPosition - 1] else null
+        val isSpaceInsertion = !isNewlineInsertion && cursorPosition > 0 && newText[cursorPosition - 1] == ' '
+        val isLikelyComposing = insertedChar != null && insertedChar.code > 0x7F
+
         var cleanedText = newText
         var modified = false
 
@@ -425,18 +434,20 @@ class HyphenTextState(
             scanEnd = cleanedText.indexOf('\n', cursorPosition).let { if (it == -1) cleanedText.length else it }
         }
 
-        for (i in scanStart until scanEnd.coerceAtMost(cleanedText.length)) {
-            if (cleanedText[i] == '\u00A0') {
-                val isStillAtLineEnd = i + 1 == cleanedText.length || cleanedText[i + 1] == '\n'
-                if (!isStillAtLineEnd) {
-                    cleanedText = cleanedText.substring(0, i) + ' ' + cleanedText.substring(i + 1)
-                    modified = true
-                }
-            } else if (cleanedText[i] == ' ') {
-                val isAtLineEnd = i + 1 == cleanedText.length || cleanedText[i + 1] == '\n'
-                if (isAtLineEnd) {
-                    cleanedText = cleanedText.substring(0, i) + '\u00A0' + cleanedText.substring(i + 1)
-                    modified = true
+        if (!isSpaceInsertion) {
+            for (i in scanStart until scanEnd.coerceAtMost(cleanedText.length)) {
+                if (cleanedText[i] == '\u00A0') {
+                    val isStillAtLineEnd = i + 1 == cleanedText.length || cleanedText[i + 1] == '\n'
+                    if (!isStillAtLineEnd) {
+                        cleanedText = cleanedText.substring(0, i) + ' ' + cleanedText.substring(i + 1)
+                        modified = true
+                    }
+                } else if (cleanedText[i] == ' ' && isNewlineInsertion) {
+                    val isAtLineEnd = i + 1 == cleanedText.length || cleanedText[i + 1] == '\n'
+                    if (isAtLineEnd) {
+                        cleanedText = cleanedText.substring(0, i) + '\u00A0' + cleanedText.substring(i + 1)
+                        modified = true
+                    }
                 }
             }
         }
@@ -474,7 +485,7 @@ class HyphenTextState(
                     else -> true
                 }
             }
-            if (modifiedMention != null) {
+            if (modifiedMention != null && !isLikelyComposing) {
                 val effectiveStart = minOf(editStart, modifiedMention.start)
                 val effectiveEnd   = maxOf(editEnd,   modifiedMention.end)
                 buffer.revertAllChanges()
@@ -517,10 +528,6 @@ class HyphenTextState(
             }
         }
 
-        val isNewlineInsertion = if (rawLengthDifference > 0) {
-            val start = (buffer.selection.start - rawLengthDifference).coerceAtLeast(0)
-            buffer.asCharSequence().substring(start, buffer.selection.start).contains('\n')
-        } else false
 
         if (isNewlineInsertion) {
             pendingOverrides = pendingOverrides.filterKeys { it !in StyleSets.allHeadings }
