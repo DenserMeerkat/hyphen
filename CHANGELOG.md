@@ -1,3 +1,13 @@
+## [0.7.1-alpha02] - 2026-10-01
+
+### 🛠️ Fixed
+* **Android Clipboard Crash (CMP 1.12+)**: Fixed crash (`IllegalArgumentException`) occurring when opening the text selection toolbar after selecting text on Compose Multiplatform 1.12+.
+* **IME Composition Underline Offset**: Fixed text input underline improperly shifting when keyboards insert a word followed by a space.
+* **Multilingual Character Composition**: Fixed IME characters not properly composing and grouping into complex glyphs and syllables during text input.
+* **Mention Preservation**: Fixed completed mentions inadvertently disappearing on non-deletion text changes or replacements nearby.
+
+---
+
 ## [0.7.1-alpha01] - 2026-09-15
 
 ### ✨ Added
