@@ -5,6 +5,7 @@ import com.denser.hyphen.model.MarkupStyle
 import com.denser.hyphen.model.TriggerConfig
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.test.Test
 
@@ -332,6 +333,45 @@ class HyphenTextStateTest {
         val mentionSpan = state.spans.find { it.style is MarkupStyle.Mention }
         assertEquals(0, mentionSpan?.start)
         assertEquals(8, mentionSpan?.end)
+    }
+
+    @Test
+    fun `equal length replacement near mention does not delete mention`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("[@Alice](mention:123) ", triggerConfigs)
+        state.isFocused = true
+
+        state.textFieldState.edit {
+            replace(6, 7, "\u00A0")
+            selection = TextRange(6)
+            state.processInput(this)
+        }
+
+        val mentionSpan = state.spans.find { it.style is MarkupStyle.Mention }
+        assertNotNull(mentionSpan)
+        assertEquals("@Alice", (mentionSpan.style as MarkupStyle.Mention).display)
+        assertEquals(0, mentionSpan.start)
+        assertEquals(6, mentionSpan.end)
+    }
+
+    @Test
+    fun `autocorrection replacement near mention preserves mention`() {
+        val triggerConfigs = listOf(TriggerConfig(trigger = "@", scheme = "mention"))
+        val state = HyphenTextState("[@Alice](mention:123) spellingg", triggerConfigs)
+        state.isFocused = true
+
+        state.textFieldState.edit {
+            replace(7, 16, "spelling")
+            selection = TextRange(15)
+            state.processInput(this)
+        }
+
+        assertEquals("@Alice spelling", state.text)
+        val mentionSpan = state.spans.find { it.style is MarkupStyle.Mention }
+        assertNotNull(mentionSpan)
+        assertEquals("@Alice", (mentionSpan.style as MarkupStyle.Mention).display)
+        assertEquals(0, mentionSpan.start)
+        assertEquals(6, mentionSpan.end)
     }
 
     @Test

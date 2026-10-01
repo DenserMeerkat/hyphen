@@ -460,34 +460,19 @@ class HyphenTextState(
         }
 
         val mentionSpans = _spans.filter { it.style is MarkupStyle.Mention && it.style.id.isNotEmpty() }
-        if (mentionSpans.isNotEmpty() && previousText != newText) {
-            val editStart = changeOrigin
-            val editEnd = changeOrigin + maxOf(0, -rawLengthDifference)
+        if (mentionSpans.isNotEmpty() && previousText != newText && rawLengthDifference < 0) {
+            val deleteStart = changeOrigin
+            val deleteEnd = changeOrigin - rawLengthDifference
 
             val modifiedMention = mentionSpans.find { mention ->
-                val display = (mention.style as MarkupStyle.Mention).display
-
-                if (editStart <= mention.start && editEnd >= mention.end) {
+                if (deleteStart <= mention.start && deleteEnd >= mention.end) {
                     return@find false
                 }
-
-                when {
-                    editStart >= mention.end -> {
-                        val actual = if (mention.end <= newText.length) newText.substring(mention.start, mention.end) else ""
-                        actual != display
-                    }
-                    editEnd <= mention.start -> {
-                        val newStart = mention.start + rawLengthDifference
-                        val newEnd = mention.end + rawLengthDifference
-                        val actual = if (newStart >= 0 && newEnd <= newText.length) newText.substring(newStart, newEnd) else ""
-                        actual != display
-                    }
-                    else -> true
-                }
+                deleteStart < mention.end && deleteEnd > mention.start
             }
             if (modifiedMention != null && !isLikelyComposing) {
-                val effectiveStart = minOf(editStart, modifiedMention.start)
-                val effectiveEnd   = maxOf(editEnd,   modifiedMention.end)
+                val effectiveStart = minOf(deleteStart, modifiedMention.start)
+                val effectiveEnd   = maxOf(deleteEnd,   modifiedMention.end)
                 buffer.revertAllChanges()
                 buffer.replace(effectiveStart, effectiveEnd, "")
                 buffer.selection = TextRange(effectiveStart)
