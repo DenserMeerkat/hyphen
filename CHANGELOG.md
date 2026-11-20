@@ -1,3 +1,11 @@
+## [0.7.1-alpha03] - 2026-11-20
+
+### 🛠️ Fixed
+* **Block Formatting While Typing**: Fixed block styling and visual transformations on other lines disappearing while typing.
+* **Android Clipboard Loop**: Fixed an infinite rewrite loop when copying formatted text on Android.
+
+---
+
 ## [0.7.1-alpha02] - 2026-10-01
 
 ### 🛠️ Fixed
