@@ -592,4 +592,82 @@ class HyphenTextStateTest {
         assertEquals("hello world ", state.textFieldState.text.toString())
         assertFalse(state.textFieldState.text.toString().contains('\u00A0'))
     }
+
+    private fun HyphenTextState.typeAt(index: Int, value: String) {
+        textFieldState.edit {
+            replace(index, index, value)
+            selection = TextRange(index + value.length)
+            processInput(this)
+        }
+    }
+
+    private fun HyphenTextState.deleteBefore(index: Int) {
+        textFieldState.edit {
+            replace(index - 1, index, "")
+            selection = TextRange(index - 1)
+            processInput(this)
+        }
+    }
+
+    private fun HyphenTextState.styledText(style: MarkupStyle): List<String> =
+        spans.filter { it.style == style }.sortedBy { it.start }.map { text.substring(it.start, it.end) }
+
+    @Test
+    fun `editing one quote line keeps the other quote lines`() {
+        val state = HyphenTextState("> one\n> two\n> three")
+
+        state.typeAt(11, "x")
+        assertEquals(listOf("> one", "> twox", "> three"), state.styledText(MarkupStyle.Blockquote))
+
+        state.deleteBefore(12)
+        state.deleteBefore(11)
+        assertEquals(listOf("> one", "> tw", "> three"), state.styledText(MarkupStyle.Blockquote))
+    }
+
+    @Test
+    fun `typing on one list line keeps the other list lines`() {
+        val checklist = HyphenTextState("- [ ] a\n- [x] b\n- [ ] c")
+        checklist.typeAt(checklist.text.length, "d")
+        assertEquals(listOf("- [ ] a", "- [ ] cd"), checklist.styledText(MarkupStyle.CheckboxUnchecked))
+        assertEquals(listOf("- [x] b"), checklist.styledText(MarkupStyle.CheckboxChecked))
+
+        val bullets = HyphenTextState("- a\n- b")
+        bullets.typeAt(3, "x")
+        assertEquals(listOf("- ax", "- b"), bullets.styledText(MarkupStyle.BulletList))
+
+        val numbers = HyphenTextState("1. a\n2. b")
+        numbers.typeAt(9, "x")
+        assertEquals(listOf("1. a", "2. bx"), numbers.styledText(MarkupStyle.OrderedList))
+    }
+
+    @Test
+    fun `typing on a plain line keeps block styles on other lines`() {
+        val state = HyphenTextState("> quote\n- [ ] task\nplain")
+
+        state.typeAt(state.text.length, "s")
+
+        assertEquals("> quote\n- [ ] task\nplains", state.toMarkdown())
+        assertEquals(listOf("> quote"), state.styledText(MarkupStyle.Blockquote))
+        assertEquals(listOf("- [ ] task"), state.styledText(MarkupStyle.CheckboxUnchecked))
+    }
+
+    @Test
+    fun `completing inline markdown shifts block styles below it`() {
+        val state = HyphenTextState("**b*\n> two")
+
+        state.typeAt(4, "*")
+
+        assertEquals("b\n> two", state.text)
+        assertEquals(listOf("> two"), state.styledText(MarkupStyle.Blockquote))
+    }
+
+    @Test
+    fun `removing a quote prefix only unquotes that line`() {
+        val state = HyphenTextState("> one\n> two")
+
+        state.deleteBefore(8)
+
+        assertEquals("> one\n>two", state.text)
+        assertEquals(listOf("> one"), state.styledText(MarkupStyle.Blockquote))
+    }
 }

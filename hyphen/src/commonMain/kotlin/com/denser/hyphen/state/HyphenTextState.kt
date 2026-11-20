@@ -541,6 +541,13 @@ class HyphenTextState(
             null
         }
 
+        val otherLineBlockSpans = parseRange?.let { range ->
+            val rangeEnd = if (range.isEmpty()) range.first else range.last + 1
+            safeSpans.filter { span ->
+                BlockStyleManager.isBlockStyle(span.style) && (span.end <= range.first || span.start >= rangeEnd)
+            }
+        }.orEmpty()
+
         val markdownResult = MarkdownProcessor.process(newText, cursorPosition, triggerConfigs, parseRange)
         var updatedSpans: List<MarkupStyleRange>
 
@@ -668,6 +675,11 @@ class HyphenTextState(
                     it.style is MarkupStyle.Mention && it.style.id.isEmpty()
                 }
             }
+        }
+
+        val lengthChange = buffer.length - previousText.length
+        updatedSpans += otherLineBlockSpans.map { span ->
+            if (span.start < changeOrigin) span else span.copy(start = span.start + lengthChange, end = span.end + lengthChange)
         }
 
         val finalSpans = updatedSpans.mapNotNull { span ->
